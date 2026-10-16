@@ -8,6 +8,8 @@ import { createLanguageDrafts, getDraftKey, getExecutionCases, selectDraftRecord
 import { classifyAttemptOutcome } from "../services/status.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
+// 「无本地运行接口」提示的关闭状态存储键（见组件内 runnerNoticeDismissed）
+const RUNNER_NOTICE_KEY = "hot100:runnerNoticeDismissed";
 const statusLabels = { new: "未开始", "in-progress": "思考中", completed: "已完成", reviewing: "待复习", mastered: "已掌握", 未开始: "未开始", 思考中: "思考中", 已完成: "已完成", 错题: "错题", 待复习: "待复习", 已掌握: "已掌握" };
 const statusValues = ["思考中", "已完成", "错题", "待复习", "已掌握"];
 
@@ -47,6 +49,24 @@ export default function ProblemDetail({
   const [leftTab, setLeftTab] = useState("problem");
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [activeExample, setActiveExample] = useState(0);
+  // 运行器不可用提示：可关闭，并记住选择。
+  // 线上构建（import.meta.env.DEV === false）永远没有 /__runner 接口，
+  // 这个提示会一直挂着，所以给一个关闭入口；关一次后不再打扰。
+  const [runnerNoticeDismissed, setRunnerNoticeDismissed] = useState(() => {
+    try {
+      return typeof window !== "undefined" && window.localStorage.getItem(RUNNER_NOTICE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const dismissRunnerNotice = () => {
+    setRunnerNoticeDismissed(true);
+    try {
+      window.localStorage.setItem(RUNNER_NOTICE_KEY, "1");
+    } catch {
+      // localStorage 不可用时静默降级：至少本次会话内不再显示
+    }
+  };
   const attemptRef = useRef(null);
   const sessionRef = useRef(null);
 
@@ -135,7 +155,18 @@ export default function ProblemDetail({
             </div>
           </details>
           {practiceMode === "interview" && <p className="interviewNotice">面试模拟会隐藏提示和题解，已有草稿会继续保留；需要清空时请手动删除代码。</p>}
-          {!runnerAvailable && <p className="runnerNotice">当前页面没有本地运行接口，请在本地开发环境运行 Java/Python。</p>}
+          {!runnerAvailable && !runnerNoticeDismissed && (
+            <div className="runnerNotice" role="status">
+              <p>当前页面没有本地运行接口，请在本地开发环境运行 Java/Python。</p>
+              <p className="runnerNoticeHint">
+                运行功能需要本机的 JDK / Python，且只在 <code>npm run dev</code> 时可用 ——
+                这是刻意设计，避免把任意代码执行开放到公网。
+              </p>
+              <button type="button" className="runnerNoticeClose" onClick={dismissRunnerNotice} aria-label="不再显示这条提示">
+                知道了，不再提示
+              </button>
+            </div>
+          )}
           <CodeEditor key={getDraftKey(question.id, language, mode)} language={language} code={code} mode={mode} questionId={question.id} func={solution.func} cases={cases} draftRecord={draftRecord} draftStatus={hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"} onDraftChange={saveDraft} example={selectedExample} onRun={runnerAvailable ? execute : undefined} readOnly={practiceMode === "interview" && false} />
         </div>
       </section>
