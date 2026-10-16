@@ -1,0 +1,165 @@
+{
+  "id": "124",
+  "description": "二叉树中的 路径 被定义为一条节点序列，序列中每对相邻节点之间都存在一条边。同一个节点在一条路径序列中 至多出现一次 。该路径 至少包含一个 节点，且不一定经过根节点。\n\n路径和 是路径中各节点值的总和。\n\n给你一个二叉树的根节点 root ，返回其 最大路径和 。\n\n示例 1：\n\n输入：root = [1,2,3]\n输出：6\n解释：最优路径是 2 - 1 - 3 ，路径和为 2 + 1 + 3 = 6\n\n示例 2：\n\n输入：root = [-10,9,20,null,null,15,7]\n输出：42\n解释：最优路径是 15 - 20 - 7 ，路径和为 15 + 20 + 7 = 42\n\n提示：\n\n树中节点数目范围是 [1, 3 104]\n-1000 <= Node.val <= 1000",
+  "summary": "后序遍历计算每个节点向父节点能提供的最大单链贡献。左右返回值各与零取最大，避免负分支拖累。经过当前节点的完整路径可同时取左右贡献，用它更新全局答案；向父节点仅返回当前值加左右较大贡献。全局值初始为负无穷以处理全负树。",
+  "explanation": "方法一：递归\n\n思考\n\n路径可以经过任意节点，不必过根，也可以在某节点「拐弯」同时走左右子树。枚举所有路径在 n ≤ 3×10⁴ 下不可行。\n\n对每个节点，能向上贡献的只是「节点值加上左右中较大的一条非负链」；左右都接上的和只用于更新全局答案，不能再往上传。负贡献应丢弃，因此递归返回前对子树结果与 0 取最大。\n\n我们思考二叉树递归问题的经典套路：\n\n1. 终止条件（何时终止递归）\n2. 递归处理左右子树\n3. 合并左右子树的计算结果\n\n对于本题，我们设计一个函数 dfs(root)，它返回以 root 为根节点的二叉树的最大路径和。\n\n函数 dfs(root) 的执行逻辑如下：\n\n如果 root 不存在，那么 dfs(root) 返回 0；\n\n否则，我们递归计算 root 的左子树和右子树的最大路径和，分别记为 left 和 right。如果 left 小于 0，那么我们将其置为 0，同理，如果 right 小于 0，那么我们将其置为 0。\n\n然后，我们用 root.val + left + right 更新答案。最后，函数返回 root.val + max(left, right)。\n\n在主函数中，我们调用 dfs(root)，即可得到每个节点的最大路径和，其中的最大值即为答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 是二叉树的节点数。\n\n总结",
+  "java": "/**\n * Definition for a binary tree node.\n * public class TreeNode {\n *     int val;\n *     TreeNode left;\n *     TreeNode right;\n *     TreeNode() {}\n *     TreeNode(int val) { this.val = val; }\n *     TreeNode(int val, TreeNode left, TreeNode right) {\n *         this.val = val;\n *         this.left = left;\n *         this.right = right;\n *     }\n * }\n */\nclass Solution {\n    private int ans = -1001;\n\n    public int maxPathSum(TreeNode root) {\n        dfs(root);\n        return ans;\n    }\n\n    private int dfs(TreeNode root) {\n        if (root == null) {\n            return 0;\n        }\n        int left = Math.max(0, dfs(root.left));\n        int right = Math.max(0, dfs(root.right));\n        ans = Math.max(ans, root.val + left + right);\n        return root.val + Math.max(left, right);\n    }\n}",
+  "python": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def maxPathSum(self, root: Optional[TreeNode]) -> int:\n        def dfs(root: Optional[TreeNode]) -> int:\n            if root is None:\n                return 0\n            left = max(0, dfs(root.left))\n            right = max(0, dfs(root.right))\n            nonlocal ans\n            ans = max(ans, root.val + left + right)\n            return root.val + max(left, right)\n\n        ans = -inf\n        dfs(root)\n        return ans",
+  "examples": [
+    {
+      "input": "root = [1,2,3]",
+      "output": "6"
+    },
+    {
+      "input": "root = [-10,9,20,null,null,15,7]",
+      "output": "42"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/binary-tree-maximum-path-sum/",
+  "fallbackSource": "https://leetcode.cn/problems/binary-tree-maximum-path-sum/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/binary-tree-maximum-path-sum/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0124.Binary%20Tree%20Maximum%20Path%20Sum/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0124.Binary%20Tree%20Maximum%20Path%20Sum/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：递归\n\n思考\n\n路径可以经过任意节点，不必过根，也可以在某节点「拐弯」同时走左右子树。枚举所有路径在 n ≤ 3×10⁴ 下不可行。\n\n对每个节点，能向上贡献的只是「节点值加上左右中较大的一条非负链」；左右都接上的和只用于更新全局答案，不能再往上传。负贡献应丢弃，因此递归返回前对子树结果与 0 取最大。\n\n我们思考二叉树递归问题的经典套路：\n\n1. 终止条件（何时终止递归）\n2. 递归处理左右子树\n3. 合并左右子树的计算结果\n\n对于本题，我们设计一个函数 dfs(root)，它返回以 root 为根节点的二叉树的最大路径和。\n\n函数 dfs(root) 的执行逻辑如下：\n\n如果 root 不存在，那么 dfs(root) 返回 0；\n\n否则，我们递归计算 root 的左子树和右子树的最大路径和，分别记为 left 和 right。如果 left 小于 0，那么我们将其置为 0，同理，如果 right 小于 0，那么我们将其置为 0。\n\n然后，我们用 root.val + left + right 更新答案。最后，函数返回 root.val + max(left, right)。\n\n在主函数中，我们调用 dfs(root)，即可得到每个节点的最大路径和，其中的最大值即为答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 是二叉树的节点数。",
+  "summaryText": "递归只返回单侧最大贡献，负贡献取零；全局答案尝试 node.val+左贡献+右贡献。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过二叉树中的最大路径和掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "98",
+    "236"
+  ],
+  "recognition": "最大路径可以在某个节点连接左右两支，但递归返回给父节点的路径能同时保留两支吗？",
+  "bruteForce": "直观做法是路径可以经过任意节点，不必过根，也可以在某节点「拐弯」同时走左右子树。枚举所有路径在 n ≤ 3×10⁴ 下不可行。；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "最大路径可以在某个节点连接左右两支，但递归返回给父节点的路径能同时保留两支吗？"
+    },
+    {
+      "level": 2,
+      "text": "递归只返回单侧最大贡献，负贡献取零；全局答案尝试 node.val+左贡献+右贡献。"
+    },
+    {
+      "level": 3,
+      "text": "后序遍历计算每个节点向父节点能提供的最大单链贡献。左右返回值各与零取最大，避免负分支拖累。经过当前节点的完整路径可同时取左右贡献，用它更新全局答案；向父节点仅返回当前值加左右较大贡献。全局值初始为负无穷以处理全负树。"
+    },
+    {
+      "level": 4,
+      "text": "best ← 负无穷\ngain(node)：\n    若 node 为空：返回 0\n    left ← max(0,gain(node.left))\n    right ← max(0,gain(node.right))\n    best ← max(best,node.val+left+right)\n    返回 node.val+max(left,right)\ngain(root)\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "后序遍历计算每个节点向父节点能提供的最大单链贡献。",
+    "左右返回值各与零取最大，避免负分支拖累。",
+    "经过当前节点的完整路径可同时取左右贡献，用它更新全局答案；向父节点仅返回当前值加左右较大贡献。",
+    "全局值初始为负无穷以处理全负树。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [1,2,3] → 6。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足二叉树中的最大路径和约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把二叉树中的最大路径和的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用路径可以经过任意节点，不必过根，也可以在某节点「拐弯」同时走左右子树。枚举所有路径在 n ≤ 3×10⁴ 下不可行。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "maxPathSum",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "124-basic-1",
+      "input": {
+        "root": [
+          1,
+          2,
+          3
+        ]
+      },
+      "expected": 6,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "124-boundary-1",
+      "input": {
+        "root": [
+          -10,
+          9,
+          20,
+          null,
+          null,
+          15,
+          7
+        ]
+      },
+      "expected": 42,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用二叉树中的最大路径和的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "124-adversarial-1",
+      "input": {
+        "root": [
+          -10,
+          9,
+          20,
+          null,
+          null,
+          15,
+          7
+        ]
+      },
+      "expected": 42,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查二叉树中的最大路径和的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [1,2,3]",
+    "output": "6",
+    "examples": [
+      {
+        "input": "root = [1,2,3]",
+        "output": "6"
+      }
+    ]
+  }
+}

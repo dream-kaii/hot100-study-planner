@@ -1,0 +1,241 @@
+{
+  "id": "54",
+  "description": "给你一个 m 行 n 列的矩阵 matrix ，请按照 顺时针螺旋顺序 ，返回矩阵中的所有元素。\n\n示例 1：\n\n输入：matrix = [[1,2,3],[4,5,6],[7,8,9]]\n输出：[1,2,3,6,9,8,7,4,5]\n\n示例 2：\n\n输入：matrix = [[1,2,3,4],[5,6,7,8],[9,10,11,12]]\n输出：[1,2,3,4,8,12,11,10,9,5,6,7]\n\n提示：\n\nm == matrix.length\nn == matrix[i].length\n1\n-100",
+  "summary": "在上下左右边界围成的矩形中，先走顶部一行并上移顶部边界，再走右侧一列并左移右边界。若仍有行则走底部并收缩，若仍有列则走左侧并收缩。每次访问前确认对应边界有效，避免单行或单列被重复输出。",
+  "explanation": "本题解决思路继承自59.螺旋矩阵II，建议看完59.螺旋矩阵II之后再看本题\n\n与59.螺旋矩阵II相同的是：两者都是模拟矩形的顺时针旋转，所以核心依然是依然是坚持循环不变量，按照左闭右开的原则\n\n模拟顺时针画矩阵的过程:\n\n填充上行从左到右\n填充右列从上到下\n填充下行从右到左\n填充左列从下到上\n\n由外向内一圈一圈这么画下去，如下所示：\n\n这里每一种颜色，代表一条边，我们遍历的长度，可以看出每一个拐角处的处理规则，拐角处让给新的一条边来继续画。\n\n与59.螺旋矩阵II不同的是：前题中的螺旋矩阵是正方形，只有正方形的边长n一个边界条件，而本题中，需要考虑长方形的长和宽(m行和n列)两个边界条件。自然，m可以等于n，即前题可视为本题在m==n的特殊情况。\n\n我们从最一般的情况开始考虑，与59.螺旋矩阵II题解对比起来，m和n的带入，主要引来两方面的差异：\n\nloop的计算：\n本题的loop计算与59.螺旋矩阵II算法略微差异，因为存在rows和columns两个维度，可自行分析，loop只能取min(rows, columns)，例如rows = 5, columns = 7，那loop = 5 / 7 = 2\nmid的计算及填充：\n1、同样的原理，本题的mid计算也存在上述差异；\n2、\n如果min(rows, columns)为偶数，则不需要在最后单独考虑矩阵最中间位置的赋值\n如果min(rows, columns)为奇数，则矩阵最中间位置不只是[mid][mid],而是会留下来一个特殊的中间行或者中间列，具体是中间行还是中间列，要看rows和columns的大小，如果rows columns,则是中间列，相反，则是中间行\n\n代码如下，已经详细注释了每一步的目的，可以看出while循环里判断的情况是很多的，代码里处理的原则也是统一的左闭右开。\n\n整体代码如下：\n\n类似题目\n\n59.螺旋矩阵II\n剑指Offer 29.顺时针打印矩阵\n\n总结",
+  "java": "class Solution {\n    public List<Integer> spiralOrder(int[][] matrix) {\n        //存放数组的数\n        List<Integer> ans = new ArrayList<>();\n        //列数\n        int columns = matrix[0].length;\n        //行数\n        int rows = matrix.length;\n        //遍历起点\n        int start = 0;\n        //循环的次数 行数和列数中的最小值除以二\n        int loop = Math.min(rows,columns) / 2;\n        //未遍历的中间列（行）的列（行）下标\n        int mid = loop;\n        //终止条件\n        int offSet = 1;\n        int i,j;\n        while(loop-- > 0) {\n            //初始化起点\n            i = j = start;\n            \n            //从左往右\n            for(; j < columns - offSet; j++)\n                ans.add(matrix[i][j]);\n\n            //从上往下\n            for(; i < rows - offSet; i++)\n                ans.add(matrix[i][j]);\n\n            //从右往左\n            for(; j > start; j--)\n                ans.add(matrix[i][j]);\n            \n            //从下往上\n            for(; i > start; i--)\n                ans.add(matrix[i][j]);\n\n            //每循环一次 改变起点位置\n            start++;\n            //终止条件改变\n            offSet++;\n        }\n\n        //如果行和列中的最小值是奇数 则会产生中间行或者中间列没有遍历\n        if(Math.min(rows,columns) % 2 != 0) {\n            //行大于列则产生中间列\n            if(rows > columns) {\n                //中间列的行的最大下标的下一位的下标为mid + rows - columns + 1\n                for(int k = mid; k < mid + rows - columns + 1; k++) {\n                    ans.add(matrix[k][mid]);\n                }\n            }else {//列大于等于行则产生中间行\n                //中间行的列的最大下标的下一位的下标为mid + columns - rows + 1\n                for(int k = mid; k < mid + columns - rows + 1; k++) {\n                    ans.add(matrix[mid][k]);\n                }\n            }\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution(object):\n    def spiralOrder(self, matrix):\n        \"\"\"\n        :type matrix: List[List[int]]\n        :rtype: List[int]\n        \"\"\"\n        if len(matrix) == 0 or len(matrix[0]) == 0 : # 判定List是否为空\n            return []\n        row, col = len(matrix), len(matrix[0]) # 行数，列数\n        loop = min(row, col) // 2 # 循环轮数\n        stx, sty = 0, 0 # 起始x，y坐标\n        i, j =0, 0\n        count = 0  # 计数\n        offset = 1  # 每轮减少的格子数\n        result = [0] * (row * col)\n        while loop>0 :# 左闭右开\n            i, j = stx, sty\n            while j < col - offset :   # 从左到右\n                result[count] = matrix[i][j]\n                count += 1\n                j += 1  \n            while i < row - offset : # 从上到下\n                result[count] = matrix[i][j]\n                count += 1\n                i += 1\n            while j>sty :  # 从右到左\n                result[count] = matrix[i][j]\n                count += 1\n                j -= 1\n            while i>stx :  # 从下到上\n                result[count] = matrix[i][j]\n                count += 1\n                i -= 1\n            stx += 1\n            sty += 1\n            offset += 1\n            loop -= 1\n        if min(row, col) % 2 == 1 :  # 判定是否需要填充多出来的一行\n            i = stx\n            if row < col :\n                while i < stx + col - row + 1 :\n                    result[count] = matrix[stx][i]\n                    count += 1\n                    i += 1\n            else :\n                while i < stx + row - col + 1 :\n                    result[count] = matrix[i][stx]\n                    count += 1\n                    i += 1\n        return result",
+  "examples": [
+    {
+      "input": "matrix = [[1,2,3],[4,5,6],[7,8,9]]",
+      "output": "[1,2,3,6,9,8,7,4,5]"
+    },
+    {
+      "input": "matrix = [[1,2,3,4],[5,6,7,8],[9,10,11,12]]",
+      "output": "[1,2,3,4,8,12,11,10,9,5,6,7]"
+    }
+  ],
+  "complexity": {
+    "time": "O(m×n)",
+    "space": "O(m×n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0054.%E8%9E%BA%E6%97%8B%E7%9F%A9%E9%98%B5.html",
+  "fallbackSource": "https://leetcode.cn/problems/spiral-matrix/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0054.%E8%9E%BA%E6%97%8B%E7%9F%A9%E9%98%B5.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0054.%E8%9E%BA%E6%97%8B%E7%9F%A9%E9%98%B5.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0054.%E8%9E%BA%E6%97%8B%E7%9F%A9%E9%98%B5.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "本题解决思路继承自59.螺旋矩阵II，建议看完59.螺旋矩阵II之后再看本题\n\n与59.螺旋矩阵II相同的是：两者都是模拟矩形的顺时针旋转，所以核心依然是依然是坚持循环不变量，按照左闭右开的原则\n\n模拟顺时针画矩阵的过程:\n\n填充上行从左到右\n填充右列从上到下\n填充下行从右到左\n填充左列从下到上\n\n由外向内一圈一圈这么画下去，如下所示：\n\n这里每一种颜色，代表一条边，我们遍历的长度，可以看出每一个拐角处的处理规则，拐角处让给新的一条边来继续画。\n\n与59.螺旋矩阵II不同的是：前题中的螺旋矩阵是正方形，只有正方形的边长n一个边界条件，而本题中，需要考虑长方形的长和宽(m行和n列)两个边界条件。自然，m可以等于n，即前题可视为本题在m==n的特殊情况。\n\n我们从最一般的情况开始考虑，与59.螺旋矩阵II题解对比起来，m和n的带入，主要引来两方面的差异：\n\nloop的计算：\n本题的loop计算与59.螺旋矩阵II算法略微差异，因为存在rows和columns两个维度，可自行分析，loop只能取min(rows, columns)，例如rows = 5, columns = 7，那loop = 5 / 7 = 2\nmid的计算及填充：\n1、同样的原理，本题的mid计算也存在上述差异；\n2、\n如果min(rows, columns)为偶数，则不需要在最后单独考虑矩阵最中间位置的赋值\n如果min(rows, columns)为奇数，则矩阵最中间位置不只是[mid][mid],而是会留下来一个特殊的中间行或者中间列，具体是中间行还是中间列，要看rows和columns的大小，如果rows columns,则是中间列，相反，则是中间行\n\n代码如下，已经详细注释了每一步的目的，可以看出while循环里判断的情况是很多的，代码里处理的原则也是统一的左闭右开。\n\n整体代码如下：\n\n类似题目\n\n59.螺旋矩阵II\n剑指Offer 29.顺时针打印矩阵",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20220922102236.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220922102236.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "维护 top、bottom、left、right 四条边界，按右、下、左、上的顺序遍历后收缩。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过螺旋矩阵掌握矩阵相关的可迁移解题模式。",
+  "prerequisites": [
+    "73"
+  ],
+  "recognition": "螺旋遍历可以看作不断剥去矩阵的最外圈；已经遍历过的边界不应再访问。",
+  "bruteForce": "直观做法是矩阵规模至多 10×10，按层剥皮、每层四向走一圈再收缩边界可以通过，但剩下一行或一列时边界很容易写错。；当输入规模扩大时，需要避免重复扫描并利用题目中的矩阵约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "螺旋遍历可以看作不断剥去矩阵的最外圈；已经遍历过的边界不应再访问。"
+    },
+    {
+      "level": 2,
+      "text": "维护 top、bottom、left、right 四条边界，按右、下、左、上的顺序遍历后收缩。"
+    },
+    {
+      "level": 3,
+      "text": "在上下左右边界围成的矩形中，先走顶部一行并上移顶部边界，再走右侧一列并左移右边界。若仍有行则走底部并收缩，若仍有列则走左侧并收缩。每次访问前确认对应边界有效，避免单行或单列被重复输出。"
+    },
+    {
+      "level": 4,
+      "text": "top ← 0，bottom ← m−1，left ← 0，right ← n−1\n当 top ≤ bottom 且 left ≤ right：\n    输出 top 行从 left 到 right；top ← top+1\n    输出 right 列从 top 到 bottom；right ← right−1\n    若 top ≤ bottom：\n        输出 bottom 行从 right 到 left；bottom ← bottom−1\n    若 left ≤ right：\n        输出 left 列从 bottom 到 top；left ← left+1\n返回输出序列",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "在上下左右边界围成的矩形中，先走顶部一行并上移顶部边界，再走右侧一列并左移右边界。",
+    "若仍有行则走底部并收缩，若仍有列则走左侧并收缩。",
+    "每次访问前确认对应边界有效，避免单行或单列被重复输出。"
+  ],
+  "walkthrough": [
+    "公开示例：matrix = [[1,2,3],[4,5,6],[7,8,9]] → [1,2,3,6,9,8,7,4,5]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足螺旋矩阵约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把螺旋矩阵的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用矩阵规模至多 10×10，按层剥皮、每层四向走一圈再收缩边界可以通过，但剩下一行或一列时边界很容易写错。，额外空间为O(m×n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "spiralOrder",
+    "params": [
+      {
+        "name": "matrix",
+        "type": "int[][]"
+      }
+    ],
+    "returns": "List<Integer>",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "54-basic-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            4,
+            5,
+            6
+          ],
+          [
+            7,
+            8,
+            9
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        6,
+        9,
+        8,
+        7,
+        4,
+        5
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "54-boundary-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            5,
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11,
+            12
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        4,
+        8,
+        12,
+        11,
+        10,
+        9,
+        5,
+        6,
+        7
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用螺旋矩阵的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "54-adversarial-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            2,
+            3,
+            4
+          ],
+          [
+            5,
+            6,
+            7,
+            8
+          ],
+          [
+            9,
+            10,
+            11,
+            12
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        4,
+        8,
+        12,
+        11,
+        10,
+        9,
+        5,
+        6,
+        7
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查螺旋矩阵的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nmatrix = [[1,2,3],[4,5,6],[7,8,9]]",
+    "output": "[1,2,3,6,9,8,7,4,5]",
+    "examples": [
+      {
+        "input": "matrix = [[1,2,3],[4,5,6],[7,8,9]]",
+        "output": "[1,2,3,6,9,8,7,4,5]"
+      }
+    ]
+  }
+}

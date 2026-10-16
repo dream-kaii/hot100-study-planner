@@ -1,0 +1,24 @@
+{
+  "name": "hot100-study-planner",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy",
+    "preview": "vite preview --host 127.0.0.1",
+    "fetch:hot100": "node scripts/fetch-hot100.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "lucide-react": "^0.475.0",
+    "monaco-editor": "^0.57.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}

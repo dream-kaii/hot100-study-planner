@@ -1,0 +1,233 @@
+{
+  "id": "236",
+  "description": "给定一个二叉树, 找到该树中两个指定节点的最近公共祖先。\n\n百度百科中最近公共祖先的定义为：“对于有根树 T 的两个节点 p、q，最近公共祖先表示为一个节点 x，满足 x 是 p、q 的祖先且 x 的深度尽可能大（一个节点也可以是它自己的祖先）。”\n\n示例 1：\n\n输入：root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1\n输出：3\n解释：节点 5 和节点 1 的最近公共祖先是节点 3 。\n\n示例 2：\n\n输入：root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4\n输出：5\n解释：节点 5 和节点 4 的最近公共祖先是节点 5 。因为根据定义最近公共祖先节点可以为节点本身。\n\n示例 3：\n\n输入：root = [1,2], p = 1, q = 2\n输出：1\n\n提示：\n\n树中节点数目在范围 [2, 105] 内。\n-109 9\n所有 Node.val 互不相同 。\np != q\np 和 q 均存在于给定的二叉树中。",
+  "summary": "定义递归查找过程，遇空返回空，遇任一目标直接返回该节点。分别搜索左右子树，若两边都非空，说明目标分居两侧，当前节点就是最近公共祖先；只有一边有结果则返回那一边。某个目标本身是另一目标祖先时，提前返回目标节点也正确。",
+  "explanation": "遇到这个题目首先想的是要是能自底向上查找就好了，这样就可以找到公共祖先了。\n\n那么二叉树如何可以自底向上查找呢？\n\n回溯啊，二叉树回溯的过程就是从底到上。\n\n后序遍历（左右中）就是天然的回溯过程，可以根据左右子树的返回值，来处理中节点的逻辑。\n\n接下来就看如何判断一个节点是节点q和节点p的公共祖先呢。\n\n首先最容易想到的一个情况：如果找到一个节点，发现左子树出现结点p，右子树出现节点q，或者 左子树出现结点q，右子树出现节点p，那么该节点就是节点p和q的最近公共祖先。 即情况一：\n\n判断逻辑是 如果递归遍历遇到q，就将q返回，遇到p 就将p返回，那么如果 左右子树的返回值都不为空，说明此时的中节点，一定是q 和p 的最近祖先。\n\n那么有录友可能疑惑，会不会左子树 遇到q 返回，右子树也遇到q返回，这样并没有找到 q 和p的最近祖先。\n\n这么想的录友，要审题了，题目强调：二叉树节点数值是不重复的，而且一定存在 q 和 p。\n\n但是很多人容易忽略一个情况，就是节点本身p(q)，它拥有一个子孙节点q(p)。 情况二：\n\n其实情况一 和 情况二 代码实现过程都是一样的，也可以说，实现情况一的逻辑，顺便包含了情况二。\n\n因为遇到 q 或者 p 就返回，这样也包含了 q 或者 p 本身就是 公共祖先的情况。\n\n这一点是很多录友容易忽略的，在下面的代码讲解中，可以再去体会。\n\n递归三部曲：\n\n确定递归函数返回值以及参数\n\n需要递归函数返回值，来告诉我们是否找到节点q或者p，那么返回值为bool类型就可以了。\n\n但我们还要返回最近公共节点，可以利用上题目中返回值是TreeNode ，那么如果遇到p或者q，就把q或者p返回，返回值不为空，就说明找到了q或者p。\n\n代码如下：\n\n确定终止条件\n\n遇到空的话，因为树都是空了，所以返回空。\n\n那么我们来说一说，如果 root == q，或者 root == p，说明找到 q p ，则将其返回，这个返回值，后面在中节点的处理过程中会用到，那么中节点的处理逻辑，下面讲解。\n\n确定单层递归逻辑\n\n值得注意的是 本题函数有返回值，是因为回溯的过程需要递归函数的返回值做判断，但本题我们依然要遍历树的所有节点。\n\n我们在二叉树：递归函数究竟什么时候需要返回值，什么时候不要返回值？中说了 递归函数有返回值就是要遍历某一条边，但有返回值也要看如何处理返回值！\n\n如果递归函数有返回值，如何区分要搜索一条边，还是搜索整个树呢？\n\n搜索一条边的写法：\n\n搜索整个树写法：\n\n看出区别了没？\n\n在递归函数有返回值的情况下：如果要搜索一条边，递归函数返回值不为空的时候，立刻返回，如果搜索整个树，直接用一个变量left、right接住返回值，这个left、right后序还有逻辑处理的需要，也就是后序遍历中处理中间节点的逻辑（也是回溯）。\n\n那么为什么要遍历整棵树呢？直观上来看，找到最近公共祖先，直接一路返回就可以了。\n\n如图：\n\n就像图中一样直接返回7。\n\n但事实上还要遍历根节点右子树（即使此时已经找到了目标节点了），也就是图中的节点4、15、20。\n\n因为在如下代码的后序遍历中，如果想利用left和right做逻辑处理， 不能立刻返回，而是要等left与right逻辑处理完之后才能返回。\n\n所以此时大家要知道我们要遍历整棵树。知道这一点，对本题就有一定深度的理解了。\n\n那么先用left和right接住左子树和右子树的返回值，代码如下：\n\n如果left 和 right都不为空，说明此时root就是最近公共节点。这个比较好理解\n\n如果left为空，right不为空，就返回right，说明目标节点是通过right返回的，反之依然。\n\n这里有的同学就理解不了了，为什么left为空，right不为空，目标节点通过right返回呢？\n\n图中节点10的左子树返回null，右子树返回目标值7，那么此时节点10的处理逻辑就是把右子树的返回值（最近公共祖先7）返回上去！\n\n这里也很重要，可能刷过这道题目的同学，都不清楚结果究竟是如何从底层一层一层传到头结点的。\n\n那么如果left和right都为空，则返回left或者right都是可以的，也就是返回空。\n\n那么寻找最小公共祖先，完整流程图如下：\n\n从图中，大家可以看到，我们是如何回溯遍历整棵二叉树，将结果返回给头结点的！\n\n整体代码如下：\n\n稍加精简，代码如下：\n\n总结\n这道题目刷过的同学未必真正了解这里面回溯的过程，以及结果是如何一层一层传上去的。\n\n那么我给大家归纳如下三点：\n\n1. 求最小公共祖先，需要从底向上遍历，那么二叉树，只能通过后序遍历（即：回溯）实现从底向上的遍历方式。\n\n2. 在回溯的过程中，必然要遍历整棵二叉树，即使已经找到结果了，依然要把其他节点遍历完，因为要使用递归函数的返回值（也就是代码中的left和right）做逻辑判断。\n\n3. 要理解如果返回值left为空，right不为空为什么要返回right，为什么可以用返回right传给上一层结果。\n\n可以说这里每一步，都是有难度的，都需要对二叉树，递归和回溯有一定的理解。\n\n本题没有给出迭代法，因为迭代法不适合模拟回溯的过程。理解递归的解法就够了。",
+  "java": "class Solution {\n    public TreeNode lowestCommonAncestor(TreeNode root, TreeNode p, TreeNode q) {\n        if (root == null || root == p || root == q) { // 递归结束条件\n            return root;\n        }\n\n        // 后序遍历\n        TreeNode left = lowestCommonAncestor(root.left, p, q);\n        TreeNode right = lowestCommonAncestor(root.right, p, q);\n\n        if(left == null && right == null) { // 若未找到节点 p 或 q\n            return null;\n        }else if(left == null && right != null) { // 若找到一个节点\n            return right;\n        }else if(left != null && right == null) { // 若找到一个节点\n            return left;\n        }else { // 若找到两个节点\n            return root;\n        }\n    }\n}",
+  "python": "class Solution:\n    def lowestCommonAncestor(self, root, p, q):\n        if root == q or root == p or root is None:\n            return root\n\n        left = self.lowestCommonAncestor(root.left, p, q)\n        right = self.lowestCommonAncestor(root.right, p, q)\n\n        if left is not None and right is not None:\n            return root\n\n        if left is None and right is not None:\n            return right\n        elif left is not None and right is None:\n            return left\n        else: \n            return None",
+  "examples": [
+    {
+      "input": "root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1",
+      "output": "3"
+    },
+    {
+      "input": "root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 4",
+      "output": "5"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0236.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E8%BF%91%E5%85%AC%E5%85%B1%E7%A5%96%E5%85%88.html",
+  "fallbackSource": "https://leetcode.cn/problems/lowest-common-ancestor-of-a-binary-tree/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0236.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E8%BF%91%E5%85%AC%E5%85%B1%E7%A5%96%E5%85%88.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0236.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E8%BF%91%E5%85%AC%E5%85%B1%E7%A5%96%E5%85%88.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0236.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E8%BF%91%E5%85%AC%E5%85%B1%E7%A5%96%E5%85%88.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "遇到这个题目首先想的是要是能自底向上查找就好了，这样就可以找到公共祖先了。\n\n那么二叉树如何可以自底向上查找呢？\n\n回溯啊，二叉树回溯的过程就是从底到上。\n\n后序遍历（左右中）就是天然的回溯过程，可以根据左右子树的返回值，来处理中节点的逻辑。\n\n接下来就看如何判断一个节点是节点q和节点p的公共祖先呢。\n\n首先最容易想到的一个情况：如果找到一个节点，发现左子树出现结点p，右子树出现节点q，或者 左子树出现结点q，右子树出现节点p，那么该节点就是节点p和q的最近公共祖先。 即情况一：\n\n判断逻辑是 如果递归遍历遇到q，就将q返回，遇到p 就将p返回，那么如果 左右子树的返回值都不为空，说明此时的中节点，一定是q 和p 的最近祖先。\n\n那么有录友可能疑惑，会不会左子树 遇到q 返回，右子树也遇到q返回，这样并没有找到 q 和p的最近祖先。\n\n这么想的录友，要审题了，题目强调：二叉树节点数值是不重复的，而且一定存在 q 和 p。\n\n但是很多人容易忽略一个情况，就是节点本身p(q)，它拥有一个子孙节点q(p)。 情况二：\n\n其实情况一 和 情况二 代码实现过程都是一样的，也可以说，实现情况一的逻辑，顺便包含了情况二。\n\n因为遇到 q 或者 p 就返回，这样也包含了 q 或者 p 本身就是 公共祖先的情况。\n\n这一点是很多录友容易忽略的，在下面的代码讲解中，可以再去体会。\n\n递归三部曲：\n\n确定递归函数返回值以及参数\n\n需要递归函数返回值，来告诉我们是否找到节点q或者p，那么返回值为bool类型就可以了。\n\n但我们还要返回最近公共节点，可以利用上题目中返回值是TreeNode ，那么如果遇到p或者q，就把q或者p返回，返回值不为空，就说明找到了q或者p。\n\n代码如下：\n\n确定终止条件\n\n遇到空的话，因为树都是空了，所以返回空。\n\n那么我们来说一说，如果 root == q，或者 root == p，说明找到 q p ，则将其返回，这个返回值，后面在中节点的处理过程中会用到，那么中节点的处理逻辑，下面讲解。\n\n确定单层递归逻辑\n\n值得注意的是 本题函数有返回值，是因为回溯的过程需要递归函数的返回值做判断，但本题我们依然要遍历树的所有节点。\n\n我们在二叉树：递归函数究竟什么时候需要返回值，什么时候不要返回值？中说了 递归函数有返回值就是要遍历某一条边，但有返回值也要看如何处理返回值！\n\n如果递归函数有返回值，如何区分要搜索一条边，还是搜索整个树呢？\n\n搜索一条边的写法：\n\n搜索整个树写法：\n\n看出区别了没？\n\n在递归函数有返回值的情况下：如果要搜索一条边，递归函数返回值不为空的时候，立刻返回，如果搜索整个树，直接用一个变量left、right接住返回值，这个left、right后序还有逻辑处理的需要，也就是后序遍历中处理中间节点的逻辑（也是回溯）。\n\n那么为什么要遍历整棵树呢？直观上来看，找到最近公共祖先，直接一路返回就可以了。\n\n如图：\n\n就像图中一样直接返回7。\n\n但事实上还要遍历根节点右子树（即使此时已经找到了目标节点了），也就是图中的节点4、15、20。\n\n因为在如下代码的后序遍历中，如果想利用left和right做逻辑处理， 不能立刻返回，而是要等left与right逻辑处理完之后才能返回。\n\n所以此时大家要知道我们要遍历整棵树。知道这一点，对本题就有一定深度的理解了。\n\n那么先用left和right接住左子树和右子树的返回值，代码如下：\n\n如果left 和 right都不为空，说明此时root就是最近公共节点。这个比较好理解\n\n如果left为空，right不为空，就返回right，说明目标节点是通过right返回的，反之依然。\n\n这里有的同学就理解不了了，为什么left为空，right不为空，目标节点通过right返回呢？\n\n图中节点10的左子树返回null，右子树返回目标值7，那么此时节点10的处理逻辑就是把右子树的返回值（最近公共祖先7）返回上去！\n\n这里也很重要，可能刷过这道题目的同学，都不清楚结果究竟是如何从底层一层一层传到头结点的。\n\n那么如果left和right都为空，则返回left或者right都是可以的，也就是返回空。\n\n那么寻找最小公共祖先，完整流程图如下：\n\n从图中，大家可以看到，我们是如何回溯遍历整棵二叉树，将结果返回给头结点的！\n\n整体代码如下：\n\n稍加精简，代码如下：",
+  "summaryText": "递归遇到 p 或 q 就返回该节点；左右都有结果返回当前节点，只有一侧有结果就向上传递它。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "236. 二叉树的最近公共祖先",
+      "url": "https://file1.kamacoder.com/i/algo/20201016173414722.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201016173414722.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20220922173502.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220922173502.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20220922173530.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220922173530.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "236.二叉树的最近公共祖先",
+      "url": "https://file1.kamacoder.com/i/algo/2021020415105872.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2021020415105872.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "236.二叉树的最近公共祖先1",
+      "url": "https://file1.kamacoder.com/i/algo/20210204151125844.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210204151125844.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "236.二叉树的最近公共祖先2",
+      "url": "https://file1.kamacoder.com/i/algo/202102041512582.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/202102041512582.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过二叉树的最近公共祖先掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "98"
+  ],
+  "recognition": "若左右子树各找到一个目标节点，当前节点就是它们第一次汇合的位置；若只在一侧找到呢？",
+  "bruteForce": "直观做法是普通二叉树没有有序性，不能按值决定方向。LCA 是同时覆盖 p 与 q 的最深结点。；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "若左右子树各找到一个目标节点，当前节点就是它们第一次汇合的位置；若只在一侧找到呢？"
+    },
+    {
+      "level": 2,
+      "text": "递归遇到 p 或 q 就返回该节点；左右都有结果返回当前节点，只有一侧有结果就向上传递它。"
+    },
+    {
+      "level": 3,
+      "text": "定义递归查找过程，遇空返回空，遇任一目标直接返回该节点。分别搜索左右子树，若两边都非空，说明目标分居两侧，当前节点就是最近公共祖先；只有一边有结果则返回那一边。某个目标本身是另一目标祖先时，提前返回目标节点也正确。"
+    },
+    {
+      "level": 4,
+      "text": "find(node)：\n    若 node 为空 或 node=p 或 node=q：返回 node\n    left ← find(node.left)\n    right ← find(node.right)\n    若 left 非空 且 right 非空：\n        返回 node\n    若 left 非空：返回 left\n    返回 right\n返回 find(root)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "定义递归查找过程，遇空返回空，遇任一目标直接返回该节点。",
+    "分别搜索左右子树，若两边都非空，说明目标分居两侧，当前节点就是最近公共祖先；只有一边有结果则返回那一边。",
+    "某个目标本身是另一目标祖先时，提前返回目标节点也正确。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1 → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足二叉树的最近公共祖先约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把二叉树的最近公共祖先的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用普通二叉树没有有序性，不能按值决定方向。LCA 是同时覆盖 p 与 q 的最深结点。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "lowestCommonAncestor",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      },
+      {
+        "name": "p",
+        "type": "TreeNode"
+      },
+      {
+        "name": "q",
+        "type": "TreeNode"
+      }
+    ],
+    "returns": "TreeNode",
+    "compare": "identity"
+  },
+  "cases": [
+    {
+      "id": "236-basic-1",
+      "input": {
+        "root": [
+          3,
+          5,
+          1,
+          6,
+          2,
+          0,
+          8,
+          null,
+          null,
+          7,
+          4
+        ],
+        "p": 5,
+        "q": 1
+      },
+      "expected": {
+        "id": "root:0"
+      },
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "236-boundary-1",
+      "input": {
+        "root": [
+          1,
+          2
+        ],
+        "p": 1,
+        "q": 2
+      },
+      "expected": {
+        "id": "root:0"
+      },
+      "tags": [
+        "boundary"
+      ],
+      "note": "根节点本身是一个目标。"
+    },
+    {
+      "id": "236-adversarial-1",
+      "input": {
+        "root": [
+          3,
+          5,
+          1,
+          6,
+          2,
+          0,
+          8,
+          null,
+          null,
+          7,
+          4
+        ],
+        "p": 5,
+        "q": 4
+      },
+      "expected": {
+        "id": "root:1"
+      },
+      "tags": [
+        "adversarial"
+      ],
+      "note": "一个目标节点也是另一个目标的祖先。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1",
+    "output": "3",
+    "examples": [
+      {
+        "input": "root = [3,5,1,6,2,0,8,null,null,7,4], p = 5, q = 1",
+        "output": "3"
+      }
+    ]
+  }
+}

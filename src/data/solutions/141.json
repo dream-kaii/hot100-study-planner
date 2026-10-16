@@ -1,0 +1,175 @@
+{
+  "id": "141",
+  "description": "给你一个链表的头节点 head ，判断链表中是否有环。\n\n如果链表中有某个节点，可以通过连续跟踪 next 指针再次到达，则链表中存在环。 为了表示给定链表中的环，评测系统内部使用整数 pos 来表示链表尾连接到链表中的位置（索引从 0 开始）。注意：pos 不作为参数进行传递 。仅仅是为了标识链表的实际情况。\n\n如果链表中存在环 ，则返回 true 。 否则，返回 false 。\n\n示例 1：\n\n输入：head = [3,2,0,-4], pos = 1\n输出：true\n解释：链表中有一个环，其尾部连接到第二个节点。\n\n示例 2：\n\n输入：head = [1,2], pos = 0\n输出：true\n解释：链表中有一个环，其尾部连接到第一个节点。\n\n示例 3：\n\n输入：head = [1], pos = -1\n输出：false\n解释：链表中没有环。\n\n提示：\n\n链表中节点的数目范围是 [0, 104]\n-105 <= Node.val <= 105\npos 为 -1 或者链表中的一个 有效索引 。\n\n进阶：你能用 O(1)（即，常量）内存解决此问题吗？",
+  "summary": "让两个指针从头节点出发。每轮先确认快指针还能走两步，再让慢指针走一步、快指针走两步，移动后比较节点身份。有环时快指针会在环内追上慢指针，无环时快指针先到末尾。不能在移动前把初始相等误认为已经找到环。",
+  "explanation": "可以使用快慢指针法， 分别定义 fast 和 slow指针，从头结点出发，fast指针每次移动两个节点，slow指针每次移动一个节点，如果 fast 和 slow指针在途中相遇 ，说明这个链表有环。\n\n为什么fast 走两个节点，slow走一个节点，有环的话，一定会在环内相遇呢，而不是永远的错开呢？\n\n首先第一点： fast指针一定先进入环中，如果fast 指针和slow指针相遇的话，一定是在环中相遇，这是毋庸置疑的。\n\n那么来看一下，为什么fast指针和slow指针一定会相遇呢？\n\n可以画一个环，然后让 fast指针在任意一个节点开始追赶slow指针。\n\n会发现最终都是这种情况， 如下图：\n\nfast和slow各自再走一步， fast和slow就相遇了\n\n这是因为fast是走两步，slow是走一步，其实相对于slow来说，fast是一个节点一个节点的靠近slow的，所以fast一定可以和slow重合。\n\n动画如下：\n\n总结",
+  "java": "public class Solution {\n    public boolean hasCycle(ListNode head) {\n\t\tListNode fast = head;\n\t\tListNode slow = head;\n\t\t// 空链表、单节点链表一定不会有环\n\t\twhile (fast != null && fast.next != null) {\n\t\t\tfast = fast.next.next; // 快指针，一次移动两步\n\t\t\tslow = slow.next;      // 慢指针，一次移动一步\n\t\t\tif (fast == slow) {   // 快慢指针相遇，表明有环\n\t\t\t\treturn true;\n\t\t\t}\n\t\t}\n\t\treturn false; // 正常走到链表末尾，表明没有环\n    }\n}",
+  "python": "class Solution:\n    def hasCycle(self, head: ListNode) -> bool:\n        if not head: return False\n        slow, fast = head, head\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n            if fast == slow:\n                return True\n        return False",
+  "examples": [
+    {
+      "input": "head = [3,2,0,-4], pos = 1",
+      "output": "true"
+    },
+    {
+      "input": "head = [1,2], pos = 0",
+      "output": "true"
+    },
+    {
+      "input": "head = [1], pos = -1",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.html",
+  "fallbackSource": "https://leetcode.cn/problems/linked-list-cycle/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "可以使用快慢指针法， 分别定义 fast 和 slow指针，从头结点出发，fast指针每次移动两个节点，slow指针每次移动一个节点，如果 fast 和 slow指针在途中相遇 ，说明这个链表有环。\n\n为什么fast 走两个节点，slow走一个节点，有环的话，一定会在环内相遇呢，而不是永远的错开呢？\n\n首先第一点： fast指针一定先进入环中，如果fast 指针和slow指针相遇的话，一定是在环中相遇，这是毋庸置疑的。\n\n那么来看一下，为什么fast指针和slow指针一定会相遇呢？\n\n可以画一个环，然后让 fast指针在任意一个节点开始追赶slow指针。\n\n会发现最终都是这种情况， 如下图：\n\nfast和slow各自再走一步， fast和slow就相遇了\n\n这是因为fast是走两步，slow是走一步，其实相对于slow来说，fast是一个节点一个节点的靠近slow的，所以fast一定可以和slow重合。\n\n动画如下：",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20210727173600.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210727173600.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "141.环形链表",
+      "url": "https://file1.kamacoder.com/i/algo/141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.gif",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/141.%E7%8E%AF%E5%BD%A2%E9%93%BE%E8%A1%A8.gif",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "slow 每次走一步，fast 每次走两步；它们在环内会相遇。先检查 fast 及 fast.next。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过环形链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "如果链表没有环，走得快的指针最终会到达空节点；如果有环，快慢指针的距离会怎样变化？",
+  "bruteForce": "直观做法是判断链表是否有环。 n≤ 10⁴。走过的节点放进哈希表，再次出现即有环；走到空则无环。实现直接，空间 O(n)。进阶要求常数空间。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "如果链表没有环，走得快的指针最终会到达空节点；如果有环，快慢指针的距离会怎样变化？"
+    },
+    {
+      "level": 2,
+      "text": "slow 每次走一步，fast 每次走两步；它们在环内会相遇。先检查 fast 及 fast.next。"
+    },
+    {
+      "level": 3,
+      "text": "让两个指针从头节点出发。每轮先确认快指针还能走两步，再让慢指针走一步、快指针走两步，移动后比较节点身份。有环时快指针会在环内追上慢指针，无环时快指针先到末尾。不能在移动前把初始相等误认为已经找到环。"
+    },
+    {
+      "level": 4,
+      "text": "slow ← head，fast ← head\n当 fast 不为空 且 fast.next 不为空：\n    slow ← slow.next\n    fast ← fast.next.next\n    若 slow 与 fast 是同一节点：\n        返回 真\n返回 假",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "让两个指针从头节点出发。",
+    "每轮先确认快指针还能走两步，再让慢指针走一步、快指针走两步，移动后比较节点身份。",
+    "有环时快指针会在环内追上慢指针，无环时快指针先到末尾。",
+    "不能在移动前把初始相等误认为已经找到环。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [3,2,0,-4], pos = 1 → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足环形链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把环形链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用判断链表是否有环。 n≤ 10⁴。走过的节点放进哈希表，再次出现即有环；走到空则无环。实现直接，空间 O(n)。进阶要求常数空间。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "hasCycle",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "141-basic-1",
+      "input": {
+        "head": [
+          3,
+          2,
+          0,
+          -4
+        ],
+        "pos": 1
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "141-boundary-1",
+      "input": {
+        "head": [
+          1
+        ],
+        "pos": -1
+      },
+      "expected": false,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用环形链表的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "141-adversarial-1",
+      "input": {
+        "head": [
+          1
+        ],
+        "pos": -1
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查环形链表的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [3,2,0,-4], pos = 1",
+    "output": "true",
+    "examples": [
+      {
+        "input": "head = [3,2,0,-4], pos = 1",
+        "output": "true"
+      }
+    ]
+  }
+}

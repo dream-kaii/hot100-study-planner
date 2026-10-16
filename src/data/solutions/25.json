@@ -1,0 +1,186 @@
+{
+  "id": "25",
+  "description": "给你链表的头节点 head ，每 k 个节点一组进行翻转，请你返回修改后的链表。\n\nk 是一个正整数，它的值小于或等于链表的长度。如果节点总数不是 k 的整数倍，那么请将最后剩余的节点保持原有顺序。\n\n你不能只是单纯的改变节点内部的值，而是需要实际进行节点交换。\n\n示例 1：\n\n输入：head = [1,2,3,4,5], k = 2\n输出：[2,1,4,3,5]\n\n示例 2：\n\n输入：head = [1,2,3,4,5], k = 3\n输出：[3,2,1,4,5]\n\n提示：\n\n链表中的节点数目为 n\n1 <= k <= n <= 5000\n0 <= Node.val <= 1000\n\n进阶：你可以设计一个只用 O(1) 额外内存空间的算法解决此问题吗？",
+  "summary": "加入哑节点并维护组前节点。每轮从它开始前进 k 步，若不足则结束；否则保存第 k 个节点之后的位置，以该位置为 prev，反转本组直到到达下一组起点。把组前节点接到新组头，原组头成为新组尾，移到那里继续下一组，保持组间连接不断开。",
+  "explanation": "方法一：模拟\n\n思考\n\n题目进阶要求额外空间 O(1)。若按组递归翻转， n ≤ 5000 时时间可以接受，但递归栈会随组数增长，不满足进阶条件。\n\n一组内部就是普通的链表翻转；组与组之间只需记住上一组的尾。真正需要先确认的是当前组是否凑满 k 个——不足则保持原序，够则摘下翻转后再接回。\n\n因此从虚拟头出发，每次先走 k 步探测：若够 k 个则翻转该段并重接；若不够则结束。探测、翻转与重接都是指针操作，额外空间 O(1)。\n\n我们可以根据题意，模拟整个翻转的过程。\n\n首先，我们定义一个辅助函数 reverse，用于翻转一个链表。然后，我们定义一个虚拟头结点 dummy，并将其 next 指针指向 head。\n\n接着，我们遍历链表，每次遍历 k 个节点，若剩余节点不足 k 个，则不进行翻转。否则，我们将 k 个节点取出，然后调用 reverse 函数翻转这 k 个节点。然后将翻转后的链表与原链表连接起来。继续遍历下一个 k 个节点，直到遍历完整个链表。\n\n时间复杂度 O(n)，其中 n 为链表的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "/**\n * Definition for singly-linked list.\n * public class ListNode {\n *     int val;\n *     ListNode next;\n *     ListNode() {}\n *     ListNode(int val) { this.val = val; }\n *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }\n * }\n */\nclass Solution {\n    public ListNode reverseKGroup(ListNode head, int k) {\n        ListNode dummy = new ListNode(0, head);\n        dummy.next = head;\n        ListNode pre = dummy;\n        while (pre != null) {\n            ListNode cur = pre;\n            for (int i = 0; i < k; i++) {\n                cur = cur.next;\n                if (cur == null) {\n                    return dummy.next;\n                }\n            }\n            ListNode node = pre.next;\n            ListNode nxt = cur.next;\n            cur.next = null;\n            pre.next = reverse(node);\n            node.next = nxt;\n            pre = node;\n        }\n        return dummy.next;\n    }\n\n    private ListNode reverse(ListNode head) {\n        ListNode dummy = new ListNode();\n        ListNode cur = head;\n        while (cur != null) {\n            ListNode nxt = cur.next;\n            cur.next = dummy.next;\n            dummy.next = cur;\n            cur = nxt;\n        }\n        return dummy.next;\n    }\n}",
+  "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def reverseKGroup(self, head: Optional[ListNode], k: int) -> Optional[ListNode]:\n        def reverse(head: Optional[ListNode]) -> Optional[ListNode]:\n            dummy = ListNode()\n            cur = head\n            while cur:\n                nxt = cur.next\n                cur.next = dummy.next\n                dummy.next = cur\n                cur = nxt\n            return dummy.next\n\n        dummy = pre = ListNode(next=head)\n        while pre:\n            cur = pre\n            for _ in range(k):\n                cur = cur.next\n                if cur is None:\n                    return dummy.next\n            node = pre.next\n            nxt = cur.next\n            cur.next = None\n            pre.next = reverse(node)\n            node.next = nxt\n            pre = node\n        return dummy.next",
+  "examples": [
+    {
+      "input": "head = [1,2,3,4,5], k = 2",
+      "output": "[2,1,4,3,5]"
+    },
+    {
+      "input": "head = [1,2,3,4,5], k = 3",
+      "output": "[3,2,1,4,5]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/reverse-nodes-in-k-group/",
+  "fallbackSource": "https://leetcode.cn/problems/reverse-nodes-in-k-group/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/reverse-nodes-in-k-group/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0025.Reverse%20Nodes%20in%20k-Group/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0025.Reverse%20Nodes%20in%20k-Group/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：模拟\n\n思考\n\n题目进阶要求额外空间 O(1)。若按组递归翻转， n ≤ 5000 时时间可以接受，但递归栈会随组数增长，不满足进阶条件。\n\n一组内部就是普通的链表翻转；组与组之间只需记住上一组的尾。真正需要先确认的是当前组是否凑满 k 个——不足则保持原序，够则摘下翻转后再接回。\n\n因此从虚拟头出发，每次先走 k 步探测：若够 k 个则翻转该段并重接；若不够则结束。探测、翻转与重接都是指针操作，额外空间 O(1)。\n\n我们可以根据题意，模拟整个翻转的过程。\n\n首先，我们定义一个辅助函数 reverse，用于翻转一个链表。然后，我们定义一个虚拟头结点 dummy，并将其 next 指针指向 head。\n\n接着，我们遍历链表，每次遍历 k 个节点，若剩余节点不足 k 个，则不进行翻转。否则，我们将 k 个节点取出，然后调用 reverse 函数翻转这 k 个节点。然后将翻转后的链表与原链表连接起来。继续遍历下一个 k 个节点，直到遍历完整个链表。\n\n时间复杂度 O(n)，其中 n 为链表的长度。空间复杂度 O(1)。",
+  "summaryText": "用组前节点定位第 k 个节点，先保存下一组起点，再只翻转这一段并接回。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过K 个一组翻转链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "翻转前需要确认剩下至少有 k 个节点，否则末尾不足一组必须保持原样。",
+  "bruteForce": "直观做法是题目进阶要求额外空间 O(1)。若按组递归翻转， n ≤ 5000 时时间可以接受，但递归栈会随组数增长，不满足进阶条件。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "翻转前需要确认剩下至少有 k 个节点，否则末尾不足一组必须保持原样。"
+    },
+    {
+      "level": 2,
+      "text": "用组前节点定位第 k 个节点，先保存下一组起点，再只翻转这一段并接回。"
+    },
+    {
+      "level": 3,
+      "text": "加入哑节点并维护组前节点。每轮从它开始前进 k 步，若不足则结束；否则保存第 k 个节点之后的位置，以该位置为 prev，反转本组直到到达下一组起点。把组前节点接到新组头，原组头成为新组尾，移到那里继续下一组，保持组间连接不断开。"
+    },
+    {
+      "level": 4,
+      "text": "dummy.next ← head；before ← dummy\n重复：\n    kth ← 从 before 向后走 k 步的节点\n    若 kth 为空：结束\n    after ← kth.next；oldHead ← before.next\n    prev ← after；current ← oldHead\n    当 current≠after：\n        next ← current.next；current.next ← prev\n        prev ← current；current ← next\n    before.next ← kth；before ← oldHead\n返回 dummy.next",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "加入哑节点并维护组前节点。",
+    "每轮从它开始前进 k 步，若不足则结束；否则保存第 k 个节点之后的位置，以该位置为 prev，反转本组直到到达下一组起点。",
+    "把组前节点接到新组头，原组头成为新组尾，移到那里继续下一组，保持组间连接不断开。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [1,2,3,4,5], k = 2 → [2,1,4,3,5]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足K 个一组翻转链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把K 个一组翻转链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用题目进阶要求额外空间 O(1)。若按组递归翻转， n ≤ 5000 时时间可以接受，但递归栈会随组数增长，不满足进阶条件。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "reverseKGroup",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "25-basic-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "k": 2
+      },
+      "expected": [
+        2,
+        1,
+        4,
+        3,
+        5
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "25-boundary-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "k": 3
+      },
+      "expected": [
+        3,
+        2,
+        1,
+        4,
+        5
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用K 个一组翻转链表的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "25-adversarial-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "k": 3
+      },
+      "expected": [
+        3,
+        2,
+        1,
+        4,
+        5
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查K 个一组翻转链表的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [1,2,3,4,5], k = 2",
+    "output": "[2,1,4,3,5]",
+    "examples": [
+      {
+        "input": "head = [1,2,3,4,5], k = 2",
+        "output": "[2,1,4,3,5]"
+      }
+    ]
+  }
+}

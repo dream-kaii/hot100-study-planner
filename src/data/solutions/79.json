@@ -1,0 +1,187 @@
+{
+  "id": "79",
+  "description": "给定一个 m x n 二维字符网格 board 和一个字符串单词 word 。如果 word 存在于网格中，返回 true ；否则，返回 false 。\n\n单词必须按照字母顺序，通过相邻的单元格内的字母构成，其中“相邻”单元格是那些水平相邻或垂直相邻的单元格。同一个单元格内的字母不允许被重复使用。\n\n示例 1：\n\n输入：board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCCED\"\n输出：true\n\n示例 2：\n\n输入：board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"SEE\"\n输出：true\n\n示例 3：\n\n输入：board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCB\"\n输出：false\n\n提示：\n\nm == board.length\nn = board[i].length\n1 <= m, n <= 6\n1 <= word.length <= 15\nboard 和 word 仅由大小写英文字母组成\n\n进阶：你可以使用搜索剪枝的技术来优化解决方案，使其在 board 更大的情况下可以更快解决问题？",
+  "summary": "枚举网格中与首字符相同的起点，递归状态为格子坐标和单词下标。越界、已访问或字符不同就失败；匹配最后一个字符则成功。其余情况临时标记当前格，向四个方向匹配下一字符，再恢复标记。恢复确保不同起点和不同分支能重新使用该格。",
+  "explanation": "方法一：DFS(回溯)\n\n思考\n\n若从每个格子出发走出长度为 |word| 的路径再比对，网格至多 6×6、 |word| ≤ 15，不及时剪枝则搜索量过大。必须边走边比较，失配立刻返回，且同一格子不能使用两次。\n\n路径必须与 word 逐字符对齐，因此搜索状态可以写成 dfs(i, j, k)：当前位置 (i, j) 对齐 word[k]。匹配后将格子改为 '0' 防止重入，再向四邻搜索 k+1，返回时还原。字母本身不是 '0'，因此不必另开访问数组。枚举每一个起点，任一成功即可。\n\n我们可以枚举网格的每一个位置 (i, j) 作为搜索的起点，然后从起点开始进行深度优先搜索，如果可以搜索到单词的末尾，就说明单词存在，否则说明单词不存在。\n\n因此，我们设计一个函数 dfs(i, j, k)，表示从网格的 (i, j) 位置出发，且从单词的第 k 个字符开始搜索，是否能够搜索成功。函数 dfs(i, j, k) 的执行步骤如下：\n\n- 如果 k = |word|-1，说明已经搜索到单词的最后一个字符，此时只需要判断网格 (i, j) 位置的字符是否等于 word[k]，如果相等则说明单词存在，否则说明单词不存在。无论单词是否存在，都无需继续往下搜索，因此直接返回结果。\n- 否则，如果 word[k] 字符不等于网格 (i, j) 位置的字符，说明本次搜索失败，直接返回 false。\n- 否则，我们将网格 (i, j) 位置的字符暂存于 c 中，然后将此位置的字符修改为一个特殊字符 '0'，代表此位置的字符已经被使用过，防止之后搜索时重复使用。然后我们从 (i, j) 位置的上、下、左、右四个方向分别出发，去搜索网格中第 k+1 个字符，如果四个方向有任何一个方向搜索成功，就说明搜索成功，否则说明搜索失败，此时我们需要还原网格 (i, j) 位置的字符，即把 c 放回网格 (i, j) 位置（回溯）。\n\n在主函数中，我们枚举网格中的每一个位置 (i, j) 作为起点，如果调用 dfs(i, j, 0) 返回 true，就说明单词存在，否则说明单词不存在，返回 false。\n\n时间复杂度 O(m×n×3^k)，空间复杂度 O(min(m×n, k))。其中 m 和 n 分别是网格的行数和列数；而 k 是字符串 word 的长度。\n\n总结",
+  "java": "class Solution {\n    private int m;\n    private int n;\n    private String word;\n    private char[][] board;\n\n    public boolean exist(char[][] board, String word) {\n        m = board.length;\n        n = board[0].length;\n        this.word = word;\n        this.board = board;\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                if (dfs(i, j, 0)) {\n                    return true;\n                }\n            }\n        }\n        return false;\n    }\n\n    private boolean dfs(int i, int j, int k) {\n        if (k == word.length() - 1) {\n            return board[i][j] == word.charAt(k);\n        }\n        if (board[i][j] != word.charAt(k)) {\n            return false;\n        }\n        char c = board[i][j];\n        board[i][j] = '0';\n        int[] dirs = {-1, 0, 1, 0, -1};\n        for (int u = 0; u < 4; ++u) {\n            int x = i + dirs[u], y = j + dirs[u + 1];\n            if (x >= 0 && x < m && y >= 0 && y < n && board[x][y] != '0' && dfs(x, y, k + 1)) {\n                return true;\n            }\n        }\n        board[i][j] = c;\n        return false;\n    }\n}",
+  "python": "class Solution:\n    def exist(self, board: List[List[str]], word: str) -> bool:\n        def dfs(i: int, j: int, k: int) -> bool:\n            if k == len(word) - 1:\n                return board[i][j] == word[k]\n            if board[i][j] != word[k]:\n                return False\n            c = board[i][j]\n            board[i][j] = \"0\"\n            for a, b in pairwise((-1, 0, 1, 0, -1)):\n                x, y = i + a, j + b\n                ok = 0 <= x < m and 0 <= y < n and board[x][y] != \"0\"\n                if ok and dfs(x, y, k + 1):\n                    return True\n            board[i][j] = c\n            return False\n\n        m, n = len(board), len(board[0])\n        return any(dfs(i, j, 0) for i in range(m) for j in range(n))",
+  "examples": [
+    {
+      "input": "board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCCED\"",
+      "output": "true"
+    },
+    {
+      "input": "board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"SEE\"",
+      "output": "true"
+    },
+    {
+      "input": "board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCB\"",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(m×n×3^k)",
+    "space": "O(min(m×n, k))"
+  },
+  "solutionSource": "https://leetcode.cn/problems/word-search/",
+  "fallbackSource": "https://leetcode.cn/problems/word-search/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/word-search/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0079.Word%20Search/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0079.Word%20Search/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：DFS(回溯)\n\n思考\n\n若从每个格子出发走出长度为 |word| 的路径再比对，网格至多 6×6、 |word| ≤ 15，不及时剪枝则搜索量过大。必须边走边比较，失配立刻返回，且同一格子不能使用两次。\n\n路径必须与 word 逐字符对齐，因此搜索状态可以写成 dfs(i, j, k)：当前位置 (i, j) 对齐 word[k]。匹配后将格子改为 '0' 防止重入，再向四邻搜索 k+1，返回时还原。字母本身不是 '0'，因此不必另开访问数组。枚举每一个起点，任一成功即可。\n\n我们可以枚举网格的每一个位置 (i, j) 作为搜索的起点，然后从起点开始进行深度优先搜索，如果可以搜索到单词的末尾，就说明单词存在，否则说明单词不存在。\n\n因此，我们设计一个函数 dfs(i, j, k)，表示从网格的 (i, j) 位置出发，且从单词的第 k 个字符开始搜索，是否能够搜索成功。函数 dfs(i, j, k) 的执行步骤如下：\n\n- 如果 k = |word|-1，说明已经搜索到单词的最后一个字符，此时只需要判断网格 (i, j) 位置的字符是否等于 word[k]，如果相等则说明单词存在，否则说明单词不存在。无论单词是否存在，都无需继续往下搜索，因此直接返回结果。\n- 否则，如果 word[k] 字符不等于网格 (i, j) 位置的字符，说明本次搜索失败，直接返回 false。\n- 否则，我们将网格 (i, j) 位置的字符暂存于 c 中，然后将此位置的字符修改为一个特殊字符 '0'，代表此位置的字符已经被使用过，防止之后搜索时重复使用。然后我们从 (i, j) 位置的上、下、左、右四个方向分别出发，去搜索网格中第 k+1 个字符，如果四个方向有任何一个方向搜索成功，就说明搜索成功，否则说明搜索失败，此时我们需要还原网格 (i, j) 位置的字符，即把 c 放回网格 (i, j) 位置（回溯）。\n\n在主函数中，我们枚举网格中的每一个位置 (i, j) 作为起点，如果调用 dfs(i, j, 0) 返回 true，就说明单词存在，否则说明单词不存在，返回 false。\n\n时间复杂度 O(m×n×3^k)，空间复杂度 O(min(m×n, k))。其中 m 和 n 分别是网格的行数和列数；而 k 是字符串 word 的长度。",
+  "summaryText": "从每个可能起点做深度优先搜索，匹配当前字符后临时标记，尝试四邻格，返回时恢复。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过单词搜索掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "78"
+  ],
+  "recognition": "路径必须连续经过相邻格子，而且同一格不能在一条路径里用两次；需要保存哪些路径状态？",
+  "bruteForce": "直观做法是方法一：DFS(回溯)；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "路径必须连续经过相邻格子，而且同一格不能在一条路径里用两次；需要保存哪些路径状态？"
+    },
+    {
+      "level": 2,
+      "text": "从每个可能起点做深度优先搜索，匹配当前字符后临时标记，尝试四邻格，返回时恢复。"
+    },
+    {
+      "level": 3,
+      "text": "枚举网格中与首字符相同的起点，递归状态为格子坐标和单词下标。越界、已访问或字符不同就失败；匹配最后一个字符则成功。其余情况临时标记当前格，向四个方向匹配下一字符，再恢复标记。恢复确保不同起点和不同分支能重新使用该格。"
+    },
+    {
+      "level": 4,
+      "text": "search(row,col,index)：\n    若越界、已访问或 board[row][col]≠word[index]：返回 假\n    若 index=单词长度−1：返回 真\n    标记当前格已访问\n    ok ← 四邻格中是否有 search(邻格,index+1) 为真\n    恢复当前格未访问\n    返回 ok\n对每个网格坐标：\n    若 search(坐标,0)：返回 真\n返回 假",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "枚举网格中与首字符相同的起点，递归状态为格子坐标和单词下标。",
+    "越界、已访问或字符不同就失败；匹配最后一个字符则成功。",
+    "其余情况临时标记当前格，向四个方向匹配下一字符，再恢复标记。",
+    "恢复确保不同起点和不同分支能重新使用该格。"
+  ],
+  "walkthrough": [
+    "公开示例：board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCCED\" → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足单词搜索约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把单词搜索的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：DFS(回溯)，额外空间为O(min(m×n, k)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "exist",
+    "params": [
+      {
+        "name": "board",
+        "type": "char[][]"
+      },
+      {
+        "name": "word",
+        "type": "String"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "79-basic-1",
+      "input": {
+        "board": [
+          [
+            "A",
+            "B",
+            "C",
+            "E"
+          ],
+          [
+            "S",
+            "F",
+            "C",
+            "S"
+          ],
+          [
+            "A",
+            "D",
+            "E",
+            "E"
+          ]
+        ],
+        "word": "ABCCED"
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "79-boundary-1",
+      "input": {
+        "board": [
+          [
+            "A"
+          ]
+        ],
+        "word": "A"
+      },
+      "expected": true,
+      "tags": [
+        "boundary"
+      ],
+      "note": "单格匹配。"
+    },
+    {
+      "id": "79-adversarial-1",
+      "input": {
+        "board": [
+          [
+            "A",
+            "B"
+          ],
+          [
+            "C",
+            "D"
+          ]
+        ],
+        "word": "ABA"
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "同一格不能重复使用。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nboard = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCCED\"",
+    "output": "true",
+    "examples": [
+      {
+        "input": "board = [['A','B','C','E'],['S','F','C','S'],['A','D','E','E']], word = \"ABCCED\"",
+        "output": "true"
+      }
+    ]
+  }
+}

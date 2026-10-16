@@ -1,0 +1,196 @@
+{
+  "id": "84",
+  "description": "给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1 。\n\n求在该柱状图中，能够勾勒出来的矩形的最大面积。\n\n示例 1:\n\n输入：heights = [2,1,5,6,2,3]\n输出：10\n解释：最大的矩形为图中红色区域，面积为 10\n\n示例 2：\n\n输入： heights = [2,4]\n输出： 4\n\n提示：\n\n1 5\n0 4",
+  "summary": "从左到右维护严格递增高度的下标栈，可在末尾补一个零高度方便结算。当前柱子更矮或等高时不断弹出栈顶，弹出柱子的高度为矩形高度，新栈顶和当前下标分别给出左右边界，宽度为两者间距减一。计算面积后继续弹栈，最后将当前下标入栈。",
+  "explanation": "本题和42. 接雨水，是遥相呼应的两道题目，建议都要仔细做一做，原理上有很多相同的地方，但细节上又有差异，更可以加深对单调栈的理解！\n\n其实这两道题目先做那一道都可以，但我先写的42.接雨水的题解，所以如果没做过接雨水的话，建议先做一做接雨水，可以参考我的题解：42. 接雨水\n\n我们先来看一下暴力解法的解法：\n\n暴力解法\n\n如上代码并不能通过leetcode，超时了，因为时间复杂度是O(n²)。\n\n双指针解法\n\n本题双指针的写法整体思路和42. 接雨水是一致的，但要比42. 接雨水难一些。\n\n难就难在本题要记录记录每个柱子 左边第一个小于该柱子的下标，而不是左边第一个小于该柱子的高度。\n\n所以需要循环查找，也就是下面在寻找的过程中使用了while，详细请看下面注释，整理思路在题解：42. 接雨水中已经介绍了。\n\n单调栈\n\n本地单调栈的解法和接雨水的题目是遥相呼应的。\n\n为什么这么说呢，42. 接雨水是找每个柱子左右两边第一个大于该柱子高度的柱子，而本题是找每个柱子左右两边第一个小于该柱子的柱子。\n\n这里就涉及到了单调栈很重要的性质，就是单调栈里的顺序，是从小到大还是从大到小。\n\n在题解42. 接雨水中我讲解了接雨水的单调栈从栈头（元素从栈头弹出）到栈底的顺序应该是从小到大的顺序。\n\n那么因为本题是要找每个柱子左右两边第一个小于该柱子的柱子，所以从栈头（元素从栈头弹出）到栈底的顺序应该是从大到小的顺序！\n\n我来举一个例子，如图：\n\n只有栈里从大到小的顺序，才能保证栈顶元素找到左右两边第一个小于栈顶元素的柱子。\n\n所以本题单调栈的顺序正好与接雨水反过来。\n\n此时大家应该可以发现其实就是栈顶和栈顶的下一个元素以及要入栈的三个元素组成了我们要求最大面积的高度和宽度\n\n理解这一点，对单调栈就掌握的比较到位了。\n\n除了栈内元素顺序和接雨水不同，剩下的逻辑就都差不多了，在题解42. 接雨水我已经对单调栈的各个方面做了详细讲解，这里就不赘述了。\n\n主要就是分析清楚如下三种情况：\n\n情况一：当前遍历的元素heights[i]大于栈顶元素heights[st.top()]的情况\n情况二：当前遍历的元素heights[i]等于栈顶元素heights[st.top()]的情况\n情况三：当前遍历的元素heights[i]小于栈顶元素heights[st.top()]的情况\n\n总结",
+  "java": "class Solution {\n    public int largestRectangleArea(int[] heights) {\n        int length = heights.length;\n        int[] minLeftIndex = new int [length];\n        int[] minRightIndex = new int [length];\n        // 记录左边第一个小于该柱子的下标\n        minLeftIndex[0] = -1 ;\n        for (int i = 1; i < length; i++) {\n            int t = i - 1;\n            // 这里不是用if，而是不断向右寻找的过程\n            while (t >= 0 && heights[t] >= heights[i]) t = minLeftIndex[t];\n            minLeftIndex[i] = t;\n        }\n        // 记录每个柱子右边第一个小于该柱子的下标\n        minRightIndex[length - 1] = length;\n        for (int i = length - 2; i >= 0; i--) {\n            int t = i + 1;\n            while(t < length && heights[t] >= heights[i]) t = minRightIndex[t];\n            minRightIndex[i] = t;\n        }\n        // 求和\n        int result = 0;\n        for (int i = 0; i < length; i++) {\n            int sum = heights[i] * (minRightIndex[i] - minLeftIndex[i] - 1);\n            result = Math.max(sum, result);\n        }\n        return result;\n    }\n}",
+  "python": "class Solution:\n    def largestRectangleArea(self, heights: List[int]) -> int:\n        n = len(heights)\n        stk = []\n        left = [-1] * n\n        right = [n] * n\n        for i, h in enumerate(heights):\n            while stk and heights[stk[-1]] >= h:\n                right[stk[-1]] = i\n                stk.pop()\n            if stk:\n                left[i] = stk[-1]\n            stk.append(i)\n        return max(h * (right[i] - left[i] - 1) for i, h in enumerate(heights))",
+  "examples": [
+    {
+      "input": "heights = [2,1,5,6,2,3]",
+      "output": "10"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0084.%E6%9F%B1%E7%8A%B6%E5%9B%BE%E4%B8%AD%E6%9C%80%E5%A4%A7%E7%9A%84%E7%9F%A9%E5%BD%A2.html",
+  "fallbackSource": "https://leetcode.cn/problems/largest-rectangle-in-histogram/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0084.%E6%9F%B1%E7%8A%B6%E5%9B%BE%E4%B8%AD%E6%9C%80%E5%A4%A7%E7%9A%84%E7%9F%A9%E5%BD%A2.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0084.%E6%9F%B1%E7%8A%B6%E5%9B%BE%E4%B8%AD%E6%9C%80%E5%A4%A7%E7%9A%84%E7%9F%A9%E5%BD%A2.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0084.%E6%9F%B1%E7%8A%B6%E5%9B%BE%E4%B8%AD%E6%9C%80%E5%A4%A7%E7%9A%84%E7%9F%A9%E5%BD%A2.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "本题和42. 接雨水，是遥相呼应的两道题目，建议都要仔细做一做，原理上有很多相同的地方，但细节上又有差异，更可以加深对单调栈的理解！\n\n其实这两道题目先做那一道都可以，但我先写的42.接雨水的题解，所以如果没做过接雨水的话，建议先做一做接雨水，可以参考我的题解：42. 接雨水\n\n我们先来看一下暴力解法的解法：\n\n暴力解法\n\n如上代码并不能通过leetcode，超时了，因为时间复杂度是O(n²)。\n\n双指针解法\n\n本题双指针的写法整体思路和42. 接雨水是一致的，但要比42. 接雨水难一些。\n\n难就难在本题要记录记录每个柱子 左边第一个小于该柱子的下标，而不是左边第一个小于该柱子的高度。\n\n所以需要循环查找，也就是下面在寻找的过程中使用了while，详细请看下面注释，整理思路在题解：42. 接雨水中已经介绍了。\n\n单调栈\n\n本地单调栈的解法和接雨水的题目是遥相呼应的。\n\n为什么这么说呢，42. 接雨水是找每个柱子左右两边第一个大于该柱子高度的柱子，而本题是找每个柱子左右两边第一个小于该柱子的柱子。\n\n这里就涉及到了单调栈很重要的性质，就是单调栈里的顺序，是从小到大还是从大到小。\n\n在题解42. 接雨水中我讲解了接雨水的单调栈从栈头（元素从栈头弹出）到栈底的顺序应该是从小到大的顺序。\n\n那么因为本题是要找每个柱子左右两边第一个小于该柱子的柱子，所以从栈头（元素从栈头弹出）到栈底的顺序应该是从大到小的顺序！\n\n我来举一个例子，如图：\n\n只有栈里从大到小的顺序，才能保证栈顶元素找到左右两边第一个小于栈顶元素的柱子。\n\n所以本题单调栈的顺序正好与接雨水反过来。\n\n此时大家应该可以发现其实就是栈顶和栈顶的下一个元素以及要入栈的三个元素组成了我们要求最大面积的高度和宽度\n\n理解这一点，对单调栈就掌握的比较到位了。\n\n除了栈内元素顺序和接雨水不同，剩下的逻辑就都差不多了，在题解42. 接雨水我已经对单调栈的各个方面做了详细讲解，这里就不赘述了。\n\n主要就是分析清楚如下三种情况：\n\n情况一：当前遍历的元素heights[i]大于栈顶元素heights[st.top()]的情况\n情况二：当前遍历的元素heights[i]等于栈顶元素heights[st.top()]的情况\n情况三：当前遍历的元素heights[i]小于栈顶元素heights[st.top()]的情况",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20210803220437.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210803220437.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20210803220506.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210803220506.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20230221165730.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20230221165730.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20230221163936.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20230221163936.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20230221164533.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20230221164533.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "维护高度递增的下标栈，遇到更矮柱子时弹栈；弹出元素的左右第一个更矮位置便确定。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过柱状图中最大的矩形掌握栈相关的可迁移解题模式。",
+  "prerequisites": [
+    "739"
+  ],
+  "recognition": "固定某根柱子作为矩形最低高度，矩形能扩展到左右哪里？什么时候能确定它的右边界？",
+  "bruteForce": "直观做法是若枚举左右边界 [l, r]，高度取区间最小值，面积为 (r - l + 1)×min，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。；当输入规模扩大时，需要避免重复扫描并利用题目中的栈约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "固定某根柱子作为矩形最低高度，矩形能扩展到左右哪里？什么时候能确定它的右边界？"
+    },
+    {
+      "level": 2,
+      "text": "维护高度递增的下标栈，遇到更矮柱子时弹栈；弹出元素的左右第一个更矮位置便确定。"
+    },
+    {
+      "level": 3,
+      "text": "从左到右维护严格递增高度的下标栈，可在末尾补一个零高度方便结算。当前柱子更矮或等高时不断弹出栈顶，弹出柱子的高度为矩形高度，新栈顶和当前下标分别给出左右边界，宽度为两者间距减一。计算面积后继续弹栈，最后将当前下标入栈。"
+    },
+    {
+      "level": 4,
+      "text": "stack ← [−1]；best ← 0\n对 i 从 0 到 n，令末尾虚拟高度为 0：\n    current ← heights[i]，若 i=n 则为 0\n    当 stack 顶部≠−1 且 heights[顶部]≥current：\n        index ← 弹栈\n        width ← i−stack顶部−1\n        best ← max(best,heights[index]×width)\n    将 i 压栈\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从左到右维护严格递增高度的下标栈，可在末尾补一个零高度方便结算。",
+    "当前柱子更矮或等高时不断弹出栈顶，弹出柱子的高度为矩形高度，新栈顶和当前下标分别给出左右边界，宽度为两者间距减一。",
+    "计算面积后继续弹栈，最后将当前下标入栈。"
+  ],
+  "walkthrough": [
+    "公开示例：heights = [2,1,5,6,2,3] → 10。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足柱状图中最大的矩形约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把柱状图中最大的矩形的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若枚举左右边界 [l, r]，高度取区间最小值，面积为 (r - l + 1)×min，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "largestRectangleArea",
+    "params": [
+      {
+        "name": "heights",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "84-basic-1",
+      "input": {
+        "heights": [
+          2,
+          1,
+          5,
+          6,
+          2,
+          3
+        ]
+      },
+      "expected": 10,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "84-boundary-1",
+      "input": {
+        "heights": [
+          2,
+          1,
+          5,
+          6,
+          2,
+          3
+        ]
+      },
+      "expected": 10,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用柱状图中最大的矩形的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "84-adversarial-1",
+      "input": {
+        "heights": [
+          2,
+          1,
+          5,
+          6,
+          2,
+          3
+        ]
+      },
+      "expected": 10,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查柱状图中最大的矩形的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nheights = [2,1,5,6,2,3]",
+    "output": "10",
+    "examples": [
+      {
+        "input": "heights = [2,1,5,6,2,3]",
+        "output": "10"
+      }
+    ]
+  }
+}

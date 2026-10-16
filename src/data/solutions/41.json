@@ -1,0 +1,158 @@
+{
+  "id": "41",
+  "description": "给你一个未排序的整数数组 nums ，请你找出其中没有出现的最小的正整数。\n请你实现时间复杂度为 O(n) 并且只使用常数级别额外空间的解决方案。\n\n示例 1：\n\n输入：nums = [1,2,0]\n输出：3\n解释：范围 [1,2] 中的数字都在数组中。\n\n示例 2：\n\n输入：nums = [3,4,-1,1]\n输出：2\n解释：1 在数组中，但 2 没有。\n\n示例 3：\n\n输入：nums = [7,8,9,11,12]\n输出：1\n解释：最小的正数 1 没有出现。\n\n提示：\n\n1 <= nums.length <= 105\n-231 <= nums[i] <= 231 - 1",
+  "summary": "逐个检查元素，只要当前值在一到 n 之间且对应位置不是相同值，就交换到值减一的下标，继续检查换来的元素。处理结束后，从头找第一个 nums[i] 不等于 i+1 的位置，返回 i+1；全部在位则返回 n+1。越界数和重复值都不需要额外存储。",
+  "explanation": "方法一：原地交换\n\n思考\n\n题目要求 O(n) 时间且只用常数额外空间。若用哈希集合记下出现过的数，再从 1 起逐个查询缺失值，时间满足，但额外空间为 O(n)， n ≤ 10⁵，无法满足空间约束。\n\n真正需要记录的是 [1, n] 中哪些值出现过：缺失的最小正整数一定落在 [1, n+1]，超出该范围的数可以忽略。数组下标本身即可充当这张出现表。\n\n因此，当 x ∈ [1, n] 时，将 x 交换到下标 x-1。原地交换把原数组当作哈希，再线性扫描即可找到第一个空洞。\n\n我们假设数组 nums 长度为 n，那么最小的正整数一定在 [1, .., n + 1] 之间。我们可以遍历数组，将数组中的每个数 x 交换到它应该在的位置上，即 x 应该在的位置为 x - 1。如果 x 不在 [1, n + 1] 之间，那么我们就不用管它。\n\n遍历结束后，我们再遍历数组，如果 i+1 不等于 nums[i]，那么 i+1 就是我们要找的最小的正整数。\n\n时间复杂度 O(n)，其中 n 是数组的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int firstMissingPositive(int[] nums) {\n        int n = nums.length;\n        for (int i = 0; i < n; ++i) {\n            while (nums[i] > 0 && nums[i] <= n && nums[i] != nums[nums[i] - 1]) {\n                swap(nums, i, nums[i] - 1);\n            }\n        }\n        for (int i = 0; i < n; ++i) {\n            if (nums[i] != i + 1) {\n                return i + 1;\n            }\n        }\n        return n + 1;\n    }\n\n    private void swap(int[] nums, int i, int j) {\n        int t = nums[i];\n        nums[i] = nums[j];\n        nums[j] = t;\n    }\n}",
+  "python": "class Solution:\n    def firstMissingPositive(self, nums: List[int]) -> int:\n        n = len(nums)\n        for i in range(n):\n            while 1 <= nums[i] <= n and nums[i] != nums[nums[i] - 1]:\n                j = nums[i] - 1\n                nums[i], nums[j] = nums[j], nums[i]\n        for i in range(n):\n            if nums[i] != i + 1:\n                return i + 1\n        return n + 1",
+  "examples": [
+    {
+      "input": "nums = [1,2,0]",
+      "output": "3"
+    },
+    {
+      "input": "nums = [3,4,-1,1]",
+      "output": "2"
+    },
+    {
+      "input": "nums = [7,8,9,11,12]",
+      "output": "1"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/first-missing-positive/",
+  "fallbackSource": "https://leetcode.cn/problems/first-missing-positive/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/first-missing-positive/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0041.First%20Missing%20Positive/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0041.First%20Missing%20Positive/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：原地交换\n\n思考\n\n题目要求 O(n) 时间且只用常数额外空间。若用哈希集合记下出现过的数，再从 1 起逐个查询缺失值，时间满足，但额外空间为 O(n)， n ≤ 10⁵，无法满足空间约束。\n\n真正需要记录的是 [1, n] 中哪些值出现过：缺失的最小正整数一定落在 [1, n+1]，超出该范围的数可以忽略。数组下标本身即可充当这张出现表。\n\n因此，当 x ∈ [1, n] 时，将 x 交换到下标 x-1。原地交换把原数组当作哈希，再线性扫描即可找到第一个空洞。\n\n我们假设数组 nums 长度为 n，那么最小的正整数一定在 [1, .., n + 1] 之间。我们可以遍历数组，将数组中的每个数 x 交换到它应该在的位置上，即 x 应该在的位置为 x - 1。如果 x 不在 [1, n + 1] 之间，那么我们就不用管它。\n\n遍历结束后，我们再遍历数组，如果 i+1 不等于 nums[i]，那么 i+1 就是我们要找的最小的正整数。\n\n时间复杂度 O(n)，其中 n 是数组的长度。空间复杂度 O(1)。",
+  "summaryText": "原地交换，把范围内的正数放到对应位置；重复值已在位时停止交换，避免死循环。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过缺失的第一个正数掌握普通数组相关的可迁移解题模式。",
+  "prerequisites": [
+    "128"
+  ],
+  "recognition": "长度为 n 的数组，最小缺失正数只可能在 1 到 n+1。能否让值 x 放到下标 x−1？",
+  "bruteForce": "直观做法是题目要求 O(n) 时间且只用常数额外空间。若用哈希集合记下出现过的数，再从 1 起逐个查询缺失值，时间满足，但额外空间为 O(n)， n ≤ 10⁵，无法满足空间约束。；当输入规模扩大时，需要避免重复扫描并利用题目中的普通数组约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "长度为 n 的数组，最小缺失正数只可能在 1 到 n+1。能否让值 x 放到下标 x−1？"
+    },
+    {
+      "level": 2,
+      "text": "原地交换，把范围内的正数放到对应位置；重复值已在位时停止交换，避免死循环。"
+    },
+    {
+      "level": 3,
+      "text": "逐个检查元素，只要当前值在一到 n 之间且对应位置不是相同值，就交换到值减一的下标，继续检查换来的元素。处理结束后，从头找第一个 nums[i] 不等于 i+1 的位置，返回 i+1；全部在位则返回 n+1。越界数和重复值都不需要额外存储。"
+    },
+    {
+      "level": 4,
+      "text": "对 i 从 0 到 n−1：\n    当 1≤nums[i]≤n 且 nums[nums[i]−1]≠nums[i]：\n        target ← nums[i]−1\n        交换 nums[i],nums[target]\n对 i 从 0 到 n−1：\n    若 nums[i]≠i+1：返回 i+1\n返回 n+1",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "逐个检查元素，只要当前值在一到 n 之间且对应位置不是相同值，就交换到值减一的下标，继续检查换来的元素。",
+    "处理结束后，从头找第一个 nums[i] 不等于 i+1 的位置，返回 i+1；全部在位则返回 n+1。",
+    "越界数和重复值都不需要额外存储。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,2,0] → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足缺失的第一个正数约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把缺失的第一个正数的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用题目要求 O(n) 时间且只用常数额外空间。若用哈希集合记下出现过的数，再从 1 起逐个查询缺失值，时间满足，但额外空间为 O(n)， n ≤ 10⁵，无法满足空间约束。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "firstMissingPositive",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "41-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          0
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "41-boundary-1",
+      "input": {
+        "nums": [
+          1
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "boundary"
+      ],
+      "note": "最小正数已存在。"
+    },
+    {
+      "id": "41-adversarial-1",
+      "input": {
+        "nums": [
+          3,
+          4,
+          -1,
+          1
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "负数和缺失的中间正数。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,2,0]",
+    "output": "3",
+    "examples": [
+      {
+        "input": "nums = [1,2,0]",
+        "output": "3"
+      }
+    ]
+  }
+}

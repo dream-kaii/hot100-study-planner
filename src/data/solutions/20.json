@@ -1,0 +1,176 @@
+{
+  "id": "20",
+  "description": "给定一个只包括 '('，')'，'{'，'}'，'['，']' 的字符串 s ，判断字符串是否有效。\n\n有效字符串需满足：\n\n左括号必须用相同类型的右括号闭合。\n左括号必须以正确的顺序闭合。\n每个右括号都有一个对应的相同类型的左括号。\n\n示例 1：\n\n输入：s = \"()\"\n\n输出：true\n\n示例 2：\n\n输入：s = \"()[]{}\"\n\n示例 3：\n\n输入：s = \"(]\"\n\n输出：false\n\n示例 4：\n\n输入：s = \"([])\"\n\n示例 5：\n\n输入：s = \"([)]\"\n\n提示：\n\n1 <= s.length <= 104\ns 仅由括号 '()[]{}' 组成",
+  "summary": "准备一个栈保存尚未闭合的左括号。逐字符扫描，左括号直接入栈；右括号必须在栈非空且栈顶正好是对应左括号时才能弹出，否则返回假。扫描结束后还需检查栈为空，避免只有左括号的字符串被错误接受。",
+  "explanation": "题外话\n\n括号匹配是使用栈解决的经典问题。\n\n题意其实就像我们在写代码的过程中，要求括号的顺序是一样的，有左括号，相应的位置必须要有右括号。\n\n如果还记得编译原理的话，编译器在 词法分析的过程中处理括号、花括号等这个符号的逻辑，也是使用了栈这种数据结构。\n\n再举个例子，linux系统中，cd这个进入目录的命令我们应该再熟悉不过了。\n\n这个命令最后进入a目录，系统是如何知道进入了a目录呢 ，这就是栈的应用（其实可以出一道相应的面试题了）\n\n所以栈在计算机领域中应用是非常广泛的。\n\n有的同学经常会想学的这些数据结构有什么用，也开发不了什么软件，大多数同学说的软件应该都是可视化的软件例如APP、网站之类的，那都是非常上层的应用了，底层很多功能的实现都是基础的数据结构和算法。\n\n所以数据结构与算法的应用往往隐藏在我们看不到的地方！\n\n这里我就不过多展开了，先来看题。\n\n进入正题\n\n由于栈结构的特殊性，非常适合做对称匹配类的题目。\n\n首先要弄清楚，字符串里的括号不匹配有几种情况。\n\n一些同学，在面试中看到这种题目上来就开始写代码，然后就越写越乱。\n\n建议在写代码之前要分析好有哪几种不匹配的情况，如果不在动手之前分析好，写出的代码也会有很多问题。\n\n先来分析一下 这里有三种不匹配的情况，\n\n1. 第一种情况，字符串里左方向的括号多余了 ，所以不匹配。\n\n2. 第二种情况，括号没有多余，但是 括号的类型没有匹配上。\n\n3. 第三种情况，字符串里右方向的括号多余了，所以不匹配。\n\n我们的代码只要覆盖了这三种不匹配的情况，就不会出问题，可以看出 动手之前分析好题目的重要性。\n\n动画如下：\n\n第一种情况：已经遍历完了字符串，但是栈不为空，说明有相应的左括号没有右括号来匹配，所以return false\n\n第二种情况：遍历字符串匹配的过程中，发现栈里没有要匹配的字符。所以return false\n\n第三种情况：遍历字符串匹配的过程中，栈已经为空了，没有匹配的字符了，说明右括号没有找到对应的左括号return false\n\n那么什么时候说明左括号和右括号全都匹配了呢，就是字符串遍历完之后，栈是空的，就说明全都匹配了。\n\n分析完之后，代码其实就比较好写了，\n\n但还有一些技巧，在匹配左括号的时候，右括号先入栈，就只需要比较当前元素和栈顶相不相等就可以了，比左括号先入栈代码实现要简单的多了！\n\n实现\n\n时间复杂度: O(n)\n空间复杂度: O(n)\n\n技巧性的东西没有固定的学习方法，还是要多看多练，自己灵活运用了。\n\n总结",
+  "java": "class Solution {\n    public boolean isValid(String s) {\n        Deque<Character> deque = new LinkedList<>();\n        char ch;\n        for (int i = 0; i < s.length(); i++) {\n            ch = s.charAt(i);\n            //碰到左括号，就把相应的右括号入栈\n            if (ch == '(') {\n                deque.push(')');\n            }else if (ch == '{') {\n                deque.push('}');\n            }else if (ch == '[') {\n                deque.push(']');\n            } else if (deque.isEmpty() || deque.peek() != ch) {\n                return false;\n            }else {//如果是右括号判断是否和栈顶元素匹配\n                deque.pop();\n            }\n        }\n        //遍历结束，如果栈为空，则括号全部匹配\n        return deque.isEmpty();\n    }\n}",
+  "python": "# 方法一，仅使用栈，更省空间\nclass Solution:\n    def isValid(self, s: str) -> bool:\n        stack = []\n        \n        for item in s:\n            if item == '(':\n                stack.append(')')\n            elif item == '[':\n                stack.append(']')\n            elif item == '{':\n                stack.append('}')\n            elif not stack or stack[-1] != item:\n                return False\n            else:\n                stack.pop()\n        \n        return True if not stack else False",
+  "examples": [
+    {
+      "input": "s = \"()\"",
+      "output": "true"
+    },
+    {
+      "input": "s = \"()[]{}\"",
+      "output": "true"
+    },
+    {
+      "input": "s = \"(]\"",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0020.%E6%9C%89%E6%95%88%E7%9A%84%E6%8B%AC%E5%8F%B7.html",
+  "fallbackSource": "https://leetcode.cn/problems/valid-parentheses/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0020.%E6%9C%89%E6%95%88%E7%9A%84%E6%8B%AC%E5%8F%B7.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0020.%E6%9C%89%E6%95%88%E7%9A%84%E6%8B%AC%E5%8F%B7.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0020.%E6%9C%89%E6%95%88%E7%9A%84%E6%8B%AC%E5%8F%B7.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "题外话\n\n括号匹配是使用栈解决的经典问题。\n\n题意其实就像我们在写代码的过程中，要求括号的顺序是一样的，有左括号，相应的位置必须要有右括号。\n\n如果还记得编译原理的话，编译器在 词法分析的过程中处理括号、花括号等这个符号的逻辑，也是使用了栈这种数据结构。\n\n再举个例子，linux系统中，cd这个进入目录的命令我们应该再熟悉不过了。\n\n这个命令最后进入a目录，系统是如何知道进入了a目录呢 ，这就是栈的应用（其实可以出一道相应的面试题了）\n\n所以栈在计算机领域中应用是非常广泛的。\n\n有的同学经常会想学的这些数据结构有什么用，也开发不了什么软件，大多数同学说的软件应该都是可视化的软件例如APP、网站之类的，那都是非常上层的应用了，底层很多功能的实现都是基础的数据结构和算法。\n\n所以数据结构与算法的应用往往隐藏在我们看不到的地方！\n\n这里我就不过多展开了，先来看题。\n\n进入正题\n\n由于栈结构的特殊性，非常适合做对称匹配类的题目。\n\n首先要弄清楚，字符串里的括号不匹配有几种情况。\n\n一些同学，在面试中看到这种题目上来就开始写代码，然后就越写越乱。\n\n建议在写代码之前要分析好有哪几种不匹配的情况，如果不在动手之前分析好，写出的代码也会有很多问题。\n\n先来分析一下 这里有三种不匹配的情况，\n\n1. 第一种情况，字符串里左方向的括号多余了 ，所以不匹配。\n\n2. 第二种情况，括号没有多余，但是 括号的类型没有匹配上。\n\n3. 第三种情况，字符串里右方向的括号多余了，所以不匹配。\n\n我们的代码只要覆盖了这三种不匹配的情况，就不会出问题，可以看出 动手之前分析好题目的重要性。\n\n动画如下：\n\n第一种情况：已经遍历完了字符串，但是栈不为空，说明有相应的左括号没有右括号来匹配，所以return false\n\n第二种情况：遍历字符串匹配的过程中，发现栈里没有要匹配的字符。所以return false\n\n第三种情况：遍历字符串匹配的过程中，栈已经为空了，没有匹配的字符了，说明右括号没有找到对应的左括号return false\n\n那么什么时候说明左括号和右括号全都匹配了呢，就是字符串遍历完之后，栈是空的，就说明全都匹配了。\n\n分析完之后，代码其实就比较好写了，\n\n但还有一些技巧，在匹配左括号的时候，右括号先入栈，就只需要比较当前元素和栈顶相不相等就可以了，比左括号先入栈代码实现要简单的多了！\n\n实现\n\n时间复杂度: O(n)\n空间复杂度: O(n)\n\n技巧性的东西没有固定的学习方法，还是要多看多练，自己灵活运用了。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "括号匹配1",
+      "url": "https://file1.kamacoder.com/i/algo/2020080915505387.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2020080915505387.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "括号匹配2",
+      "url": "https://file1.kamacoder.com/i/algo/20200809155107397.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20200809155107397.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "括号匹配3",
+      "url": "https://file1.kamacoder.com/i/algo/20200809155115779.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20200809155115779.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "20.有效括号",
+      "url": "https://file1.kamacoder.com/i/algo/20.有效括号.gif",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20.有效括号.gif",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "遇到左括号压栈，遇到右括号检查栈顶类型并弹出；栈空或类型不同立即失败。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过有效的括号掌握栈相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "右括号必须匹配最近一个尚未匹配的左括号，这种“后来者先匹配”的顺序适合什么结构？",
+  "bruteForce": "直观做法是把已经相邻的 ()、 [] 和 {} 反复从字符串中删去，直到不能再删，结果是正确的。每一轮都要重新扫描， n ≤ 10⁴ 时最坏会退化成 O(n²)，括号层层嵌套时也容易超时。；当输入规模扩大时，需要避免重复扫描并利用题目中的栈约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "右括号必须匹配最近一个尚未匹配的左括号，这种“后来者先匹配”的顺序适合什么结构？"
+    },
+    {
+      "level": 2,
+      "text": "遇到左括号压栈，遇到右括号检查栈顶类型并弹出；栈空或类型不同立即失败。"
+    },
+    {
+      "level": 3,
+      "text": "准备一个栈保存尚未闭合的左括号。逐字符扫描，左括号直接入栈；右括号必须在栈非空且栈顶正好是对应左括号时才能弹出，否则返回假。扫描结束后还需检查栈为空，避免只有左括号的字符串被错误接受。"
+    },
+    {
+      "level": 4,
+      "text": "stack ← 空栈；pairs ← 右括号到左括号的映射\n对每个字符 c：\n    若 c 是左括号：压入 stack\n    否则：\n        若 stack 为空 或 stack 顶部 ≠ pairs[c]：返回 假\n        弹出 stack 顶部\n返回 stack 为空",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "准备一个栈保存尚未闭合的左括号。",
+    "逐字符扫描，左括号直接入栈；右括号必须在栈非空且栈顶正好是对应左括号时才能弹出，否则返回假。",
+    "扫描结束后还需检查栈为空，避免只有左括号的字符串被错误接受。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"()\" → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足有效的括号约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把有效的括号的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用把已经相邻的 ()、 [] 和 {} 反复从字符串中删去，直到不能再删，结果是正确的。每一轮都要重新扫描， n ≤ 10⁴ 时最坏会退化成 O(n²)，括号层层嵌套时也容易超时。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "isValid",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "20-basic-1",
+      "input": {
+        "s": "()"
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "20-boundary-1",
+      "input": {
+        "s": "(]"
+      },
+      "expected": false,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用有效的括号的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "20-adversarial-1",
+      "input": {
+        "s": "(]"
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查有效的括号的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"()\"",
+    "output": "true",
+    "examples": [
+      {
+        "input": "s = \"()\"",
+        "output": "true"
+      }
+    ]
+  }
+}

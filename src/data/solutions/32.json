@@ -1,0 +1,142 @@
+{
+  "id": "32",
+  "description": "给你一个只包含 '(' 和 ')' 的字符串，找出最长有效（格式正确且连续）括号 子串 的长度。\n\n左右括号匹配，即每个左括号都有对应的右括号将其闭合的字符串是格式正确的，比如 \"(()())\"。\n\n示例 1：\n\n输入：s = \"(()\"\n输出：2\n解释：最长有效括号子串是 \"()\"\n\n示例 2：\n\n输入：s = \")()())\"\n输出：4\n解释：最长有效括号子串是 \"()()\"\n\n示例 3：\n\n输入：s = \"\"\n输出：0\n\n提示：\n\n0 <= s.length <= 3 104\ns[i] 为 '(' 或 ')'",
+  "summary": "维护未匹配左括号下标栈，初始放入 −1 作为合法段之前的边界。左括号直接压入；右括号先弹栈，若栈变空，说明右括号无法匹配，把其下标压入作为新边界；否则当前下标减栈顶就是以此处结尾的最长合法长度，用于更新答案。",
+  "explanation": "方法一：动态规划\n\n思考\n\n枚举每个子串再用栈判定是否有效，时间复杂度为 O(n²) 乃至 O(n³)。 n ≤ 3×10⁴，无法通过。\n\n大量子串互相重叠：以某一位置结尾的最长有效括号，可以由更短的有效段拼接得到。因此可以按结尾位置递推。\n\n有效括号串只能以右括号结尾。若 s[i-1] 与前一位配成一对，长度即为再往前那段加上 2；若前一位也是右括号，则先跨过已经配好的一段，再判断这段之前是否还能配上一个左括号。我们可以定义 f[i] 为以 s[i-1] 结尾的最长有效长度，按上述两种配对方式转移，答案取 max f[i]。\n\n我们定义 f[i] 表示以 s[i-1] 结尾的最长有效括号的长度，那么答案就是 max{i=1}ⁿ f[i]。\n\n- 如果 s[i-1] 是左括号，那么以 s[i-1] 结尾的最长有效括号的长度一定为 0，因此 f[i] = 0。\n- 如果 s[i-1] 是右括号，有以下两种情况：\n- 如果 s[i-2] 是左括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-2] + 2。\n- 如果 s[i-2] 是右括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-1] + 2，但是还需要考虑 s[i-f[i-1]-2] 是否是左括号，如果是左括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-1] + 2 + f[i-f[i-1]-2]。\n\n因此，我们可以得到状态转移方程：\n\nf[i] = 0, if s[i-1] = '(',\nf[i] = f[i-2] + 2, if s[i-1] = ')' and s[i-2] = '(',\nf[i] = f[i-1] + 2 + f[i-f[i-1]-2], if s[i-1] = ')' and s[i-2] = ')' and s[i-f[i-1]-2] = '(',\n\n最后返回 max{i=1}ⁿ f[i] 即可。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为字符串的长度。\n\n总结",
+  "java": "class Solution {\n    public int longestValidParentheses(String s) {\n        int n = s.length();\n        int[] f = new int[n + 1];\n        int ans = 0;\n        for (int i = 2; i <= n; ++i) {\n            if (s.charAt(i - 1) == ')') {\n                if (s.charAt(i - 2) == '(') {\n                    f[i] = f[i - 2] + 2;\n                } else {\n                    int j = i - f[i - 1] - 1;\n                    if (j > 0 && s.charAt(j - 1) == '(') {\n                        f[i] = f[i - 1] + 2 + f[j - 1];\n                    }\n                }\n                ans = Math.max(ans, f[i]);\n            }\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def longestValidParentheses(self, s: str) -> int:\n        n = len(s)\n        f = [0] * (n + 1)\n        for i, c in enumerate(s, 1):\n            if c == \")\":\n                if i > 1 and s[i - 2] == \"(\":\n                    f[i] = f[i - 2] + 2\n                else:\n                    j = i - f[i - 1] - 1\n                    if j and s[j - 1] == \"(\":\n                        f[i] = f[i - 1] + 2 + f[j - 1]\n        return max(f)",
+  "examples": [
+    {
+      "input": "s = \"(()\"",
+      "output": "2"
+    },
+    {
+      "input": "s = \")()())\"",
+      "output": "4"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/longest-valid-parentheses/",
+  "fallbackSource": "https://leetcode.cn/problems/longest-valid-parentheses/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/longest-valid-parentheses/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0032.Longest%20Valid%20Parentheses/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0032.Longest%20Valid%20Parentheses/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：动态规划\n\n思考\n\n枚举每个子串再用栈判定是否有效，时间复杂度为 O(n²) 乃至 O(n³)。 n ≤ 3×10⁴，无法通过。\n\n大量子串互相重叠：以某一位置结尾的最长有效括号，可以由更短的有效段拼接得到。因此可以按结尾位置递推。\n\n有效括号串只能以右括号结尾。若 s[i-1] 与前一位配成一对，长度即为再往前那段加上 2；若前一位也是右括号，则先跨过已经配好的一段，再判断这段之前是否还能配上一个左括号。我们可以定义 f[i] 为以 s[i-1] 结尾的最长有效长度，按上述两种配对方式转移，答案取 max f[i]。\n\n我们定义 f[i] 表示以 s[i-1] 结尾的最长有效括号的长度，那么答案就是 max{i=1}ⁿ f[i]。\n\n- 如果 s[i-1] 是左括号，那么以 s[i-1] 结尾的最长有效括号的长度一定为 0，因此 f[i] = 0。\n- 如果 s[i-1] 是右括号，有以下两种情况：\n- 如果 s[i-2] 是左括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-2] + 2。\n- 如果 s[i-2] 是右括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-1] + 2，但是还需要考虑 s[i-f[i-1]-2] 是否是左括号，如果是左括号，那么以 s[i-1] 结尾的最长有效括号的长度为 f[i-1] + 2 + f[i-f[i-1]-2]。\n\n因此，我们可以得到状态转移方程：\n\nf[i] = 0, if s[i-1] = '(',\nf[i] = f[i-2] + 2, if s[i-1] = ')' and s[i-2] = '(',\nf[i] = f[i-1] + 2 + f[i-f[i-1]-2], if s[i-1] = ')' and s[i-2] = ')' and s[i-f[i-1]-2] = '(',\n\n最后返回 max{i=1}ⁿ f[i] 即可。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为字符串的长度。",
+  "summaryText": "栈存下标，先放 −1 作为边界；匹配后用当前下标减去新栈顶算合法长度。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过最长有效括号掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "20"
+  ],
+  "recognition": "遇到右括号匹配成功后，最长合法后缀从哪里开始？没有匹配的括号位置可以充当边界。",
+  "bruteForce": "直观做法是枚举每个子串再用栈判定是否有效，时间复杂度为 O(n²) 乃至 O(n³)。 n ≤ 3×10⁴，无法通过。；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "遇到右括号匹配成功后，最长合法后缀从哪里开始？没有匹配的括号位置可以充当边界。"
+    },
+    {
+      "level": 2,
+      "text": "栈存下标，先放 −1 作为边界；匹配后用当前下标减去新栈顶算合法长度。"
+    },
+    {
+      "level": 3,
+      "text": "维护未匹配左括号下标栈，初始放入 −1 作为合法段之前的边界。左括号直接压入；右括号先弹栈，若栈变空，说明右括号无法匹配，把其下标压入作为新边界；否则当前下标减栈顶就是以此处结尾的最长合法长度，用于更新答案。"
+    },
+    {
+      "level": 4,
+      "text": "stack ← [−1]；best ← 0\n对每个下标 i：\n    若 s[i]='('：将 i 压栈\n    否则：\n        弹出栈顶\n        若 stack 为空：将 i 压栈\n        否则：best ← max(best,i−stack顶部)\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "维护未匹配左括号下标栈，初始放入 −1 作为合法段之前的边界。",
+    "左括号直接压入；右括号先弹栈，若栈变空，说明右括号无法匹配，把其下标压入作为新边界；否则当前下标减栈顶就是以此处结尾的最长合法长度，用于更新答案。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"(()\" → 2。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足最长有效括号约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把最长有效括号的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用枚举每个子串再用栈判定是否有效，时间复杂度为 O(n²) 乃至 O(n³)。 n ≤ 3×10⁴，无法通过。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "longestValidParentheses",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "32-basic-1",
+      "input": {
+        "s": "(()"
+      },
+      "expected": 2,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "32-boundary-1",
+      "input": {
+        "s": ")()())"
+      },
+      "expected": 4,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用最长有效括号的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "32-adversarial-1",
+      "input": {
+        "s": ")()())"
+      },
+      "expected": 4,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查最长有效括号的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"(()\"",
+    "output": "2",
+    "examples": [
+      {
+        "input": "s = \"(()\"",
+        "output": "2"
+      }
+    ]
+  }
+}

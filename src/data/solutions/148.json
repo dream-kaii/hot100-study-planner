@@ -1,0 +1,158 @@
+{
+  "id": "148",
+  "description": "给你链表的头结点 head ，请将其按 升序 排列并返回 排序后的链表 。\n\n示例 1：\n\n输入：head = [4,2,1,3]\n输出：[1,2,3,4]\n\n示例 2：\n\n输入：head = [-1,5,3,4,0]\n输出：[-1,0,3,4,5]\n\n示例 3：\n\n输入：head = []\n输出：[]\n\n提示：\n\n链表中节点的数目在范围 [0, 5 104] 内\n-105 <= Node.val <= 105\n\n进阶：你可以在 O(n log n) 时间复杂度和常数级空间复杂度下，对链表进行排序吗？",
+  "summary": "使用归并排序。链表为空或只有一个节点时直接返回；否则用快慢指针找到中点前驱，断开为两条独立链表，递归排序它们。最后用哑节点反复取两边较小节点，接上剩余部分。每轮分割使长度减半，合并只沿 next 向前走。",
+  "explanation": "方法一：归并排序\n\n思考\n\n链表排序，进阶要求 O(nlog n) 时间、常数空间。随机访问缺失，快排交换不方便； n≤ 5×10⁴。归并只需要顺序访问：快慢指针断开中点，递归排序两半再线性合并。递归栈是 O(log n)，满足时间要求。\n\n我们可以用归并排序的思想来解决。\n\n首先，我们利用快慢指针找到链表的中点，将链表从中点处断开，形成两个独立的子链表 l1 和 l2。\n\n然后，我们递归地对 l1 和 l2 进行排序，最后将 l1 和 l2 合并为一个有序链表。\n\n时间复杂度 O(n×log n)，空间复杂度 O(log n)。其中 n 是链表的长度。\n\n总结",
+  "java": "/**\n * Definition for singly-linked list.\n * public class ListNode {\n *     int val;\n *     ListNode next;\n *     ListNode() {}\n *     ListNode(int val) { this.val = val; }\n *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }\n * }\n */\nclass Solution {\n    public ListNode sortList(ListNode head) {\n        if (head == null || head.next == null) {\n            return head;\n        }\n        ListNode slow = head, fast = head.next;\n        while (fast != null && fast.next != null) {\n            slow = slow.next;\n            fast = fast.next.next;\n        }\n        ListNode l1 = head, l2 = slow.next;\n        slow.next = null;\n        l1 = sortList(l1);\n        l2 = sortList(l2);\n        ListNode dummy = new ListNode();\n        ListNode tail = dummy;\n        while (l1 != null && l2 != null) {\n            if (l1.val <= l2.val) {\n                tail.next = l1;\n                l1 = l1.next;\n            } else {\n                tail.next = l2;\n                l2 = l2.next;\n            }\n            tail = tail.next;\n        }\n        tail.next = l1 != null ? l1 : l2;\n        return dummy.next;\n    }\n}",
+  "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def sortList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        if head is None or head.next is None:\n            return head\n        slow, fast = head, head.next\n        while fast and fast.next:\n            slow = slow.next\n            fast = fast.next.next\n        l1, l2 = head, slow.next\n        slow.next = None\n        l1, l2 = self.sortList(l1), self.sortList(l2)\n        dummy = ListNode()\n        tail = dummy\n        while l1 and l2:\n            if l1.val <= l2.val:\n                tail.next = l1\n                l1 = l1.next\n            else:\n                tail.next = l2\n                l2 = l2.next\n            tail = tail.next\n        tail.next = l1 or l2\n        return dummy.next",
+  "examples": [
+    {
+      "input": "head = [4,2,1,3]",
+      "output": "[1,2,3,4]"
+    },
+    {
+      "input": "head = [-1,5,3,4,0]",
+      "output": "[-1,0,3,4,5]"
+    },
+    {
+      "input": "head = []",
+      "output": "[]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(log n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/sort-list/",
+  "fallbackSource": "https://leetcode.cn/problems/sort-list/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/sort-list/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0148.Sort%20List/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0148.Sort%20List/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：归并排序\n\n思考\n\n链表排序，进阶要求 O(nlog n) 时间、常数空间。随机访问缺失，快排交换不方便； n≤ 5×10⁴。归并只需要顺序访问：快慢指针断开中点，递归排序两半再线性合并。递归栈是 O(log n)，满足时间要求。\n\n我们可以用归并排序的思想来解决。\n\n首先，我们利用快慢指针找到链表的中点，将链表从中点处断开，形成两个独立的子链表 l1 和 l2。\n\n然后，我们递归地对 l1 和 l2 进行排序，最后将 l1 和 l2 合并为一个有序链表。\n\n时间复杂度 O(n×log n)，空间复杂度 O(log n)。其中 n 是链表的长度。",
+  "summaryText": "快慢指针找中点并断开，递归排序左右半段，再按合并有序链表的方式接起来。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过排序链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "链表不方便随机访问，但两个已排序链表可以线性合并。能把链表不断拆成两半吗？",
+  "bruteForce": "直观做法是链表排序，进阶要求 O(nlog n) 时间、常数空间。随机访问缺失，快排交换不方便； n≤ 5×10⁴。归并只需要顺序访问：快慢指针断开中点，递归排序两半再线性合并。递归栈是 O(log n)，满足时间要求。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "链表不方便随机访问，但两个已排序链表可以线性合并。能把链表不断拆成两半吗？"
+    },
+    {
+      "level": 2,
+      "text": "快慢指针找中点并断开，递归排序左右半段，再按合并有序链表的方式接起来。"
+    },
+    {
+      "level": 3,
+      "text": "使用归并排序。链表为空或只有一个节点时直接返回；否则用快慢指针找到中点前驱，断开为两条独立链表，递归排序它们。最后用哑节点反复取两边较小节点，接上剩余部分。每轮分割使长度减半，合并只沿 next 向前走。"
+    },
+    {
+      "level": 4,
+      "text": "sort(head)：\n    若 head 为空或 head.next 为空：返回 head\n    用快慢指针找到左半段尾部 mid\n    rightHead ← mid.next；mid.next ← 空\n    left ← sort(head)\n    right ← sort(rightHead)\n    按较小头节点优先合并 left 与 right\n    返回合并后的头节点\n返回 sort(head)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "使用归并排序。",
+    "链表为空或只有一个节点时直接返回；否则用快慢指针找到中点前驱，断开为两条独立链表，递归排序它们。",
+    "最后用哑节点反复取两边较小节点，接上剩余部分。",
+    "每轮分割使长度减半，合并只沿 next 向前走。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [4,2,1,3] → [1,2,3,4]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足排序链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把排序链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用链表排序，进阶要求 O(nlog n) 时间、常数空间。随机访问缺失，快排交换不方便； n≤ 5×10⁴。归并只需要顺序访问：快慢指针断开中点，递归排序两半再线性合并。递归栈是 O(log n)，满足时间要求。，额外空间为O(log n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "sortList",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "148-basic-1",
+      "input": {
+        "head": [
+          4,
+          2,
+          1,
+          3
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "148-boundary-1",
+      "input": {
+        "head": []
+      },
+      "expected": [],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用排序链表的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "148-adversarial-1",
+      "input": {
+        "head": []
+      },
+      "expected": [],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查排序链表的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [4,2,1,3]",
+    "output": "[1,2,3,4]",
+    "examples": [
+      {
+        "input": "head = [4,2,1,3]",
+        "output": "[1,2,3,4]"
+      }
+    ]
+  }
+}

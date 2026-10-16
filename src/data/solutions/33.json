@@ -1,0 +1,167 @@
+{
+  "id": "33",
+  "description": "整数数组 nums 按升序排列，数组中的值 互不相同 。\n\n在传递给函数之前，nums 在预先未知的某个下标 k（0 <= k < nums.length）上进行了 向左旋转，使数组变为 [nums[k], nums[k+1], ..., nums[n-1], nums[0], nums[1], ..., nums[k-1]]（下标 从 0 开始 计数）。例如， [0,1,2,4,5,6,7] 下标 3 上向左旋转后可能变为 [4,5,6,7,0,1,2] 。\n\n给你 旋转后 的数组 nums 和一个整数 target ，如果 nums 中存在这个目标值 target ，则返回它的下标，否则返回 -1 。\n\n你必须设计一个时间复杂度为 O(log n) 的算法解决此问题。\n\n示例 1：\n\n输入：nums = [4,5,6,7,0,1,2], target = 0\n输出：4\n\n示例 2：\n\n输入：nums = [4,5,6,7,0,1,2], target = 3\n输出：-1\n\n示例 3：\n\n输入：nums = [1], target = 0\n输出：-1\n\n提示：\n\n1 <= nums.length <= 5000\n-104 <= nums[i] <= 104\nnums 中的每个值都 独一无二\n题目数据保证 nums 在预先未知的某个下标上进行了旋转\n-104 <= target <= 104",
+  "summary": "用左右边界二分，若中点命中就返回。若左端值不大于中点值，左半段有序，只有目标落在左端到中点之间才向左找；否则向右找。左半段无序时右半段必有序，对称判断目标范围。每次排除不可能的半段，直到命中或区间为空。",
+  "explanation": "方法一：二分查找\n\n思考\n\n线性扫描的时间复杂度为 O(n)。题目要求 O(log n)，因此不能逐个比较。\n\n数组被旋转后整体不再有序，普通二分无法直接判断 target 落在哪一半。\n\n注意到，任取中点将区间一分为二，其中至少有一半保持单调。比较 nums[0] 与 nums[mid] 即可判断左半是否有序；若 target 落在该有序区间内，则丢弃另一半，否则在无序半段中继续查找。因此仍可二分：有序半段用来判定去留，无序半段留给下一轮继续分割。\n\n我们使用二分，将数组分割成 [left,.. mid], [mid + 1,.. right] 两部分，这时候可以发现，其中有一部分一定是有序的。\n\n因此，我们可以根据有序的那一部分，判断 target 是否在这一部分中：\n\n- 若 [0,.. mid] 范围内的元素构成有序数组：\n- 若满足 nums[0] ≤ target ≤ nums[mid]，那么我们搜索范围可以缩小为 [left,.. mid]；\n- 否则，在 [mid + 1,.. right] 中查找；\n- 若 [mid + 1, n - 1] 范围内的元素构成有序数组：\n- 若满足 nums[mid] < target ≤ nums[n - 1]，那么我们搜索范围可以缩小为 [mid + 1,.. right]；\n- 否则，在 [left,.. mid] 中查找。\n\n二分查找终止条件是 left ≥ right，若结束后发现 nums[left] 与 target 不等，说明数组中不存在值为 target 的元素，返回 -1，否则返回下标 left。\n\n时间复杂度 O(log n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int search(int[] nums, int target) {\n        int n = nums.length;\n        int left = 0, right = n - 1;\n        while (left < right) {\n            int mid = (left + right) >> 1;\n            if (nums[0] <= nums[mid]) {\n                if (nums[0] <= target && target <= nums[mid]) {\n                    right = mid;\n                } else {\n                    left = mid + 1;\n                }\n            } else {\n                if (nums[mid] < target && target <= nums[n - 1]) {\n                    left = mid + 1;\n                } else {\n                    right = mid;\n                }\n            }\n        }\n        return nums[left] == target ? left : -1;\n    }\n}",
+  "python": "class Solution:\n    def search(self, nums: List[int], target: int) -> int:\n        n = len(nums)\n        left, right = 0, n - 1\n        while left < right:\n            mid = (left + right) >> 1\n            if nums[0] <= nums[mid]:\n                if nums[0] <= target <= nums[mid]:\n                    right = mid\n                else:\n                    left = mid + 1\n            else:\n                if nums[mid] < target <= nums[n - 1]:\n                    left = mid + 1\n                else:\n                    right = mid\n        return left if nums[left] == target else -1",
+  "examples": [
+    {
+      "input": "nums = [4,5,6,7,0,1,2], target = 0",
+      "output": "4"
+    },
+    {
+      "input": "nums = [4,5,6,7,0,1,2], target = 3",
+      "output": "-1"
+    },
+    {
+      "input": "nums = [1], target = 0",
+      "output": "-1"
+    }
+  ],
+  "complexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/search-in-rotated-sorted-array/",
+  "fallbackSource": "https://leetcode.cn/problems/search-in-rotated-sorted-array/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/search-in-rotated-sorted-array/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0033.Search%20in%20Rotated%20Sorted%20Array/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0033.Search%20in%20Rotated%20Sorted%20Array/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：二分查找\n\n思考\n\n线性扫描的时间复杂度为 O(n)。题目要求 O(log n)，因此不能逐个比较。\n\n数组被旋转后整体不再有序，普通二分无法直接判断 target 落在哪一半。\n\n注意到，任取中点将区间一分为二，其中至少有一半保持单调。比较 nums[0] 与 nums[mid] 即可判断左半是否有序；若 target 落在该有序区间内，则丢弃另一半，否则在无序半段中继续查找。因此仍可二分：有序半段用来判定去留，无序半段留给下一轮继续分割。\n\n我们使用二分，将数组分割成 [left,.. mid], [mid + 1,.. right] 两部分，这时候可以发现，其中有一部分一定是有序的。\n\n因此，我们可以根据有序的那一部分，判断 target 是否在这一部分中：\n\n- 若 [0,.. mid] 范围内的元素构成有序数组：\n- 若满足 nums[0] ≤ target ≤ nums[mid]，那么我们搜索范围可以缩小为 [left,.. mid]；\n- 否则，在 [mid + 1,.. right] 中查找；\n- 若 [mid + 1, n - 1] 范围内的元素构成有序数组：\n- 若满足 nums[mid] < target ≤ nums[n - 1]，那么我们搜索范围可以缩小为 [mid + 1,.. right]；\n- 否则，在 [left,.. mid] 中查找。\n\n二分查找终止条件是 left ≥ right，若结束后发现 nums[left] 与 target 不等，说明数组中不存在值为 target 的元素，返回 -1，否则返回下标 left。\n\n时间复杂度 O(log n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。",
+  "summaryText": "先判断左半段是否有序，再检查 target 是否落在这一段的取值范围，决定保留哪一半。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过搜索旋转排序数组掌握二分查找相关的可迁移解题模式。",
+  "prerequisites": [
+    "34"
+  ],
+  "recognition": "旋转后整个数组不再有序，但每次取中点时，左右两段中至少有一段仍然有序。",
+  "bruteForce": "直观做法是线性扫描的时间复杂度为 O(n)。题目要求 O(log n)，因此不能逐个比较。；当输入规模扩大时，需要避免重复扫描并利用题目中的二分查找约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "旋转后整个数组不再有序，但每次取中点时，左右两段中至少有一段仍然有序。"
+    },
+    {
+      "level": 2,
+      "text": "先判断左半段是否有序，再检查 target 是否落在这一段的取值范围，决定保留哪一半。"
+    },
+    {
+      "level": 3,
+      "text": "用左右边界二分，若中点命中就返回。若左端值不大于中点值，左半段有序，只有目标落在左端到中点之间才向左找；否则向右找。左半段无序时右半段必有序，对称判断目标范围。每次排除不可能的半段，直到命中或区间为空。"
+    },
+    {
+      "level": 4,
+      "text": "left ← 0，right ← n−1\n当 left ≤ right：\n    mid ← 向下取整((left+right)/2)\n    若 nums[mid]=target：返回 mid\n    若 nums[left] ≤ nums[mid]：\n        若 nums[left] ≤ target < nums[mid]：right ← mid−1\n        否则：left ← mid+1\n    否则：\n        若 nums[mid] < target ≤ nums[right]：left ← mid+1\n        否则：right ← mid−1\n返回 −1",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "用左右边界二分，若中点命中就返回。",
+    "若左端值不大于中点值，左半段有序，只有目标落在左端到中点之间才向左找；否则向右找。",
+    "左半段无序时右半段必有序，对称判断目标范围。",
+    "每次排除不可能的半段，直到命中或区间为空。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [4,5,6,7,0,1,2], target = 0 → 4。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足搜索旋转排序数组约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把搜索旋转排序数组的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用线性扫描的时间复杂度为 O(n)。题目要求 O(log n)，因此不能逐个比较。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "search",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "33-basic-1",
+      "input": {
+        "nums": [
+          4,
+          5,
+          6,
+          7,
+          0,
+          1,
+          2
+        ],
+        "target": 0
+      },
+      "expected": 4,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "33-boundary-1",
+      "input": {
+        "nums": [
+          1
+        ],
+        "target": 0
+      },
+      "expected": -1,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用搜索旋转排序数组的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "33-adversarial-1",
+      "input": {
+        "nums": [
+          1
+        ],
+        "target": 0
+      },
+      "expected": -1,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查搜索旋转排序数组的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [4,5,6,7,0,1,2], target = 0",
+    "output": "4",
+    "examples": [
+      {
+        "input": "nums = [4,5,6,7,0,1,2], target = 0",
+        "output": "4"
+      }
+    ]
+  }
+}

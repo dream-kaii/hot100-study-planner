@@ -1,0 +1,181 @@
+{
+  "id": "104",
+  "description": "给定一个二叉树 root ，返回其最大深度。\n\n二叉树的 最大深度 是指从根节点到最远叶子节点的最长路径上的节点数。\n\n示例 1：\n\n输入：root = [3,9,20,null,null,15,7]\n输出：3\n\n示例 2：\n\n输入：root = [1,null,2]\n输出：2\n\n提示：\n\n树中节点的数量在 [0, 104] 区间内。\n-100 <= Node.val <= 100",
+  "summary": "使用递归分别求左右子树深度。空节点返回零，非空节点返回左右结果的最大值再加一，表示把当前这一层算上。递归从叶子向上合并，左右分支只选择更深的那条，因此返回的是从根到最深叶子的节点层数，根为空也自然得到零。",
+  "explanation": "看完本篇可以一起做了如下两道题目：\n\n104.二叉树的最大深度\n559.n叉树的最大深度\n\n递归法\n\n本题可以使用前序（中左右），也可以使用后序遍历（左右中），使用前序求的就是深度，使用后序求的是高度。\n\n二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数或者节点数（取决于深度从0开始还是从1开始）\n二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数或者节点数（取决于高度从0开始还是从1开始）\n\n而根节点的高度就是二叉树的最大深度，所以本题中我们通过后序求的根节点高度来求的二叉树最大深度。\n\n这一点其实是很多同学没有想清楚的，很多题解同样没有讲清楚。\n\n我先用后序遍历（左右中）来计算树的高度。\n\n1. 确定递归函数的参数和返回值：参数就是传入树的根节点，返回就返回这棵树的深度，所以返回值为int类型。\n\n代码如下：\n\n2. 确定终止条件：如果为空节点的话，就返回0，表示高度为0。\n\n3. 确定单层递归的逻辑：先求它的左子树的深度，再求右子树的深度，最后取左右深度最大的数值 再+1 （加1是因为算上当前中间节点）就是目前节点为根节点的树的深度。\n\n所以整体c++代码如下：\n\n代码精简之后c++代码如下：\n\n精简之后的代码根本看不出是哪种遍历方式，也看不出递归三部曲的步骤，所以如果对二叉树的操作还不熟练，尽量不要直接照着精简代码来学。\n\n本题当然也可以使用前序，代码如下：(充分表现出求深度回溯的过程)\n\n可以看出使用了前序（中左右）的遍历顺序，这才是真正求深度的逻辑！\n\n注意以上代码是为了把细节体现出来，简化一下代码如下：\n\n迭代法\n\n使用迭代法的话，使用层序遍历是最为合适的，因为最大的深度就是二叉树的层数，和层序遍历的方式极其吻合。\n\n在二叉树中，一层一层的来遍历二叉树，记录一下遍历的层数就是二叉树的深度，如图所示：\n\n所以这道题的迭代法就是一道模板题，可以使用二叉树层序遍历的模板来解决的。\n\n如果对层序遍历还不清楚的话，可以看这篇：二叉树：层序遍历登场！\n\n总结",
+  "java": "class Solution {\n    /**\n     * 递归法\n     */\n    public int maxDepth(TreeNode root) {\n        if (root == null) {\n            return 0;\n        }\n        int leftDepth = maxDepth(root.left);\n        int rightDepth = maxDepth(root.right);\n        return Math.max(leftDepth, rightDepth) + 1;\n    }\n}",
+  "python": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def maxDepth(self, root: TreeNode) -> int:\n        if root is None:\n            return 0\n        l, r = self.maxDepth(root.left), self.maxDepth(root.right)\n        return 1 + max(l, r)",
+  "examples": [
+    {
+      "input": "root = [3,9,20,null,null,15,7]",
+      "output": "3"
+    },
+    {
+      "input": "root = [1,null,2]",
+      "output": "2"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0104.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E5%A4%A7%E6%B7%B1%E5%BA%A6.html",
+  "fallbackSource": "https://leetcode.cn/problems/maximum-depth-of-binary-tree/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0104.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E5%A4%A7%E6%B7%B1%E5%BA%A6.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0104.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E5%A4%A7%E6%B7%B1%E5%BA%A6.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0104.%E4%BA%8C%E5%8F%89%E6%A0%91%E7%9A%84%E6%9C%80%E5%A4%A7%E6%B7%B1%E5%BA%A6.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "看完本篇可以一起做了如下两道题目：\n\n104.二叉树的最大深度\n559.n叉树的最大深度\n\n递归法\n\n本题可以使用前序（中左右），也可以使用后序遍历（左右中），使用前序求的就是深度，使用后序求的是高度。\n\n二叉树节点的深度：指从根节点到该节点的最长简单路径边的条数或者节点数（取决于深度从0开始还是从1开始）\n二叉树节点的高度：指从该节点到叶子节点的最长简单路径边的条数或者节点数（取决于高度从0开始还是从1开始）\n\n而根节点的高度就是二叉树的最大深度，所以本题中我们通过后序求的根节点高度来求的二叉树最大深度。\n\n这一点其实是很多同学没有想清楚的，很多题解同样没有讲清楚。\n\n我先用后序遍历（左右中）来计算树的高度。\n\n1. 确定递归函数的参数和返回值：参数就是传入树的根节点，返回就返回这棵树的深度，所以返回值为int类型。\n\n代码如下：\n\n2. 确定终止条件：如果为空节点的话，就返回0，表示高度为0。\n\n3. 确定单层递归的逻辑：先求它的左子树的深度，再求右子树的深度，最后取左右深度最大的数值 再+1 （加1是因为算上当前中间节点）就是目前节点为根节点的树的深度。\n\n所以整体c++代码如下：\n\n代码精简之后c++代码如下：\n\n精简之后的代码根本看不出是哪种遍历方式，也看不出递归三部曲的步骤，所以如果对二叉树的操作还不熟练，尽量不要直接照着精简代码来学。\n\n本题当然也可以使用前序，代码如下：(充分表现出求深度回溯的过程)\n\n可以看出使用了前序（中左右）的遍历顺序，这才是真正求深度的逻辑！\n\n注意以上代码是为了把细节体现出来，简化一下代码如下：\n\n迭代法\n\n使用迭代法的话，使用层序遍历是最为合适的，因为最大的深度就是二叉树的层数，和层序遍历的方式极其吻合。\n\n在二叉树中，一层一层的来遍历二叉树，记录一下遍历的层数就是二叉树的深度，如图所示：\n\n所以这道题的迭代法就是一道模板题，可以使用二叉树层序遍历的模板来解决的。\n\n如果对层序遍历还不清楚的话，可以看这篇：二叉树：层序遍历登场！",
+  "tables": [],
+  "images": [
+    {
+      "alt": "104. 二叉树的最大深度",
+      "url": "https://file1.kamacoder.com/i/algo/20210203153031914-20230310121809902.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210203153031914-20230310121809902.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "层序遍历",
+      "url": "https://file1.kamacoder.com/i/algo/20200810193056585.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20200810193056585.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "559.n叉树的最大深度",
+      "url": "https://file1.kamacoder.com/i/algo/2021020315313214.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2021020315313214.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "空树深度为零；非空节点深度等于左右子树深度较大值加一。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过二叉树的最大深度掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "94"
+  ],
+  "recognition": "一棵非空树的最大深度，与它左右子树的最大深度有什么直接关系？",
+  "bruteForce": "直观做法是树的深度是根到最远叶子的边数加一。层序统计层数可行， n ≤ 10⁴ 时间足够。树本身按递归定义，当前树的深度等于左右子树深度的较大值再加一，空树深度为 0。为此对左右子树递归求深度后取最大即可。；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "一棵非空树的最大深度，与它左右子树的最大深度有什么直接关系？"
+    },
+    {
+      "level": 2,
+      "text": "空树深度为零；非空节点深度等于左右子树深度较大值加一。"
+    },
+    {
+      "level": 3,
+      "text": "使用递归分别求左右子树深度。空节点返回零，非空节点返回左右结果的最大值再加一，表示把当前这一层算上。递归从叶子向上合并，左右分支只选择更深的那条，因此返回的是从根到最深叶子的节点层数，根为空也自然得到零。"
+    },
+    {
+      "level": 4,
+      "text": "depth(node)：\n    若 node 为空：\n        返回 0\n    leftDepth ← depth(node.left)\n    rightDepth ← depth(node.right)\n    返回 max(leftDepth,rightDepth)+1\n返回 depth(root)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "使用递归分别求左右子树深度。",
+    "空节点返回零，非空节点返回左右结果的最大值再加一，表示把当前这一层算上。",
+    "递归从叶子向上合并，左右分支只选择更深的那条，因此返回的是从根到最深叶子的节点层数，根为空也自然得到零。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [3,9,20,null,null,15,7] → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足二叉树的最大深度约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把二叉树的最大深度的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用树的深度是根到最远叶子的边数加一。层序统计层数可行， n ≤ 10⁴ 时间足够。树本身按递归定义，当前树的深度等于左右子树深度的较大值再加一，空树深度为 0。为此对左右子树递归求深度后取最大即可。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "maxDepth",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "104-basic-1",
+      "input": {
+        "root": [
+          3,
+          9,
+          20,
+          null,
+          null,
+          15,
+          7
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "104-boundary-1",
+      "input": {
+        "root": [
+          1,
+          null,
+          2
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用二叉树的最大深度的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "104-adversarial-1",
+      "input": {
+        "root": [
+          1,
+          null,
+          2
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查二叉树的最大深度的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [3,9,20,null,null,15,7]",
+    "output": "3",
+    "examples": [
+      {
+        "input": "root = [3,9,20,null,null,15,7]",
+        "output": "3"
+      }
+    ]
+  }
+}

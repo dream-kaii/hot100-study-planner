@@ -1,0 +1,175 @@
+{
+  "id": "34",
+  "description": "给你一个按照非递减顺序排列的整数数组 nums，和一个目标值 target。请你找出给定目标值在数组中的开始位置和结束位置。\n\n如果数组中不存在目标值 target，返回 [-1, -1]。\n\n你必须设计并实现时间复杂度为 O(log n) 的算法解决此问题。\n\n示例 1：\n\n输入：nums = [5,7,7,8,8,10], target = 8\n输出：[3,4]\n\n示例 2：\n\n输入：nums = [5,7,7,8,8,10], target = 6\n输出：[-1,-1]\n\n示例 3：\n\n输入：nums = [], target = 0\n输出：[-1,-1]\n\n提示：\n\n0 <= nums.length <= 105\n-109 <= nums[i] <= 109\nnums 是一个非递减数组\n-109 <= target <= 109",
+  "summary": "写一个寻找边界的二分过程：每轮按是否小于阈值决定舍弃哪一半。先找第一个不小于 target 的位置，若越界或值不等于目标就返回两个 −1；再找第一个严格大于 target 的位置，减一得到最后出现位置。两个二分都能处理全部元素相等的情况。",
+  "explanation": "这道题目如果基础不是很好，不建议大家看简短的代码，简短的代码隐藏了太多逻辑，结果就是稀里糊涂把题AC了，但是没有想清楚具体细节！\n\n对二分还不了解的同学先做这两题：\n\n704.二分查找\n35.搜索插入位置\n\n下面我来把所有情况都讨论一下。\n\n寻找target在数组里的左右边界，有如下三种情况：\n\n情况一：target 在数组范围的右边或者左边，例如数组{3, 4, 5}，target为2或者数组{3, 4, 5},target为6，此时应该返回{-1, -1}\n情况二：target 在数组范围中，且数组中不存在target，例如数组{3,6,7},target为5，此时应该返回{-1, -1}\n情况三：target 在数组范围中，且数组中存在target，例如数组{3,6,7},target为6，此时应该返回{1, 1}\n\n这三种情况都考虑到，说明就想的很清楚了。\n\n接下来，在去寻找左边界，和右边界了。\n\n采用二分法来去寻找左右边界，为了让代码清晰，我分别写两个二分来寻找左边界和右边界。\n\n刚刚接触二分搜索的同学不建议上来就想用一个二分来查找左右边界，很容易把自己绕进去，建议扎扎实实的写两个二分分别找左边界和右边界\n\n寻找右边界\n\n先来寻找右边界，至于二分查找，如果看过704.二分查找就会知道，二分查找中什么时候用while (left <= right)，有什么时候用while (left < right)，其实只要清楚循环不变量，很容易区分两种写法。\n\n那么这里我采用while (left <= right)的写法，区间定义为[left, right]，即左闭右闭的区间（如果这里有点看不懂了，强烈建议把704.二分查找这篇文章先看了，704题目做了之后再做这道题目就好很多了）\n\n确定好：计算出来的右边界是不包含target的右边界，左边界同理。\n\n可以写出如下代码\n\n寻找左边界\n\n处理三种情况\n\n左右边界计算完之后，看一下主体代码，这里把上面讨论的三种情况，都覆盖了\n\n这份代码在简洁性很有大的优化空间，例如把寻找左右区间函数合并一起。\n\n但拆开更清晰一些，而且把三种情况以及对应的处理逻辑完整的展现出来了。\n\n总结\n初学者建议大家一块一块的去分拆这道题目，正如本题解描述，想清楚三种情况之后，先专注于寻找右区间，然后专注于寻找左区间，左右根据左右区间做最后判断。\n\n不要上来就想如果一起寻找左右区间，搞着搞着就会顾此失彼，绕进去拔不出来了。",
+  "java": "class Solution {\n    int[] searchRange(int[] nums, int target) {\n        int leftBorder = getLeftBorder(nums, target);\n        int rightBorder = getRightBorder(nums, target);\n        // 情况一\n        if (leftBorder == -2 || rightBorder == -2) return new int[]{-1, -1};\n        // 情况三\n        if (rightBorder - leftBorder > 1) return new int[]{leftBorder + 1, rightBorder - 1};\n        // 情况二\n        return new int[]{-1, -1};\n    }\n\n    int getRightBorder(int[] nums, int target) {\n        int left = 0;\n        int right = nums.length - 1;\n        int rightBorder = -2; // 记录一下rightBorder没有被赋值的情况\n        while (left <= right) {\n            int middle = left + ((right - left) / 2);\n            if (nums[middle] > target) {\n                right = middle - 1;\n            } else { // 寻找右边界，nums[middle] == target的时候更新left\n                left = middle + 1;\n                rightBorder = left;\n            }\n        }\n        return rightBorder;\n    }\n\n    int getLeftBorder(int[] nums, int target) {\n        int left = 0;\n        int right = nums.length - 1;\n        int leftBorder = -2; // 记录一下leftBorder没有被赋值的情况\n        while (left <= right) {\n            int middle = left + ((right - left) / 2);\n            if (nums[middle] >= target) { // 寻找左边界，nums[middle] == target的时候更新right\n                right = middle - 1;\n                leftBorder = right;\n            } else {\n                left = middle + 1;\n            }\n        }\n        return leftBorder;\n    }\n}",
+  "python": "class Solution:\n    def searchRange(self, nums: List[int], target: int) -> List[int]:\n        def getRightBorder(nums:List[int], target:int) -> int:\n            left, right = 0, len(nums)-1\n            rightBoder = -2 # 记录一下rightBorder没有被赋值的情况\n            while left <= right:\n                middle = left + (right-left) // 2\n                if nums[middle] > target:\n                    right = middle - 1\n                else: # 寻找右边界，nums[middle] == target的时候更新left\n                    left = middle + 1\n                    rightBoder = left\n    \n            return rightBoder\n        \n        def getLeftBorder(nums:List[int], target:int) -> int:\n            left, right = 0, len(nums)-1 \n            leftBoder = -2 # 记录一下leftBorder没有被赋值的情况\n            while left <= right:\n                middle = left + (right-left) // 2\n                if nums[middle] >= target: #  寻找左边界，nums[middle] == target的时候更新right\n                    right = middle - 1\n                    leftBoder = right\n                else:\n                    left = middle + 1\n            return leftBoder\n        leftBoder = getLeftBorder(nums, target)\n        rightBoder = getRightBorder(nums, target)\n        # 情况一\n        if leftBoder == -2 or rightBoder == -2: return [-1, -1]\n        # 情况三\n        if rightBoder -leftBoder >1: return [leftBoder + 1, rightBoder - 1]\n        # 情况二\n        return [-1, -1]",
+  "examples": [
+    {
+      "input": "nums = [5,7,7,8,8,10], target = 8",
+      "output": "[3,4]"
+    },
+    {
+      "input": "nums = [5,7,7,8,8,10], target = 6",
+      "output": "[-1,-1]"
+    },
+    {
+      "input": "nums = [], target = 0",
+      "output": "[-1,-1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0034.%E5%9C%A8%E6%8E%92%E5%BA%8F%E6%95%B0%E7%BB%84%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%85%83%E7%B4%A0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%92%8C%E6%9C%80%E5%90%8E%E4%B8%80%E4%B8%AA%E4%BD%8D%E7%BD%AE.html",
+  "fallbackSource": "https://leetcode.cn/problems/find-first-and-last-position-of-element-in-sorted-array/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0034.%E5%9C%A8%E6%8E%92%E5%BA%8F%E6%95%B0%E7%BB%84%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%85%83%E7%B4%A0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%92%8C%E6%9C%80%E5%90%8E%E4%B8%80%E4%B8%AA%E4%BD%8D%E7%BD%AE.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0034.%E5%9C%A8%E6%8E%92%E5%BA%8F%E6%95%B0%E7%BB%84%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%85%83%E7%B4%A0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%92%8C%E6%9C%80%E5%90%8E%E4%B8%80%E4%B8%AA%E4%BD%8D%E7%BD%AE.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0034.%E5%9C%A8%E6%8E%92%E5%BA%8F%E6%95%B0%E7%BB%84%E4%B8%AD%E6%9F%A5%E6%89%BE%E5%85%83%E7%B4%A0%E7%9A%84%E7%AC%AC%E4%B8%80%E4%B8%AA%E5%92%8C%E6%9C%80%E5%90%8E%E4%B8%80%E4%B8%AA%E4%BD%8D%E7%BD%AE.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "这道题目如果基础不是很好，不建议大家看简短的代码，简短的代码隐藏了太多逻辑，结果就是稀里糊涂把题AC了，但是没有想清楚具体细节！\n\n对二分还不了解的同学先做这两题：\n\n704.二分查找\n35.搜索插入位置\n\n下面我来把所有情况都讨论一下。\n\n寻找target在数组里的左右边界，有如下三种情况：\n\n情况一：target 在数组范围的右边或者左边，例如数组{3, 4, 5}，target为2或者数组{3, 4, 5},target为6，此时应该返回{-1, -1}\n情况二：target 在数组范围中，且数组中不存在target，例如数组{3,6,7},target为5，此时应该返回{-1, -1}\n情况三：target 在数组范围中，且数组中存在target，例如数组{3,6,7},target为6，此时应该返回{1, 1}\n\n这三种情况都考虑到，说明就想的很清楚了。\n\n接下来，在去寻找左边界，和右边界了。\n\n采用二分法来去寻找左右边界，为了让代码清晰，我分别写两个二分来寻找左边界和右边界。\n\n刚刚接触二分搜索的同学不建议上来就想用一个二分来查找左右边界，很容易把自己绕进去，建议扎扎实实的写两个二分分别找左边界和右边界\n\n寻找右边界\n\n先来寻找右边界，至于二分查找，如果看过704.二分查找就会知道，二分查找中什么时候用while (left <= right)，有什么时候用while (left < right)，其实只要清楚循环不变量，很容易区分两种写法。\n\n那么这里我采用while (left <= right)的写法，区间定义为[left, right]，即左闭右闭的区间（如果这里有点看不懂了，强烈建议把704.二分查找这篇文章先看了，704题目做了之后再做这道题目就好很多了）\n\n确定好：计算出来的右边界是不包含target的右边界，左边界同理。\n\n可以写出如下代码\n\n寻找左边界\n\n处理三种情况\n\n左右边界计算完之后，看一下主体代码，这里把上面讨论的三种情况，都覆盖了\n\n这份代码在简洁性很有大的优化空间，例如把寻找左右区间函数合并一起。\n\n但拆开更清晰一些，而且把三种情况以及对应的处理逻辑完整的展现出来了。",
+  "summaryText": "分别二分找第一个 ≥target 和第一个 >target 的位置，后者减一就是右边界。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过在排序数组中查找元素的第一个和最后一个位置掌握二分查找相关的可迁移解题模式。",
+  "prerequisites": [
+    "35"
+  ],
+  "recognition": "查到一个 target 只能说明它存在，不能说明找到了第一次和最后一次。如何分别寻找两个边界？",
+  "bruteForce": "直观做法是扫描一遍记下 target 的首次与末次出现，时间复杂度为 O(n)。 n ≤ 10⁵ 且题目要求 O(log n)；即便先找到一个命中再向两侧扩展，最坏仍是线性。；当输入规模扩大时，需要避免重复扫描并利用题目中的二分查找约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "查到一个 target 只能说明它存在，不能说明找到了第一次和最后一次。如何分别寻找两个边界？"
+    },
+    {
+      "level": 2,
+      "text": "分别二分找第一个 ≥target 和第一个 >target 的位置，后者减一就是右边界。"
+    },
+    {
+      "level": 3,
+      "text": "写一个寻找边界的二分过程：每轮按是否小于阈值决定舍弃哪一半。先找第一个不小于 target 的位置，若越界或值不等于目标就返回两个 −1；再找第一个严格大于 target 的位置，减一得到最后出现位置。两个二分都能处理全部元素相等的情况。"
+    },
+    {
+      "level": 4,
+      "text": "边界(strict)：\n    left ← 0，right ← n\n    当 left < right：\n        mid ← 向下取整((left+right)/2)\n        若 nums[mid] < target 或 (strict 且 nums[mid]=target)：left ← mid+1\n        否则：right ← mid\n    返回 left\nstart ← 边界(假)\n若 start=n 或 nums[start]≠target：返回 [−1,−1]\n返回 [start,边界(真)−1]",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "写一个寻找边界的二分过程：每轮按是否小于阈值决定舍弃哪一半。",
+    "先找第一个不小于 target 的位置，若越界或值不等于目标就返回两个 −1；再找第一个严格大于 target 的位置，减一得到最后出现位置。",
+    "两个二分都能处理全部元素相等的情况。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [5,7,7,8,8,10], target = 8 → [3,4]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足在排序数组中查找元素的第一个和最后一个位置约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把在排序数组中查找元素的第一个和最后一个位置的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用扫描一遍记下 target 的首次与末次出现，时间复杂度为 O(n)。 n ≤ 10⁵ 且题目要求 O(log n)；即便先找到一个命中再向两侧扩展，最坏仍是线性。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "searchRange",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "int[]",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "34-basic-1",
+      "input": {
+        "nums": [
+          5,
+          7,
+          7,
+          8,
+          8,
+          10
+        ],
+        "target": 8
+      },
+      "expected": [
+        3,
+        4
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "34-boundary-1",
+      "input": {
+        "nums": [],
+        "target": 0
+      },
+      "expected": [
+        -1,
+        -1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "空数组。"
+    },
+    {
+      "id": "34-adversarial-1",
+      "input": {
+        "nums": [
+          2,
+          2,
+          2,
+          2
+        ],
+        "target": 2
+      },
+      "expected": [
+        0,
+        3
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "所有元素都相同，两个边界都落在数组端点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [5,7,7,8,8,10], target = 8",
+    "output": "[3,4]",
+    "examples": [
+      {
+        "input": "nums = [5,7,7,8,8,10], target = 8",
+        "output": "[3,4]"
+      }
+    ]
+  }
+}

@@ -1,0 +1,308 @@
+{
+  "id": "146",
+  "description": "请你设计并实现一个满足 LRU (最近最少使用) 缓存 约束的数据结构。\n\n实现 LRUCache 类：\n\nLRUCache(int capacity) 以 正整数 作为容量 capacity 初始化 LRU 缓存\nint get(int key) 如果关键字 key 存在于缓存中，则返回关键字的值，否则返回 -1 。\nvoid put(int key, int value) 如果关键字 key 已经存在，则变更其数据值 value ；如果不存在，则向缓存中插入该组 key-value 。如果插入操作导致关键字数量超过 capacity ，则应该 逐出 最久未使用的关键字。\n\n函数 get 和 put 必须以 O(1) 的平均时间复杂度运行。\n\n示例：\n\n输入\n[\"LRUCache\", \"put\", \"put\", \"get\", \"put\", \"get\", \"put\", \"get\", \"get\", \"get\"]\n[[2], [1, 1], [2, 2], [1], [3, 3], [2], [4, 4], [1], [3], [4]]\n输出\n[null, null, null, 1, null, -1, null, -1, 3, 4]\n\n解释\nLRUCache lRUCache = new LRUCache(2);\nlRUCache.put(1, 1); // 缓存是 {1=1}\nlRUCache.put(2, 2); // 缓存是 {1=1, 2=2}\nlRUCache.get(1); // 返回 1\nlRUCache.put(3, 3); // 该操作会使得关键字 2 作废，缓存是 {1=1, 3=3}\nlRUCache.get(2); // 返回 -1 (未找到)\nlRUCache.put(4, 4); // 该操作会使得关键字 1 作废，缓存是 {4=4, 3=3}\nlRUCache.get(1); // 返回 -1 (未找到)\nlRUCache.get(3); // 返回 3\nlRUCache.get(4); // 返回 4\n\n提示：\n\n1 <= capacity <= 3000\n0 <= key <= 10000\n0 <= value <= 105\n最多调用 2 105 次 get 和 put",
+  "summary": "使用哈希表定位节点，并用带头尾哨兵的双向链表维护使用顺序。get 命中后把节点移到头部，未命中返回 −1。put 命中则改值并移头，未命中则建节点插头；超容量时摘掉尾哨兵前的节点，同时删除哈希表中的键。",
+  "explanation": "方法一：哈希表 + 双向链表\n\n思考\n\nget / put 都要 O(1)，淘汰最久未使用的键。哈希表能 O(1) 查找，但不能单独维护使用顺序；数组或单向链表移动节点是 O(n)。调用次数达 2×10⁵。\n\n哈希表存键到节点，双向链表按「最近使用在头、最久在尾」排列。访问或更新时把节点摘下再插到头部；容量满时删掉尾部前驱。查找与调整指针都是 O(1)。\n\n我们可以用“哈希表”和“双向链表”实现一个 LRU 缓存。\n\n- 哈希表：用于存储 key 和对应的节点位置。\n- 双向链表：用于存储节点数据，按照访问时间排序。\n\n当访问一个节点时，如果节点存在，我们将其从原来的位置删除，并重新插入到链表头部。这样就能保证链表尾部存储的就是最近最久未使用的节点，当节点数量大于缓存最大空间时就淘汰链表尾部的节点。\n\n当插入一个节点时，如果节点存在，我们将其从原来的位置删除，并重新插入到链表头部。如果不存在，我们首先检查缓存是否已满，如果已满，则删除链表尾部的节点，将新的节点插入链表头部。\n\n时间复杂度 O(1)，空间复杂度 O(capacity)。\n\n总结",
+  "java": "class Node {\n    int key, val;\n    Node prev, next;\n\n    Node() {\n    }\n\n    Node(int key, int val) {\n        this.key = key;\n        this.val = val;\n    }\n}\n\nclass LRUCache {\n    private int size;\n    private int capacity;\n    private Node head = new Node();\n    private Node tail = new Node();\n    private Map<Integer, Node> cache = new HashMap<>();\n\n    public LRUCache(int capacity) {\n        this.capacity = capacity;\n        head.next = tail;\n        tail.prev = head;\n    }\n\n    public int get(int key) {\n        if (!cache.containsKey(key)) {\n            return -1;\n        }\n        Node node = cache.get(key);\n        removeNode(node);\n        addToHead(node);\n        return node.val;\n    }\n\n    public void put(int key, int value) {\n        if (cache.containsKey(key)) {\n            Node node = cache.get(key);\n            removeNode(node);\n            node.val = value;\n            addToHead(node);\n        } else {\n            Node node = new Node(key, value);\n            cache.put(key, node);\n            addToHead(node);\n            if (++size > capacity) {\n                node = tail.prev;\n                cache.remove(node.key);\n                removeNode(node);\n                --size;\n            }\n        }\n    }\n\n    private void removeNode(Node node) {\n        node.prev.next = node.next;\n        node.next.prev = node.prev;\n    }\n\n    private void addToHead(Node node) {\n        node.next = head.next;\n        node.prev = head;\n        head.next = node;\n        node.next.prev = node;\n    }\n}\n\n/**\n * Your LRUCache object will be instantiated and called as such:\n * LRUCache obj = new LRUCache(capacity);\n * int param_1 = obj.get(key);\n * obj.put(key,value);\n */",
+  "python": "class Node:\n    def __init__(self, key: int = 0, val: int = 0):\n        self.key = key\n        self.val = val\n        self.prev = None\n        self.next = None\n\n\nclass LRUCache:\n\n    def __init__(self, capacity: int):\n        self.size = 0\n        self.capacity = capacity\n        self.cache = {}\n        self.head = Node()\n        self.tail = Node()\n        self.head.next = self.tail\n        self.tail.prev = self.head\n\n    def get(self, key: int) -> int:\n        if key not in self.cache:\n            return -1\n        node = self.cache[key]\n        self.remove_node(node)\n        self.add_to_head(node)\n        return node.val\n\n    def put(self, key: int, value: int) -> None:\n        if key in self.cache:\n            node = self.cache[key]\n            self.remove_node(node)\n            node.val = value\n            self.add_to_head(node)\n        else:\n            node = Node(key, value)\n            self.cache[key] = node\n            self.add_to_head(node)\n            self.size += 1\n            if self.size > self.capacity:\n                node = self.tail.prev\n                self.cache.pop(node.key)\n                self.remove_node(node)\n                self.size -= 1\n\n    def remove_node(self, node):\n        node.prev.next = node.next\n        node.next.prev = node.prev\n\n    def add_to_head(self, node):\n        node.next = self.head.next\n        node.prev = self.head\n        self.head.next = node\n        node.next.prev = node\n\n\n# Your LRUCache object will be instantiated and called as such:\n# obj = LRUCache(capacity)\n# param_1 = obj.get(key)\n# obj.put(key,value)",
+  "examples": [
+    {
+      "input": "[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]",
+      "output": "[null,null,null,1,null,-1,null,-1,3,4]"
+    }
+  ],
+  "complexity": {
+    "time": "O(1)",
+    "space": "O(capacity)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/lru-cache/",
+  "fallbackSource": "https://leetcode.cn/problems/lru-cache/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/lru-cache/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0146.LRU%20Cache/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0146.LRU%20Cache/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：哈希表 + 双向链表\n\n思考\n\nget / put 都要 O(1)，淘汰最久未使用的键。哈希表能 O(1) 查找，但不能单独维护使用顺序；数组或单向链表移动节点是 O(n)。调用次数达 2×10⁵。\n\n哈希表存键到节点，双向链表按「最近使用在头、最久在尾」排列。访问或更新时把节点摘下再插到头部；容量满时删掉尾部前驱。查找与调整指针都是 O(1)。\n\n我们可以用“哈希表”和“双向链表”实现一个 LRU 缓存。\n\n- 哈希表：用于存储 key 和对应的节点位置。\n- 双向链表：用于存储节点数据，按照访问时间排序。\n\n当访问一个节点时，如果节点存在，我们将其从原来的位置删除，并重新插入到链表头部。这样就能保证链表尾部存储的就是最近最久未使用的节点，当节点数量大于缓存最大空间时就淘汰链表尾部的节点。\n\n当插入一个节点时，如果节点存在，我们将其从原来的位置删除，并重新插入到链表头部。如果不存在，我们首先检查缓存是否已满，如果已满，则删除链表尾部的节点，将新的节点插入链表头部。\n\n时间复杂度 O(1)，空间复杂度 O(capacity)。",
+  "summaryText": "哈希表保存 key 到节点；双向链表按最近使用到最久未用排序，访问时摘下并移到头部。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过LRU 缓存掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "148"
+  ],
+  "recognition": "既要按键快速查找，又要快速移动访问过的元素到最新位置，单独用数组或哈希表够吗？",
+  "bruteForce": "直观做法是方法一：哈希表 + 双向链表；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "既要按键快速查找，又要快速移动访问过的元素到最新位置，单独用数组或哈希表够吗？"
+    },
+    {
+      "level": 2,
+      "text": "哈希表保存 key 到节点；双向链表按最近使用到最久未用排序，访问时摘下并移到头部。"
+    },
+    {
+      "level": 3,
+      "text": "使用哈希表定位节点，并用带头尾哨兵的双向链表维护使用顺序。get 命中后把节点移到头部，未命中返回 −1。put 命中则改值并移头，未命中则建节点插头；超容量时摘掉尾哨兵前的节点，同时删除哈希表中的键。"
+    },
+    {
+      "level": 4,
+      "text": "初始化：map ← 空映射；连接头尾哨兵\n移到头部(node)：\n    连接 node 的前后邻居，摘下 node\n    将 node 插入头哨兵之后\nget(key)：\n    若 key 不在 map：返回 −1\n    移到头部(map[key])；返回节点的值\nput(key, value)：\n    若 key 在 map：更新其值；移到头部该节点\n    否则：新建节点；插入头部；写入 map\n    若 map 大小超过 capacity：\n        victim ← 尾哨兵前的节点\n        摘下 victim；从 map 删除 victim.key",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "使用哈希表定位节点，并用带头尾哨兵的双向链表维护使用顺序。",
+    "get 命中后把节点移到头部，未命中返回 −1。",
+    "put 命中则改值并移头，未命中则建节点插头；超容量时摘掉尾哨兵前的节点，同时删除哈希表中的键。"
+  ],
+  "walkthrough": [
+    "公开示例：[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]] → [null,null,null,1,null,-1,null,-1,3,4]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足LRU 缓存约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把LRU 缓存的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 双向链表，额外空间为O(capacity)。"
+  ],
+  "func": {
+    "className": "LRUCache",
+    "methodName": "get",
+    "params": [
+      {
+        "name": "key",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "compare": "operation-sequence",
+    "constructorParams": [
+      {
+        "name": "capacity",
+        "type": "int"
+      }
+    ],
+    "methods": [
+      {
+        "methodName": "get",
+        "params": [
+          {
+            "name": "key",
+            "type": "int"
+          }
+        ],
+        "returns": "int"
+      },
+      {
+        "methodName": "put",
+        "params": [
+          {
+            "name": "key",
+            "type": "int"
+          },
+          {
+            "name": "value",
+            "type": "int"
+          }
+        ],
+        "returns": "void"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "146-basic-1",
+      "input": {
+        "operations": [
+          "LRUCache",
+          "put",
+          "put",
+          "get",
+          "put",
+          "get",
+          "put",
+          "get",
+          "get",
+          "get"
+        ],
+        "arguments": [
+          [
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            2
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ],
+          [
+            4
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        1,
+        null,
+        -1,
+        null,
+        -1,
+        3,
+        4
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "146-boundary-1",
+      "input": {
+        "operations": [
+          "LRUCache",
+          "put",
+          "put",
+          "get",
+          "get"
+        ],
+        "arguments": [
+          [
+            1
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1
+          ],
+          [
+            2
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        -1,
+        2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "容量为1，插入第二个键必须淘汰第一个键。"
+    },
+    {
+      "id": "146-adversarial-1",
+      "input": {
+        "operations": [
+          "LRUCache",
+          "put",
+          "put",
+          "put",
+          "put",
+          "get",
+          "get",
+          "get"
+        ],
+        "arguments": [
+          [
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            2
+          ],
+          [
+            1,
+            10
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            2
+          ],
+          [
+            1
+          ],
+          [
+            3
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        -1,
+        10,
+        3
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "更新已有键会刷新最近使用时间，容量不能增加。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]",
+    "output": "[null,null,null,1,null,-1,null,-1,3,4]",
+    "examples": [
+      {
+        "input": "[\"LRUCache\",\"put\",\"put\",\"get\",\"put\",\"get\",\"put\",\"get\",\"get\",\"get\"]\n[[2],[1,1],[2,2],[1],[3,3],[2],[4,4],[1],[3],[4]]",
+        "output": "[null,null,null,1,null,-1,null,-1,3,4]"
+      }
+    ]
+  }
+}

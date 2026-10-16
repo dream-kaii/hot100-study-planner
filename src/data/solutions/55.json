@@ -1,0 +1,170 @@
+{
+  "id": "55",
+  "description": "给你一个非负整数数组 nums ，你最初位于数组的 第一个下标 。数组中的每个元素代表你在该位置可以跳跃的最大长度。\n\n判断你是否能够到达最后一个下标，如果可以，返回 true ；否则，返回 false 。\n\n示例 1：\n\n输入：nums = [2,3,1,1,4]\n输出：true\n解释：可以先跳 1 步，从下标 0 到达下标 1, 然后再从下标 1 跳 3 步到达最后一个下标。\n\n示例 2：\n\n输入：nums = [3,2,1,0,4]\n输出：false\n解释：无论怎样，总会到达下标为 3 的位置。但该下标的最大跳跃长度是 0 ， 所以永远不可能到达最后一个下标。\n\n提示：\n\n1 <= nums.length <= 104\n0 <= nums[i] <= 105",
+  "summary": "从左到右维护所有已可达位置能够覆盖的最远下标。处理 i 前，如果 i 已经超过最远下标，说明出现无法跨越的缺口，立即失败。否则更新 farthest 为原值与 i+nums[i] 的最大值；覆盖末尾即可成功。无需记录每条跳跃路径或尝试每个落点。",
+  "explanation": "刚看到本题一开始可能想：当前位置元素如果是 3，我究竟是跳一步呢，还是两步呢，还是三步呢，究竟跳几步才是最优呢？\n\n其实跳几步无所谓，关键在于可跳的覆盖范围！\n\n不一定非要明确一次究竟跳几步，每次取最大的跳跃步数，这个就是可以跳跃的覆盖范围。\n\n这个范围内，别管是怎么跳的，反正一定可以跳过来。\n\n那么这个问题就转化为跳跃覆盖范围究竟可不可以覆盖到终点！\n\n每次移动取最大跳跃步数（得到最大的覆盖范围），每移动一个单位，就更新最大覆盖范围。\n\n贪心算法局部最优解：每次取最大跳跃步数（取最大覆盖范围），整体最优解：最后得到整体最大覆盖范围，看是否能到终点。\n\n局部最优推出全局最优，找不出反例，试试贪心！\n\n如图：\n\ni 每次移动只能在 cover 的范围内移动，每移动一个元素，cover 得到该元素数值（新的覆盖范围）的补充，让 i 继续移动下去。\n\n而 cover 每次只取 max(该元素数值补充后的范围, cover 本身范围)。\n\n如果 cover 大于等于了终点下标，直接 return true 就可以了。\n\n总结\n这道题目关键点在于：不用拘泥于每次究竟跳几步，而是看覆盖范围，覆盖范围内一定是可以跳过来的，不用管是怎么跳的。\n\n大家可以看出思路想出来了，代码还是非常简单的。\n\n一些同学可能感觉，我在讲贪心系列的时候，题目和题目之间貌似没有什么联系？\n\n是真的就是没什么联系，因为贪心无套路！没有个整体的贪心框架解决一系列问题，只能是接触各种类型的题目锻炼自己的贪心思维！",
+  "java": "class Solution {\n    public boolean canJump(int[] nums) {\n        if (nums.length == 1) {\n            return true;\n        }\n        //覆盖范围, 初始覆盖范围应该是0，因为下面的迭代是从下标0开始的\n        int coverRange = 0;\n        //在覆盖范围内更新最大的覆盖范围\n        for (int i = 0; i <= coverRange; i++) {\n            coverRange = Math.max(coverRange, i + nums[i]);\n            if (coverRange >= nums.length - 1) {\n                return true;\n            }\n        }\n        return false;\n    }\n}",
+  "python": "class Solution:\n    def canJump(self, nums: List[int]) -> bool:\n        cover = 0\n        if len(nums) == 1: return True\n        i = 0\n        # python不支持动态修改for循环中变量,使用while循环代替\n        while i <= cover:\n            cover = max(i + nums[i], cover)\n            if cover >= len(nums) - 1: return True\n            i += 1\n        return False",
+  "examples": [
+    {
+      "input": "nums = [2,3,1,1,4]",
+      "output": "true"
+    },
+    {
+      "input": "nums = [3,2,1,0,4]",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0055.%E8%B7%B3%E8%B7%83%E6%B8%B8%E6%88%8F.html",
+  "fallbackSource": "https://leetcode.cn/problems/jump-game/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0055.%E8%B7%B3%E8%B7%83%E6%B8%B8%E6%88%8F.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0055.%E8%B7%B3%E8%B7%83%E6%B8%B8%E6%88%8F.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0055.%E8%B7%B3%E8%B7%83%E6%B8%B8%E6%88%8F.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "刚看到本题一开始可能想：当前位置元素如果是 3，我究竟是跳一步呢，还是两步呢，还是三步呢，究竟跳几步才是最优呢？\n\n其实跳几步无所谓，关键在于可跳的覆盖范围！\n\n不一定非要明确一次究竟跳几步，每次取最大的跳跃步数，这个就是可以跳跃的覆盖范围。\n\n这个范围内，别管是怎么跳的，反正一定可以跳过来。\n\n那么这个问题就转化为跳跃覆盖范围究竟可不可以覆盖到终点！\n\n每次移动取最大跳跃步数（得到最大的覆盖范围），每移动一个单位，就更新最大覆盖范围。\n\n贪心算法局部最优解：每次取最大跳跃步数（取最大覆盖范围），整体最优解：最后得到整体最大覆盖范围，看是否能到终点。\n\n局部最优推出全局最优，找不出反例，试试贪心！\n\n如图：\n\ni 每次移动只能在 cover 的范围内移动，每移动一个元素，cover 得到该元素数值（新的覆盖范围）的补充，让 i 继续移动下去。\n\n而 cover 每次只取 max(该元素数值补充后的范围, cover 本身范围)。\n\n如果 cover 大于等于了终点下标，直接 return true 就可以了。",
+  "summaryText": "维护 farthest。若当前下标超过它就失败，否则用 i+nums[i] 扩展覆盖范围。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20230203105634.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20230203105634.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过跳跃游戏掌握贪心算法相关的可迁移解题模式。",
+  "prerequisites": [
+    "121"
+  ],
+  "recognition": "扫描到某个位置时，只需要知道此前能到达的最远位置；超过这个范围的位置还能出发吗？",
+  "bruteForce": "直观做法是题目只关心最后一个下标是否可达。从每个位置展开全部跳跃，或用动态规划判断每个下标能否到达，最坏时间均为 O(n²)。 n ≤ 10⁴ 偏紧，且不必记下中间每一步如何跳。；当输入规模扩大时，需要避免重复扫描并利用题目中的贪心算法约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "扫描到某个位置时，只需要知道此前能到达的最远位置；超过这个范围的位置还能出发吗？"
+    },
+    {
+      "level": 2,
+      "text": "维护 farthest。若当前下标超过它就失败，否则用 i+nums[i] 扩展覆盖范围。"
+    },
+    {
+      "level": 3,
+      "text": "从左到右维护所有已可达位置能够覆盖的最远下标。处理 i 前，如果 i 已经超过最远下标，说明出现无法跨越的缺口，立即失败。否则更新 farthest 为原值与 i+nums[i] 的最大值；覆盖末尾即可成功。无需记录每条跳跃路径或尝试每个落点。"
+    },
+    {
+      "level": 4,
+      "text": "farthest ← 0\n对 i 从 0 到 n−1：\n    若 i > farthest：返回 假\n    farthest ← max(farthest,i+nums[i])\n    若 farthest ≥ n−1：\n        返回 真\n返回 真",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从左到右维护所有已可达位置能够覆盖的最远下标。",
+    "处理 i 前，如果 i 已经超过最远下标，说明出现无法跨越的缺口，立即失败。",
+    "否则更新 farthest 为原值与 i+nums[i] 的最大值；覆盖末尾即可成功。",
+    "无需记录每条跳跃路径或尝试每个落点。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [2,3,1,1,4] → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足跳跃游戏约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把跳跃游戏的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用题目只关心最后一个下标是否可达。从每个位置展开全部跳跃，或用动态规划判断每个下标能否到达，最坏时间均为 O(n²)。 n ≤ 10⁴ 偏紧，且不必记下中间每一步如何跳。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "canJump",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "55-basic-1",
+      "input": {
+        "nums": [
+          2,
+          3,
+          1,
+          1,
+          4
+        ]
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "55-boundary-1",
+      "input": {
+        "nums": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ]
+      },
+      "expected": false,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用跳跃游戏的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "55-adversarial-1",
+      "input": {
+        "nums": [
+          3,
+          2,
+          1,
+          0,
+          4
+        ]
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查跳跃游戏的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [2,3,1,1,4]",
+    "output": "true",
+    "examples": [
+      {
+        "input": "nums = [2,3,1,1,4]",
+        "output": "true"
+      }
+    ]
+  }
+}

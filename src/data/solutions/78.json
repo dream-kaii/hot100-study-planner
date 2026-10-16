@@ -1,0 +1,205 @@
+{
+  "id": "78",
+  "description": "给你一个整数数组 nums ，数组中的元素 互不相同 。返回该数组所有可能的子集（幂集）。\n\n解集 不能 包含重复的子集。你可以按 任意顺序 返回解集。\n\n示例 1：\n\n输入：nums = [1,2,3]\n输出：[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]\n\n示例 2：\n\n输入：nums = [0]\n输出：[[],[0]]\n\n提示：\n\n1 <= nums.length <= 10\n-10 <= nums[i] <= 10\nnums 中的所有元素 互不相同",
+  "summary": "从下标零开始递归，路径保存当前已选元素。对每个下标先递归不选当前数的情况，再把当前数加入路径递归选择它的情况，返回后弹出恢复路径。下标到数组末尾时复制路径加入答案。每个元素的选否组合只出现一次，空集也自然被记录。",
+  "explanation": "求子集问题和77.组合和131.分割回文串又不一样了。\n\n如果把 子集问题、组合问题、分割问题都抽象为一棵树的话，那么组合问题和分割问题都是收集树的叶子节点，而子集问题是找树的所有节点！\n\n其实子集也是一种组合问题，因为它的集合是无序的，子集{1,2} 和 子集{2,1}是一样的。\n\n那么既然是无序，取过的元素不会重复取，写回溯算法的时候，for就要从startIndex开始，而不是从0开始！\n\n有同学问了，什么时候for可以从0开始呢？\n\n求排列问题的时候，就要从0开始，因为集合是有序的，{1, 2} 和{2, 1}是两个集合，排列问题我们后续的文章就会讲到的。\n\n以示例中nums = [1,2,3]为例把求子集抽象为树型结构，如下：\n\n从图中红线部分，可以看出遍历这个树的时候，把所有节点都记录下来，就是要求的子集集合。\n\n回溯三部曲\n\n递归函数参数\n\n全局变量数组path为子集收集元素，二维数组result存放子集组合。（也可以放到递归函数参数里）\n\n递归函数参数在上面讲到了，需要startIndex。\n\n代码如下：\n\n递归终止条件\n\n从图中可以看出：\n\n剩余集合为空的时候，就是叶子节点。\n\n那么什么时候剩余集合为空呢？\n\n就是startIndex已经大于数组的长度了，就终止了，因为没有元素可取了，代码如下:\n\n其实可以不需要加终止条件，因为startIndex = nums.size()，本层for循环本来也结束了。\n\n单层搜索逻辑\n\n求取子集问题，不需要任何剪枝！因为子集就是要遍历整棵树。\n\n那么单层递归逻辑代码如下：\n\n根据关于回溯算法，你该了解这些！给出的回溯算法模板：\n\n可以写出如下回溯算法\n\n时间复杂度: O(n 2ⁿ)\n空间复杂度: O(n)\n\n在注释中，可以发现可以不写终止条件，因为本来我们就要遍历整棵树。\n\n有的同学可能担心不写终止条件会不会无限递归？\n\n并不会，因为每次递归的下一层就是从i+1开始的。\n\n总结\n相信大家经过了\n组合问题：\n77.组合\n回溯算法：组合问题再剪剪枝\n216.组合总和III\n17.电话号码的字母组合\n39.组合总和\n40.组合总和II\n分割问题：\n131.分割回文串\n93.复原IP地址\n\n洗礼之后，发现子集问题还真的有点简单了，其实这就是一道标准的模板题。\n\n但是要清楚子集问题和组合问题、分割问题的的区别，子集是收集树形结构中树的所有节点的结果。\n\n而组合问题、分割问题是收集树形结构中叶子节点的结果。",
+  "java": "class Solution {\n    List<List<Integer>> result = new ArrayList<>();// 存放符合条件结果的集合\n    LinkedList<Integer> path = new LinkedList<>();// 用来存放符合条件结果\n    public List<List<Integer>> subsets(int[] nums) {\n        subsetsHelper(nums, 0);\n        return result;\n    }\n\n    private void subsetsHelper(int[] nums, int startIndex){\n        result.add(new ArrayList<>(path));//「遍历这个树的时候，把所有节点都记录下来，就是要求的子集集合」。\n        if (startIndex >= nums.length){ //终止条件可不加\n            return;\n        }\n        for (int i = startIndex; i < nums.length; i++){\n            path.add(nums[i]);\n            subsetsHelper(nums, i + 1);\n            path.removeLast();\n        }\n    }\n}",
+  "python": "class Solution:\n    def subsets(self, nums):\n        result = []\n        path = []\n        self.backtracking(nums, 0, path, result)\n        return result\n\n    def backtracking(self, nums, startIndex, path, result):\n        result.append(path[:])  # 收集子集，要放在终止添加的上面，否则会漏掉自己\n        # if startIndex >= len(nums):  # 终止条件可以不加\n        #     return\n        for i in range(startIndex, len(nums)):\n            path.append(nums[i])\n            self.backtracking(nums, i + 1, path, result)\n            path.pop()",
+  "examples": [
+    {
+      "input": "nums = [1,2,3]",
+      "output": "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]"
+    },
+    {
+      "input": "nums = [0]",
+      "output": "[[],[0]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n×2ⁿ)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0078.%E5%AD%90%E9%9B%86.html",
+  "fallbackSource": "https://leetcode.cn/problems/subsets/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0078.%E5%AD%90%E9%9B%86.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0078.%E5%AD%90%E9%9B%86.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0078.%E5%AD%90%E9%9B%86.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "求子集问题和77.组合和131.分割回文串又不一样了。\n\n如果把 子集问题、组合问题、分割问题都抽象为一棵树的话，那么组合问题和分割问题都是收集树的叶子节点，而子集问题是找树的所有节点！\n\n其实子集也是一种组合问题，因为它的集合是无序的，子集{1,2} 和 子集{2,1}是一样的。\n\n那么既然是无序，取过的元素不会重复取，写回溯算法的时候，for就要从startIndex开始，而不是从0开始！\n\n有同学问了，什么时候for可以从0开始呢？\n\n求排列问题的时候，就要从0开始，因为集合是有序的，{1, 2} 和{2, 1}是两个集合，排列问题我们后续的文章就会讲到的。\n\n以示例中nums = [1,2,3]为例把求子集抽象为树型结构，如下：\n\n从图中红线部分，可以看出遍历这个树的时候，把所有节点都记录下来，就是要求的子集集合。\n\n回溯三部曲\n\n递归函数参数\n\n全局变量数组path为子集收集元素，二维数组result存放子集组合。（也可以放到递归函数参数里）\n\n递归函数参数在上面讲到了，需要startIndex。\n\n代码如下：\n\n递归终止条件\n\n从图中可以看出：\n\n剩余集合为空的时候，就是叶子节点。\n\n那么什么时候剩余集合为空呢？\n\n就是startIndex已经大于数组的长度了，就终止了，因为没有元素可取了，代码如下:\n\n其实可以不需要加终止条件，因为startIndex = nums.size()，本层for循环本来也结束了。\n\n单层搜索逻辑\n\n求取子集问题，不需要任何剪枝！因为子集就是要遍历整棵树。\n\n那么单层递归逻辑代码如下：\n\n根据关于回溯算法，你该了解这些！给出的回溯算法模板：\n\n可以写出如下回溯算法\n\n时间复杂度: O(n 2ⁿ)\n空间复杂度: O(n)\n\n在注释中，可以发现可以不写终止条件，因为本来我们就要遍历整棵树。\n\n有的同学可能担心不写终止条件会不会无限递归？\n\n并不会，因为每次递归的下一层就是从i+1开始的。",
+  "summaryText": "递归状态是当前下标和已选路径；每个元素分别走“不选”和“选择”两个分支。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "78.子集",
+      "url": "https://file1.kamacoder.com/i/algo/78.%E5%AD%90%E9%9B%86.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/78.%E5%AD%90%E9%9B%86.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "78.子集",
+      "url": "https://file1.kamacoder.com/i/algo/78.%E5%AD%90%E9%9B%86.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/78.%E5%AD%90%E9%9B%86.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过子集掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "15"
+  ],
+  "recognition": "对每个数只有选或不选两种决定。沿着所有决定走到末尾，会得到什么？",
+  "bruteForce": "直观做法是方法一：DFS(回溯)；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "对每个数只有选或不选两种决定。沿着所有决定走到末尾，会得到什么？"
+    },
+    {
+      "level": 2,
+      "text": "递归状态是当前下标和已选路径；每个元素分别走“不选”和“选择”两个分支。"
+    },
+    {
+      "level": 3,
+      "text": "从下标零开始递归，路径保存当前已选元素。对每个下标先递归不选当前数的情况，再把当前数加入路径递归选择它的情况，返回后弹出恢复路径。下标到数组末尾时复制路径加入答案。每个元素的选否组合只出现一次，空集也自然被记录。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 空列表；path ← 空列表\nsearch(index)：\n    若 index=n：复制 path 加入 answer；返回\n    search(index+1)\n    path 追加 nums[index]\n    search(index+1)\n    弹出 path 最后一项\nsearch(0)\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从下标零开始递归，路径保存当前已选元素。",
+    "对每个下标先递归不选当前数的情况，再把当前数加入路径递归选择它的情况，返回后弹出恢复路径。",
+    "下标到数组末尾时复制路径加入答案。",
+    "每个元素的选否组合只出现一次，空集也自然被记录。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,2,3] → [[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足子集约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把子集的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：DFS(回溯)，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "subsets",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "List<List<Integer>>",
+    "compare": "unordered-nested"
+  },
+  "cases": [
+    {
+      "id": "78-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3
+        ]
+      },
+      "expected": [
+        [],
+        [
+          1
+        ],
+        [
+          2
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          3
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          1,
+          2,
+          3
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "78-boundary-1",
+      "input": {
+        "nums": [
+          0
+        ]
+      },
+      "expected": [
+        [],
+        [
+          0
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用子集的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "78-adversarial-1",
+      "input": {
+        "nums": [
+          0
+        ]
+      },
+      "expected": [
+        [],
+        [
+          0
+        ]
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查子集的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,2,3]",
+    "output": "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]",
+    "examples": [
+      {
+        "input": "nums = [1,2,3]",
+        "output": "[[],[1],[2],[1,2],[3],[1,3],[2,3],[1,2,3]]"
+      }
+    ]
+  }
+}

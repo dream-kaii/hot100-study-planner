@@ -1,0 +1,264 @@
+{
+  "id": "739",
+  "description": "给定一个整数数组 temperatures ，表示每天的温度，返回一个数组 answer ，其中 answer[i] 是指对于第 i 天，下一个更高温度出现在几天后。如果气温在这之后都不会升高，请在该位置用 0 来代替。\n\n示例 1:\n\n输入: temperatures = [73,74,75,71,69,72,76,73]\n输出: [1,1,4,2,1,1,0,0]\n\n示例 2:\n\n输入: temperatures = [30,40,50,60]\n输出: [1,1,1,0]\n\n示例 3:\n\n输入: temperatures = [30,60,90]\n输出: [1,1,0]\n\n提示：\n\n1 <= temperatures.length <= 105\n30 <= temperatures[i] <= 100",
+  "summary": "从左到右扫描每日温度，栈中保存尚未找到更高温度的日期下标。当今天温度高于栈顶日期，弹出该日期，并将等待天数设为今天与它的下标差；反复处理后把今天入栈。相同温度不能解决等待，最终留在栈中的日期答案保持零。",
+  "explanation": "首先想到的当然是暴力解法，两层for循环，把至少需要等待的天数就搜出来了。时间复杂度是O(n²)\n\n那么接下来在来看看使用单调栈的解法。\n\n那有同学就问了，我怎么能想到用单调栈呢？ 什么时候用单调栈呢？\n\n通常是一维数组，要寻找任一个元素的右边或者左边第一个比自己大或者小的元素的位置，此时我们就要想到可以用单调栈了。时间复杂度为O(n)。\n\n例如本题其实就是找找到一个元素右边第一个比自己大的元素，此时就应该想到用单调栈了。\n\n那么单调栈的原理是什么呢？为什么时间复杂度是O(n)就可以找到每一个元素的右边第一个比它大的元素位置呢？\n\n单调栈的本质是空间换时间，因为在遍历的过程中需要用一个栈来记录右边第一个比当前元素高的元素，优点是整个数组只需要遍历一次。\n\n更直白来说，就是用一个栈来记录我们遍历过的元素，因为我们遍历数组的时候，我们不知道之前都遍历了哪些元素，以至于遍历一个元素找不到是不是之前遍历过一个更小的，所以我们需要用一个容器（这里用单调栈）来记录我们遍历过的元素。\n\n在使用单调栈的时候首先要明确如下几点：\n\n1. 单调栈里存放的元素是什么？\n\n单调栈里只需要存放元素的下标i就可以了，如果需要使用对应的元素，直接T[i]就可以获取。\n\n2. 单调栈里元素是递增呢？ 还是递减呢？\n\n注意以下讲解中，顺序的描述为 从栈头到栈底的顺序，因为单纯的说从左到右或者从前到后，不说栈头朝哪个方向的话，大家一定比较懵。\n\n这里我们要使用递增循序（再强调一下是指从栈头到栈底的顺序），因为只有递增的时候，栈里要加入一个元素i的时候，才知道栈顶元素在数组中右面第一个比栈顶元素大的元素是i。\n\n即：如果求一个元素右边第一个更大元素，单调栈就是递增的，如果求一个元素右边第一个更小元素，单调栈就是递减的。\n\n文字描述理解起来有点费劲，接下来我画了一系列的图，来讲解单调栈的工作过程，大家再去思考，本题为什么是递增栈。\n\n使用单调栈主要有三个判断条件。\n\n当前遍历的元素T[i]小于栈顶元素T[st.top()]的情况\n当前遍历的元素T[i]等于栈顶元素T[st.top()]的情况\n当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况\n\n把这三种情况分析清楚了，也就理解透彻了。\n\n接下来我们用temperatures = [73, 74, 75, 71, 71, 72, 76, 73]为例来逐步分析，输出应该是 [1, 1, 4, 2, 1, 1, 0, 0]。\n\n-------\n\n首先先将第一个遍历元素加入单调栈\n\n---------\n\n加入T[1] = 74，因为T[1] T[0]（当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况）。\n\n我们要保持一个递增单调栈（从栈头到栈底），所以将T[0]弹出，T[1]加入，此时result数组可以记录了，result[0] = 1，即T[0]右面第一个比T[0]大的元素是T[1]。\n\n-----------\n\n加入T[2]，同理，T[1]弹出\n\n加入T[3]，T[3] T[4] （当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况），将T[4]弹出，同时计算距离，更新result\n\n----------\n\nT[4]弹出之后， T[5] T[3] （当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况），将T[3]继续弹出，同时计算距离，更新result\n\n直到发现T[5]小于T[st.top()]，终止弹出，将T[5]加入单调栈\n\n加入T[6]，同理，需要将栈里的T[5]，T[2]弹出\n\n同理，继续弹出\n\n------\n\n此时栈里只剩下了T[6]\n\n------------\n\n加入T[7]， T[7] < T[6] 直接入栈，这就是最后的情况，result数组也更新完了。\n\n此时有同学可能就疑惑了，那result[6] , result[7]怎么没更新啊，元素也一直在栈里。\n\n其实定义result数组的时候，就应该直接初始化为0，如果result没有更新，说明这个元素右面没有更大的了，也就是为0。\n\n以上在图解的时候，已经把，这三种情况都做了详细的分析。\n\n情况一：当前遍历的元素T[i]小于栈顶元素T[st.top()]的情况\n情况二：当前遍历的元素T[i]等于栈顶元素T[st.top()]的情况\n情况三：当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况\n\n通过以上过程，大家可以自己再模拟一遍，就会发现：只有单调栈递增（从栈口到栈底顺序），就是求右边第一个比自己大的，单调栈递减的话，就是求右边第一个比自己小的。\n\n总结",
+  "java": "class Solution {\n    public int[] dailyTemperatures(int[] temperatures) {\n        int lens=temperatures.length;\n        int []res=new int[lens];\n        Deque<Integer> stack=new LinkedList<>();\n        for(int i=0;i<lens;i++){\n\n           while(!stack.isEmpty()&&temperatures[i]>temperatures[stack.peek()]){\n                    res[stack.peek()]=i-stack.peek();\n                    stack.pop();\n                }\n                stack.push(i);\n        }\n\n        return  res;\n    }\n}",
+  "python": "class Solution:\n    def dailyTemperatures(self, temperatures: List[int]) -> List[int]:\n        answer = [0]*len(temperatures)\n        stack = [0]\n        for i in range(1,len(temperatures)):\n            # 情况一和情况二\n            if temperatures[i]<=temperatures[stack[-1]]:\n                stack.append(i)\n            # 情况三\n            else:\n                while len(stack) != 0 and temperatures[i]>temperatures[stack[-1]]:\n                    answer[stack[-1]]=i-stack[-1]\n                    stack.pop()\n                stack.append(i)\n\n        return answer",
+  "examples": [
+    {
+      "input": "temperatures = [73,74,75,71,69,72,76,73]",
+      "output": "[1,1,4,2,1,1,0,0]"
+    },
+    {
+      "input": "temperatures = [30,40,50,60]",
+      "output": "[1,1,1,0]"
+    },
+    {
+      "input": "temperatures = [30,60,90]",
+      "output": "[1,1,0]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0739.%E6%AF%8F%E6%97%A5%E6%B8%A9%E5%BA%A6.html",
+  "fallbackSource": "https://leetcode.cn/problems/daily-temperatures/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0739.%E6%AF%8F%E6%97%A5%E6%B8%A9%E5%BA%A6.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0739.%E6%AF%8F%E6%97%A5%E6%B8%A9%E5%BA%A6.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0739.%E6%AF%8F%E6%97%A5%E6%B8%A9%E5%BA%A6.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "首先想到的当然是暴力解法，两层for循环，把至少需要等待的天数就搜出来了。时间复杂度是O(n²)\n\n那么接下来在来看看使用单调栈的解法。\n\n那有同学就问了，我怎么能想到用单调栈呢？ 什么时候用单调栈呢？\n\n通常是一维数组，要寻找任一个元素的右边或者左边第一个比自己大或者小的元素的位置，此时我们就要想到可以用单调栈了。时间复杂度为O(n)。\n\n例如本题其实就是找找到一个元素右边第一个比自己大的元素，此时就应该想到用单调栈了。\n\n那么单调栈的原理是什么呢？为什么时间复杂度是O(n)就可以找到每一个元素的右边第一个比它大的元素位置呢？\n\n单调栈的本质是空间换时间，因为在遍历的过程中需要用一个栈来记录右边第一个比当前元素高的元素，优点是整个数组只需要遍历一次。\n\n更直白来说，就是用一个栈来记录我们遍历过的元素，因为我们遍历数组的时候，我们不知道之前都遍历了哪些元素，以至于遍历一个元素找不到是不是之前遍历过一个更小的，所以我们需要用一个容器（这里用单调栈）来记录我们遍历过的元素。\n\n在使用单调栈的时候首先要明确如下几点：\n\n1. 单调栈里存放的元素是什么？\n\n单调栈里只需要存放元素的下标i就可以了，如果需要使用对应的元素，直接T[i]就可以获取。\n\n2. 单调栈里元素是递增呢？ 还是递减呢？\n\n注意以下讲解中，顺序的描述为 从栈头到栈底的顺序，因为单纯的说从左到右或者从前到后，不说栈头朝哪个方向的话，大家一定比较懵。\n\n这里我们要使用递增循序（再强调一下是指从栈头到栈底的顺序），因为只有递增的时候，栈里要加入一个元素i的时候，才知道栈顶元素在数组中右面第一个比栈顶元素大的元素是i。\n\n即：如果求一个元素右边第一个更大元素，单调栈就是递增的，如果求一个元素右边第一个更小元素，单调栈就是递减的。\n\n文字描述理解起来有点费劲，接下来我画了一系列的图，来讲解单调栈的工作过程，大家再去思考，本题为什么是递增栈。\n\n使用单调栈主要有三个判断条件。\n\n当前遍历的元素T[i]小于栈顶元素T[st.top()]的情况\n当前遍历的元素T[i]等于栈顶元素T[st.top()]的情况\n当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况\n\n把这三种情况分析清楚了，也就理解透彻了。\n\n接下来我们用temperatures = [73, 74, 75, 71, 71, 72, 76, 73]为例来逐步分析，输出应该是 [1, 1, 4, 2, 1, 1, 0, 0]。\n\n-------\n\n首先先将第一个遍历元素加入单调栈\n\n---------\n\n加入T[1] = 74，因为T[1] T[0]（当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况）。\n\n我们要保持一个递增单调栈（从栈头到栈底），所以将T[0]弹出，T[1]加入，此时result数组可以记录了，result[0] = 1，即T[0]右面第一个比T[0]大的元素是T[1]。\n\n-----------\n\n加入T[2]，同理，T[1]弹出\n\n加入T[3]，T[3] T[4] （当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况），将T[4]弹出，同时计算距离，更新result\n\n----------\n\nT[4]弹出之后， T[5] T[3] （当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况），将T[3]继续弹出，同时计算距离，更新result\n\n直到发现T[5]小于T[st.top()]，终止弹出，将T[5]加入单调栈\n\n加入T[6]，同理，需要将栈里的T[5]，T[2]弹出\n\n同理，继续弹出\n\n------\n\n此时栈里只剩下了T[6]\n\n------------\n\n加入T[7]， T[7] < T[6] 直接入栈，这就是最后的情况，result数组也更新完了。\n\n此时有同学可能就疑惑了，那result[6] , result[7]怎么没更新啊，元素也一直在栈里。\n\n其实定义result数组的时候，就应该直接初始化为0，如果result没有更新，说明这个元素右面没有更大的了，也就是为0。\n\n以上在图解的时候，已经把，这三种情况都做了详细的分析。\n\n情况一：当前遍历的元素T[i]小于栈顶元素T[st.top()]的情况\n情况二：当前遍历的元素T[i]等于栈顶元素T[st.top()]的情况\n情况三：当前遍历的元素T[i]大于栈顶元素T[st.top()]的情况\n\n通过以上过程，大家可以自己再模拟一遍，就会发现：只有单调栈递增（从栈口到栈底顺序），就是求右边第一个比自己大的，单调栈递减的话，就是求右边第一个比自己小的。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "739.每日温度1",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124434172.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124434172.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度2",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124504299.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124504299.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度3",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124527361.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124527361.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度4",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124610761.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124610761.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度5",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124633444.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124633444.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度6",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124700567.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124700567.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度7",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124726613.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124726613.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度8",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124807715.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124807715.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度9",
+      "url": "https://file1.kamacoder.com/i/algo/2021021912483374.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2021021912483374.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度10",
+      "url": "https://file1.kamacoder.com/i/algo/2021021912490098.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2021021912490098.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度11",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124930156.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124930156.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "739.每日温度12",
+      "url": "https://file1.kamacoder.com/i/algo/20210219124957216.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210219124957216.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "维护温度单调不增的下标栈；当前温度严格大于栈顶时，弹出并记录下标差。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过每日温度掌握栈相关的可迁移解题模式。",
+  "prerequisites": [
+    "20"
+  ],
+  "recognition": "还没等到更高温度的那些天，可以暂存起来；今天更热时，哪些天能一次得到答案？",
+  "bruteForce": "直观做法是对每个位置求右侧下一个更高温度的距离。 n≤ 10⁵，对每个下标向右扫描是 O(n²)。；当输入规模扩大时，需要避免重复扫描并利用题目中的栈约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "还没等到更高温度的那些天，可以暂存起来；今天更热时，哪些天能一次得到答案？"
+    },
+    {
+      "level": 2,
+      "text": "维护温度单调不增的下标栈；当前温度严格大于栈顶时，弹出并记录下标差。"
+    },
+    {
+      "level": 3,
+      "text": "从左到右扫描每日温度，栈中保存尚未找到更高温度的日期下标。当今天温度高于栈顶日期，弹出该日期，并将等待天数设为今天与它的下标差；反复处理后把今天入栈。相同温度不能解决等待，最终留在栈中的日期答案保持零。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 全零数组；stack ← 空栈\n对今天 i 从 0 到 n−1：\n    当 stack 非空 且 temperature[i] > temperature[栈顶]：\n        day ← 弹出栈顶\n        answer[day] ← i−day\n    将 i 压入 stack\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从左到右扫描每日温度，栈中保存尚未找到更高温度的日期下标。",
+    "当今天温度高于栈顶日期，弹出该日期，并将等待天数设为今天与它的下标差；反复处理后把今天入栈。",
+    "相同温度不能解决等待，最终留在栈中的日期答案保持零。"
+  ],
+  "walkthrough": [
+    "公开示例：temperatures = [73,74,75,71,69,72,76,73] → [1,1,4,2,1,1,0,0]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足每日温度约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把每日温度的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用对每个位置求右侧下一个更高温度的距离。 n≤ 10⁵，对每个下标向右扫描是 O(n²)。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "dailyTemperatures",
+    "params": [
+      {
+        "name": "temperatures",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int[]",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "739-basic-1",
+      "input": {
+        "temperatures": [
+          73,
+          74,
+          75,
+          71,
+          69,
+          72,
+          76,
+          73
+        ]
+      },
+      "expected": [
+        1,
+        1,
+        4,
+        2,
+        1,
+        1,
+        0,
+        0
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "739-boundary-1",
+      "input": {
+        "temperatures": [
+          30
+        ]
+      },
+      "expected": [
+        0
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单日没有未来日期。"
+    },
+    {
+      "id": "739-adversarial-1",
+      "input": {
+        "temperatures": [
+          70,
+          70,
+          69,
+          71
+        ]
+      },
+      "expected": [
+        3,
+        2,
+        1,
+        0
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "相同温度不算升温，要等待严格更高的温度。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ntemperatures = [73,74,75,71,69,72,76,73]",
+    "output": "[1,1,4,2,1,1,0,0]",
+    "examples": [
+      {
+        "input": "temperatures = [73,74,75,71,69,72,76,73]",
+        "output": "[1,1,4,2,1,1,0,0]"
+      }
+    ]
+  }
+}

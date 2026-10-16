@@ -1,0 +1,163 @@
+{
+  "id": "169",
+  "description": "给定一个大小为 n 的数组 nums ，返回其中的多数元素。多数元素是指在数组中出现次数 大于 ⌊n/2⌋ 的元素。\n\n你可以假设数组是非空的，并且给定的数组总是存在多数元素。\n\n示例 1：\n\n输入：nums = [3,2,3]\n输出：3\n\n示例 2：\n\n输入：nums = [2,2,1,1,1,2,2]\n输出：2\n\n提示：\n\nn == nums.length\n1 <= n <= 5 104\n-109 <= nums[i] <= 109\n输入保证数组中一定有一个多数元素。\n\n进阶：尝试设计时间复杂度为 O(n)、空间复杂度为 O(1) 的算法解决此问题。",
+  "summary": "使用投票法，把不同元素视作互相抵消。票数为零时将当前元素设为候选，相同元素加票，不同元素减票。因为多数元素超过其余元素总数，抵消后必然留下它；题目保证多数元素存在，因此最后候选即为答案。",
+  "explanation": "方法一：摩尔投票法\n\n思考\n\n多数元素出现次数超过 ⌊n/2⌋，题目保证存在。哈希计数或排序都能做，进阶要 O(n) 时间、 O(1) 空间。 n≤ 5×10⁴。\n\n摩尔投票把不同元素两两抵消：计数器归零就换候选人。多数元素无法被完全抵消，一趟结束后的候选人即答案，无需第二趟确认。\n\n摩尔投票法的基本步骤如下：\n\n初始化元素 m，并初始化计数器 cnt=0。接下来，对于输入列表中每一个元素 x：\n\n1. 如果 cnt=0，那么 m=x 并且 cnt=1；\n1. 否则，如果 m=x，那么 cnt = cnt + 1，否则 cnt = cnt - 1。\n\n一般而言，摩尔投票法需要对输入的列表进行两次遍历。在第一次遍历中，我们生成候选值 m，如果存在多数，那么该候选值就是多数值。在第二次遍历中，只需要简单地计算候选值的频率，以确认是否是多数值。由于本题已经明确说明存在多数值，所以第一次遍历结束后，直接返回 m 即可，无需二次遍历确认是否是多数值。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int majorityElement(int[] nums) {\n        int cnt = 0, m = 0;\n        for (int x : nums) {\n            if (cnt == 0) {\n                m = x;\n                cnt = 1;\n            } else {\n                cnt += m == x ? 1 : -1;\n            }\n        }\n        return m;\n    }\n}",
+  "python": "class Solution:\n    def majorityElement(self, nums: List[int]) -> int:\n        cnt = m = 0\n        for x in nums:\n            if cnt == 0:\n                m, cnt = x, 1\n            else:\n                cnt += 1 if m == x else -1\n        return m",
+  "examples": [
+    {
+      "input": "nums = [3,2,3]",
+      "output": "3"
+    },
+    {
+      "input": "nums = [2,2,1,1,1,2,2]",
+      "output": "2"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/majority-element/",
+  "fallbackSource": "https://leetcode.cn/problems/majority-element/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/majority-element/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0169.Majority%20Element/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0169.Majority%20Element/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：摩尔投票法\n\n思考\n\n多数元素出现次数超过 ⌊n/2⌋，题目保证存在。哈希计数或排序都能做，进阶要 O(n) 时间、 O(1) 空间。 n≤ 5×10⁴。\n\n摩尔投票把不同元素两两抵消：计数器归零就换候选人。多数元素无法被完全抵消，一趟结束后的候选人即答案，无需第二趟确认。\n\n摩尔投票法的基本步骤如下：\n\n初始化元素 m，并初始化计数器 cnt=0。接下来，对于输入列表中每一个元素 x：\n\n1. 如果 cnt=0，那么 m=x 并且 cnt=1；\n1. 否则，如果 m=x，那么 cnt = cnt + 1，否则 cnt = cnt - 1。\n\n一般而言，摩尔投票法需要对输入的列表进行两次遍历。在第一次遍历中，我们生成候选值 m，如果存在多数，那么该候选值就是多数值。在第二次遍历中，只需要简单地计算候选值的频率，以确认是否是多数值。由于本题已经明确说明存在多数值，所以第一次遍历结束后，直接返回 m 即可，无需二次遍历确认是否是多数值。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。",
+  "summaryText": "维护候选值和票数；相同加一，不同减一。票数归零时用当前数重新选候选。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过多数元素掌握技巧相关的可迁移解题模式。",
+  "prerequisites": [
+    "136"
+  ],
+  "recognition": "多数元素出现次数超过一半。如果每次删去两个不同的数，多数元素还会改变吗？",
+  "bruteForce": "直观做法是方法一：摩尔投票法；当输入规模扩大时，需要避免重复扫描并利用题目中的技巧约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "多数元素出现次数超过一半。如果每次删去两个不同的数，多数元素还会改变吗？"
+    },
+    {
+      "level": 2,
+      "text": "维护候选值和票数；相同加一，不同减一。票数归零时用当前数重新选候选。"
+    },
+    {
+      "level": 3,
+      "text": "使用投票法，把不同元素视作互相抵消。票数为零时将当前元素设为候选，相同元素加票，不同元素减票。因为多数元素超过其余元素总数，抵消后必然留下它；题目保证多数元素存在，因此最后候选即为答案。"
+    },
+    {
+      "level": 4,
+      "text": "candidate ← 未设置，votes ← 0\n对每个数 x：\n    若 votes = 0：\n        candidate ← x\n    若 x = candidate：votes ← votes+1\n    否则：votes ← votes−1\n返回 candidate",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "使用投票法，把不同元素视作互相抵消。",
+    "票数为零时将当前元素设为候选，相同元素加票，不同元素减票。",
+    "因为多数元素超过其余元素总数，抵消后必然留下它；题目保证多数元素存在，因此最后候选即为答案。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [3,2,3] → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足多数元素约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把多数元素的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：摩尔投票法，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "majorityElement",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "169-basic-1",
+      "input": {
+        "nums": [
+          3,
+          2,
+          3
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "169-boundary-1",
+      "input": {
+        "nums": [
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用多数元素的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "169-adversarial-1",
+      "input": {
+        "nums": [
+          2,
+          2,
+          1,
+          1,
+          1,
+          2,
+          2
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查多数元素的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [3,2,3]",
+    "output": "3",
+    "examples": [
+      {
+        "input": "nums = [3,2,3]",
+        "output": "3"
+      }
+    ]
+  }
+}

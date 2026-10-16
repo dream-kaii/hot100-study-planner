@@ -1,0 +1,163 @@
+{
+  "id": "153",
+  "description": "已知一个长度为 n 的数组，预先按照升序排列，经由 1 到 n 次 旋转 后，得到输入数组。例如，原数组 nums = [0,1,2,4,5,6,7] 在变化后可能得到：\n\n若旋转 4 次，则可以得到 [4,5,6,7,0,1,2]\n若旋转 7 次，则可以得到 [0,1,2,4,5,6,7]\n\n注意，数组 [a[0], a[1], a[2], ..., a[n-1]] 旋转一次 的结果为数组 [a[n-1], a[0], a[1], a[2], ..., a[n-2]] 。\n\n给你一个元素值 互不相同 的数组 nums ，它原来是一个升序排列的数组，并按上述情形进行了多次旋转。请你找出并返回数组中的 最小元素 。\n\n你必须设计一个时间复杂度为 O(log n) 的算法解决此问题。\n\n示例 1：\n\n输入：nums = [3,4,5,1,2]\n输出：1\n解释：原数组为 [1,2,3,4,5] ，旋转 3 次得到输入数组。\n\n示例 2：\n\n输入：nums = [4,5,6,7,0,1,2]\n输出：0\n解释：原数组为 [0,1,2,4,5,6,7] ，旋转 4 次得到输入数组。\n\n示例 3：\n\n输入：nums = [11,13,15,17]\n输出：11\n解释：原数组为 [11,13,15,17] ，旋转 4 次得到输入数组。\n\n提示：\n\nn == nums.length\n1 <= n <= 5000\n-5000 <= nums[i] <= 5000\nnums 中的所有整数 互不相同\nnums 原来是一个升序排序的数组，并进行了 1 至 n 次旋转",
+  "summary": "令搜索范围包含最小值。比较中点与右端点，中点更大说明跨越旋转断点的部分在右边，将 left 移到 mid+1；否则右半段有序且中点不大于右端，保留中点并令 right 为 mid。两边相遇时唯一剩下的位置就是最小值，未旋转数组也适用。",
+  "explanation": "方法一：二分查找\n\n思考\n\n旋转后的有序数组没有重复，线性扫最小值是 O(n)， n≤ 5000 可以，但有序性允许对数。最小值把数组分成两段递增。与末元素比较：中点更大说明最小值在右半，否则在左半（含中点）。收缩到一点即答案。\n\n我们可以使用二分查找来解决这个问题。\n\n首先，我们定义两个指针 l 和 r，分别指向数组的起始位置和结束位置。然后，我们进入一个循环，直到 l 小于 r。\n\n在每次循环中，我们计算中间位置 mid，并比较 nums[mid] 和 nums[n-1] 的值。如果 nums[mid] 大于 nums[n-1]，说明最小值在 mid 的右侧，因此我们将 l 更新为 mid + 1。否则，最小值在 mid 的左侧或 mid 本身，因此我们将 r 更新为 mid。当循环结束时，指针 l 将指向最小值的位置，我们返回 nums[l] 即可。\n\n时间复杂度 O(log n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int findMin(int[] nums) {\n        int l = 0, r = nums.length - 1;\n        while (l < r) {\n            int mid = (l + r) >> 1;\n            if (nums[mid] > nums[nums.length - 1]) {\n                l = mid + 1;\n            } else {\n                r = mid;\n            }\n        }\n        return nums[l];\n    }\n}",
+  "python": "class Solution:\n    def findMin(self, nums: List[int]) -> int:\n        l, r = 0, len(nums) - 1\n        while l < r:\n            mid = (l + r) >> 1\n            if nums[mid] > nums[-1]:\n                l = mid + 1\n            else:\n                r = mid\n        return nums[l]",
+  "examples": [
+    {
+      "input": "nums = [3,4,5,1,2]",
+      "output": "1"
+    },
+    {
+      "input": "nums = [4,5,6,7,0,1,2]",
+      "output": "0"
+    },
+    {
+      "input": "nums = [11,13,15,17]",
+      "output": "11"
+    }
+  ],
+  "complexity": {
+    "time": "O(log n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array/",
+  "fallbackSource": "https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0153.Find%20Minimum%20in%20Rotated%20Sorted%20Array/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0153.Find%20Minimum%20in%20Rotated%20Sorted%20Array/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：二分查找\n\n思考\n\n旋转后的有序数组没有重复，线性扫最小值是 O(n)， n≤ 5000 可以，但有序性允许对数。最小值把数组分成两段递增。与末元素比较：中点更大说明最小值在右半，否则在左半（含中点）。收缩到一点即答案。\n\n我们可以使用二分查找来解决这个问题。\n\n首先，我们定义两个指针 l 和 r，分别指向数组的起始位置和结束位置。然后，我们进入一个循环，直到 l 小于 r。\n\n在每次循环中，我们计算中间位置 mid，并比较 nums[mid] 和 nums[n-1] 的值。如果 nums[mid] 大于 nums[n-1]，说明最小值在 mid 的右侧，因此我们将 l 更新为 mid + 1。否则，最小值在 mid 的左侧或 mid 本身，因此我们将 r 更新为 mid。当循环结束时，指针 l 将指向最小值的位置，我们返回 nums[l] 即可。\n\n时间复杂度 O(log n)，其中 n 是数组 nums 的长度。空间复杂度 O(1)。",
+  "summaryText": "若 nums[mid] 大于 nums[right]，最小值一定在中点右侧；否则最小值在左侧或就是中点。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过寻找旋转排序数组中的最小值掌握二分查找相关的可迁移解题模式。",
+  "prerequisites": [
+    "33"
+  ],
+  "recognition": "旋转数组的最小值是较小那一段的开头。中点与右端点的大小关系能排除哪一半？",
+  "bruteForce": "直观做法是旋转后的有序数组没有重复，线性扫最小值是 O(n)， n≤ 5000 可以，但有序性允许对数。最小值把数组分成两段递增。与末元素比较：中点更大说明最小值在右半，否则在左半（含中点）。收缩到一点即答案。；当输入规模扩大时，需要避免重复扫描并利用题目中的二分查找约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "旋转数组的最小值是较小那一段的开头。中点与右端点的大小关系能排除哪一半？"
+    },
+    {
+      "level": 2,
+      "text": "若 nums[mid] 大于 nums[right]，最小值一定在中点右侧；否则最小值在左侧或就是中点。"
+    },
+    {
+      "level": 3,
+      "text": "令搜索范围包含最小值。比较中点与右端点，中点更大说明跨越旋转断点的部分在右边，将 left 移到 mid+1；否则右半段有序且中点不大于右端，保留中点并令 right 为 mid。两边相遇时唯一剩下的位置就是最小值，未旋转数组也适用。"
+    },
+    {
+      "level": 4,
+      "text": "left ← 0，right ← n−1\n当 left < right：\n    mid ← left+向下取整((right−left)/2)\n    若 nums[mid] > nums[right]：\n        left ← mid+1\n    否则：right ← mid\n返回 nums[left]",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "令搜索范围包含最小值。",
+    "比较中点与右端点，中点更大说明跨越旋转断点的部分在右边，将 left 移到 mid+1；否则右半段有序且中点不大于右端，保留中点并令 right 为 mid。",
+    "两边相遇时唯一剩下的位置就是最小值，未旋转数组也适用。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [3,4,5,1,2] → 1。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足寻找旋转排序数组中的最小值约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把寻找旋转排序数组中的最小值的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用旋转后的有序数组没有重复，线性扫最小值是 O(n)， n≤ 5000 可以，但有序性允许对数。最小值把数组分成两段递增。与末元素比较：中点更大说明最小值在右半，否则在左半（含中点）。收缩到一点即答案。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "findMin",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "153-basic-1",
+      "input": {
+        "nums": [
+          3,
+          4,
+          5,
+          1,
+          2
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "153-boundary-1",
+      "input": {
+        "nums": [
+          11,
+          13,
+          15,
+          17
+        ]
+      },
+      "expected": 11,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用寻找旋转排序数组中的最小值的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "153-adversarial-1",
+      "input": {
+        "nums": [
+          11,
+          13,
+          15,
+          17
+        ]
+      },
+      "expected": 11,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查寻找旋转排序数组中的最小值的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [3,4,5,1,2]",
+    "output": "1",
+    "examples": [
+      {
+        "input": "nums = [3,4,5,1,2]",
+        "output": "1"
+      }
+    ]
+  }
+}

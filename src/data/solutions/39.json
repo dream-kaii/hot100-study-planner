@@ -1,0 +1,218 @@
+{
+  "id": "39",
+  "description": "给你一个 无重复元素 的整数数组 candidates 和一个目标整数 target ，找出 candidates 中可以使数字和为目标数 target 的 所有 不同组合 ，并以列表形式返回。你可以按 任意顺序 返回这些组合。\n\ncandidates 中的 同一个 数字可以 无限制重复被选取 。如果至少一个数字的被选数量不同，则两种组合是不同的。\n\n对于给定的输入，保证和为 target 的不同组合数少于 150 个。\n\n示例 1：\n\n输入：candidates = [2,3,6,7], target = 7\n输出：[[2,2,3],[7]]\n解释：\n2 和 3 可以形成一组候选，2 + 2 + 3 = 7 。注意 2 可以使用多次。\n7 也是一个候选， 7 = 7 。\n仅有这两种组合。\n\n示例 2：\n\n输入: candidates = [2,3,5], target = 8\n输出: [[2,2,2,2],[2,3,3],[3,5]]\n\n示例 3：\n\n输入: candidates = [2], target = 1\n输出: []\n\n提示：\n\n1 <= candidates.length <= 30\n2 <= candidates[i] <= 40\ncandidates 的所有元素 互不相同\n1 <= target <= 40",
+  "summary": "将候选数排序，递归状态包含剩余目标值、起始下标和路径。从 start 起尝试候选数，若超过剩余值就停止；选中后以同一下标继续递归，允许重复使用。剩余值为零时复制路径到答案。非递减选择顺序消除了组合排列造成的重复。",
+  "explanation": "题目中的无限制重复被选取，吓得我赶紧想想 出现0 可咋办，然后看到下面提示：1 target的话就返回。\n\n其实如果已经知道下一层的sum会大于target，就没有必要进入下一层递归了。\n\n那么可以在for循环的搜索范围上做做文章了。\n\n对总集合排序之后，如果下一层的sum（就是本层的 sum + candidates[i]）已经大于target，就可以结束本轮for循环的遍历。\n\n如图：\n\nfor循环剪枝代码如下：\n\n整体代码如下：（注意注释的部分）\n\n时间复杂度: O(n 2ⁿ)，注意这只是复杂度的上界，因为剪枝的存在，真实的时间复杂度远小于此\n空间复杂度: O(target)\n\n总结\n本题和我们之前讲过的77.组合、216.组合总和III有两点不同：\n\n组合没有数量要求\n元素可无限重复选取\n\n针对这两个问题，我都做了详细的分析。\n\n并且给出了对于组合问题，什么时候用startIndex，什么时候不用，并用17.电话号码的字母组合做了对比。\n\n最后还给出了本题的剪枝优化，这个优化如果是初学者的话并不容易想到。\n\n在求和问题中，排序之后加剪枝是常见的套路！\n\n可以看出我写的文章都会大量引用之前的文章，就是要不断作对比，分析其差异，然后给出代码解决的方法，这样才能彻底理解题目的本质与难点。",
+  "java": "// 剪枝优化\nclass Solution {\n    public List<List<Integer>> combinationSum(int[] candidates, int target) {\n        List<List<Integer>> res = new ArrayList<>();\n        Arrays.sort(candidates); // 先进行排序\n        backtracking(res, new ArrayList<>(), candidates, target, 0, 0);\n        return res;\n    }\n\n    public void backtracking(List<List<Integer>> res, List<Integer> path, int[] candidates, int target, int sum, int idx) {\n        // 找到了数字和为 target 的组合\n        if (sum == target) {\n            res.add(new ArrayList<>(path));\n            return;\n        }\n\n        for (int i = idx; i < candidates.length; i++) {\n            // 如果 sum + candidates[i] > target 就终止遍历\n            if (sum + candidates[i] > target) break;\n            path.add(candidates[i]);\n            backtracking(res, path, candidates, target, sum + candidates[i], i);\n            path.remove(path.size() - 1); // 回溯，移除路径 path 最后一个元素\n        }\n    }\n}",
+  "python": "class Solution:\n\n    def backtracking(self, candidates, target, total, startIndex, path, result):\n        if total > target:\n            return\n        if total == target:\n            result.append(path[:])\n            return\n\n        for i in range(startIndex, len(candidates)):\n            total += candidates[i]\n            path.append(candidates[i])\n            self.backtracking(candidates, target, total, i, path, result)  # 不用i+1了，表示可以重复读取当前的数\n            total -= candidates[i]\n            path.pop()\n\n    def combinationSum(self, candidates, target):\n        result = []\n        self.backtracking(candidates, target, 0, 0, [], result)\n        return result",
+  "examples": [
+    {
+      "input": "candidates = [2,3,6,7], target = 7",
+      "output": "[[2,2,3],[7]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n * 2ⁿ)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0039.%E7%BB%84%E5%90%88%E6%80%BB%E5%92%8C.html",
+  "fallbackSource": "https://leetcode.cn/problems/combination-sum/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0039.%E7%BB%84%E5%90%88%E6%80%BB%E5%92%8C.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0039.%E7%BB%84%E5%90%88%E6%80%BB%E5%92%8C.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0039.%E7%BB%84%E5%90%88%E6%80%BB%E5%92%8C.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "题目中的无限制重复被选取，吓得我赶紧想想 出现0 可咋办，然后看到下面提示：1 target的话就返回。\n\n其实如果已经知道下一层的sum会大于target，就没有必要进入下一层递归了。\n\n那么可以在for循环的搜索范围上做做文章了。\n\n对总集合排序之后，如果下一层的sum（就是本层的 sum + candidates[i]）已经大于target，就可以结束本轮for循环的遍历。\n\n如图：\n\nfor循环剪枝代码如下：\n\n整体代码如下：（注意注释的部分）\n\n时间复杂度: O(n 2ⁿ)，注意这只是复杂度的上界，因为剪枝的存在，真实的时间复杂度远小于此\n空间复杂度: O(target)",
+  "summaryText": "排序后用 start 限制只能选当前下标及之后的数；递归仍传当前下标以允许重复使用。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "39.组合总和",
+      "url": "https://file1.kamacoder.com/i/algo/20201223170730367.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201223170730367.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "39.组合总和",
+      "url": "https://file1.kamacoder.com/i/algo/20201223170730367-20230310135337214.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201223170730367-20230310135337214.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "39.组合总和",
+      "url": "https://file1.kamacoder.com/i/algo/20201223170730367-20230310135342472.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201223170730367-20230310135342472.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "39.组合总和1",
+      "url": "https://file1.kamacoder.com/i/algo/20201223170809182.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201223170809182.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过组合总和掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "78"
+  ],
+  "recognition": "同一个数能反复选，但相同组合的不同排列只应出现一次。怎样限制选择顺序？",
+  "bruteForce": "直观做法是方法一：排序 + 剪枝 + 回溯；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "同一个数能反复选，但相同组合的不同排列只应出现一次。怎样限制选择顺序？"
+    },
+    {
+      "level": 2,
+      "text": "排序后用 start 限制只能选当前下标及之后的数；递归仍传当前下标以允许重复使用。"
+    },
+    {
+      "level": 3,
+      "text": "将候选数排序，递归状态包含剩余目标值、起始下标和路径。从 start 起尝试候选数，若超过剩余值就停止；选中后以同一下标继续递归，允许重复使用。剩余值为零时复制路径到答案。非递减选择顺序消除了组合排列造成的重复。"
+    },
+    {
+      "level": 4,
+      "text": "排序 candidates；answer ← 空列表\nsearch(start,remain,path)：\n    若 remain=0：复制 path 加入 answer；返回\n    对 i 从 start 到 候选数末尾：\n        若 candidates[i] > remain：结束循环\n        path 追加 candidates[i]\n        search(i,remain−candidates[i],path)\n        弹出 path 最后一项\nsearch(0,target,空路径)；返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "将候选数排序，递归状态包含剩余目标值、起始下标和路径。",
+    "从 start 起尝试候选数，若超过剩余值就停止；选中后以同一下标继续递归，允许重复使用。",
+    "剩余值为零时复制路径到答案。",
+    "非递减选择顺序消除了组合排列造成的重复。"
+  ],
+  "walkthrough": [
+    "公开示例：candidates = [2,3,6,7], target = 7 → [[2,2,3],[7]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足组合总和约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把组合总和的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：排序 + 剪枝 + 回溯，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "combinationSum",
+    "params": [
+      {
+        "name": "candidates",
+        "type": "int[]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "List<List<Integer>>",
+    "compare": "unordered-nested"
+  },
+  "cases": [
+    {
+      "id": "39-basic-1",
+      "input": {
+        "candidates": [
+          2,
+          3,
+          6,
+          7
+        ],
+        "target": 7
+      },
+      "expected": [
+        [
+          2,
+          2,
+          3
+        ],
+        [
+          7
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "39-boundary-1",
+      "input": {
+        "candidates": [
+          2,
+          3,
+          6,
+          7
+        ],
+        "target": 7
+      },
+      "expected": [
+        [
+          2,
+          2,
+          3
+        ],
+        [
+          7
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用组合总和的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "39-adversarial-1",
+      "input": {
+        "candidates": [
+          2,
+          3,
+          6,
+          7
+        ],
+        "target": 7
+      },
+      "expected": [
+        [
+          2,
+          2,
+          3
+        ],
+        [
+          7
+        ]
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查组合总和的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ncandidates = [2,3,6,7], target = 7",
+    "output": "[[2,2,3],[7]]",
+    "examples": [
+      {
+        "input": "candidates = [2,3,6,7], target = 7",
+        "output": "[[2,2,3],[7]]"
+      }
+    ]
+  }
+}

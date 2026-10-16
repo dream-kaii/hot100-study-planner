@@ -1,0 +1,9 @@
+import React, { useMemo } from "react";
+import { isReviewDue } from "../services/review.js";
+import { derivePracticeStatus } from "../services/status.js";
+
+export default function Mistakes({ questions, progress, rawProgress = {}, dailyNewLimit = 1, onOpen }) {
+  const dueItems = useMemo(() => questions.filter((question) => isReviewDue(rawProgress[question.id]) || ["错题", "待复习"].includes(progress[question.id]?.status)), [questions, rawProgress, progress]);
+  const newItems = useMemo(() => questions.filter((question) => derivePracticeStatus(rawProgress[question.id]) === "new").slice(0, Math.max(1, Number(dailyNewLimit) || 1)), [questions, rawProgress, dailyNewLimit]);
+  return <section className="pageSection"><div className="sectionHeader"><div><span className="eyebrow">REVIEW LOOP</span><h1>错题与复习</h1><p>复习反馈会推进 1、3、7、14 天间隔；打开题目时可以继续草稿或空白重做。</p></div></div><div className="reviewColumns"><section className="contentCard"><h2>今日复习</h2>{dueItems.length ? <div className="reviewList">{dueItems.map((question) => <div className="reviewRow" key={question.id}><div><strong>#{question.id} {question.title}</strong><small>{progress[question.id]?.status || "待复习"} · {rawProgress[question.id]?.reviewAt ? `复习于 ${rawProgress[question.id].reviewAt.slice(0, 10)}` : "需要复盘"}</small></div><div className="reviewActions"><button onClick={() => onOpen(question.id)}>继续草稿</button><button onClick={() => onOpen(question.id, { resetDraft: true })}>空白重做</button></div></div>)}</div> : <p>目前没有错题或到期复习题。</p>}</section><section className="contentCard"><h2>今日新题</h2>{newItems.length ? newItems.map((question) => <button className="planRow" key={question.id} onClick={() => onOpen(question.id)}><span>#{question.id}</span><strong>{question.title}</strong><small>学习顺序 {question.studyOrder || question.order}</small></button>) : <p>今日新题已完成。</p>}</section></div></section>;
+}

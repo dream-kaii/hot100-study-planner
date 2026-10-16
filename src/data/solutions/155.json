@@ -1,0 +1,270 @@
+{
+  "id": "155",
+  "description": "设计一个支持 push ，pop ，top 操作，并能在常数时间内检索到最小元素的栈。\n\n实现 MinStack 类:\n\nMinStack() 初始化堆栈对象。\nvoid push(int value) 将元素 value 推入堆栈。\nvoid pop() 删除堆栈顶部的元素。\nint top() 获取堆栈顶部的元素。\nint getMin() 获取堆栈中的最小元素。\n\n示例 1:\n\n输入：\n[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]\n\n输出：\n[null,null,null,null,-3,null,0,-2]\n\n解释：\nMinStack minStack = new MinStack();\nminStack.push(-2);\nminStack.push(0);\nminStack.push(-3);\nminStack.getMin(); -- 返回 -3.\nminStack.pop();\nminStack.top(); -- 返回 0.\nminStack.getMin(); -- 返回 -2.\n\n提示：\n\n-231 <= val <= 231 - 1\npop、top 和 getMin 操作总是在 非空栈 上调用\npush, pop, top, and getMin最多被调用 3 104 次",
+  "summary": "维护数值栈和等长的最小值栈。push 时数值正常入栈，最小值栈压入新值与此前最小值中较小者；pop 时两个栈同步弹出。top 读取数值栈顶，getMin 读取最小值栈顶。重复最小值也逐层记录，因此弹出其中一个不会丢失另一个。",
+  "explanation": "方法一：双栈\n\n思考\n\n栈的 getMin 要与 push/pop 一样 O(1)。每次扫描栈底是线性的，调用可达 3×10⁴。最小值只在入栈更小元素或弹出当前最小时变化，因此再维护一个同步的最小栈：每次压入 min(x, 当前最小 )，弹出时两栈一起弹。\n\n我们用两个栈来实现，其中 stk1 用来存储数据，stk2 用来存储当前栈中的最小值。初始时，stk2 中存储一个极大值。\n\n- 当我们向栈中压入一个元素 x 时，我们将 x 压入 stk1，并将 min(x, stk2[-1]) 压入 stk2。\n- 当我们从栈中弹出一个元素时，我们将 stk1 和 stk2 的栈顶元素都弹出。\n- 当我们要获取当前栈中的栈顶元素时，我们只需要返回 stk1 的栈顶元素即可。\n- 当我们要获取当前栈中的最小值时，我们只需要返回 stk2 的栈顶元素即可。\n\n每个操作的时间复杂度为 O(1)。整体的空间复杂度为 O(n)，其中 n 为栈中元素的个数。\n\n总结",
+  "java": "class MinStack {\n    private Deque<Integer> stk1 = new ArrayDeque<>();\n    private Deque<Integer> stk2 = new ArrayDeque<>();\n\n    public MinStack() {\n        stk2.push(Integer.MAX_VALUE);\n    }\n\n    public void push(int val) {\n        stk1.push(val);\n        stk2.push(Math.min(val, stk2.peek()));\n    }\n\n    public void pop() {\n        stk1.pop();\n        stk2.pop();\n    }\n\n    public int top() {\n        return stk1.peek();\n    }\n\n    public int getMin() {\n        return stk2.peek();\n    }\n}\n\n/**\n * Your MinStack object will be instantiated and called as such:\n * MinStack obj = new MinStack();\n * obj.push(val);\n * obj.pop();\n * int param_3 = obj.top();\n * int param_4 = obj.getMin();\n */",
+  "python": "class MinStack:\n    def __init__(self):\n        self.stk1 = []\n        self.stk2 = [inf]\n\n    def push(self, val: int) -> None:\n        self.stk1.append(val)\n        self.stk2.append(min(val, self.stk2[-1]))\n\n    def pop(self) -> None:\n        self.stk1.pop()\n        self.stk2.pop()\n\n    def top(self) -> int:\n        return self.stk1[-1]\n\n    def getMin(self) -> int:\n        return self.stk2[-1]\n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(val)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()",
+  "examples": [
+    {
+      "input": "[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]",
+      "output": "[null,null,null,null,-3,null,0,-2]"
+    }
+  ],
+  "complexity": {
+    "time": "O(1)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/min-stack/",
+  "fallbackSource": "https://leetcode.cn/problems/min-stack/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/min-stack/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0155.Min%20Stack/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0155.Min%20Stack/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：双栈\n\n思考\n\n栈的 getMin 要与 push/pop 一样 O(1)。每次扫描栈底是线性的，调用可达 3×10⁴。最小值只在入栈更小元素或弹出当前最小时变化，因此再维护一个同步的最小栈：每次压入 min(x, 当前最小 )，弹出时两栈一起弹。\n\n我们用两个栈来实现，其中 stk1 用来存储数据，stk2 用来存储当前栈中的最小值。初始时，stk2 中存储一个极大值。\n\n- 当我们向栈中压入一个元素 x 时，我们将 x 压入 stk1，并将 min(x, stk2[-1]) 压入 stk2。\n- 当我们从栈中弹出一个元素时，我们将 stk1 和 stk2 的栈顶元素都弹出。\n- 当我们要获取当前栈中的栈顶元素时，我们只需要返回 stk1 的栈顶元素即可。\n- 当我们要获取当前栈中的最小值时，我们只需要返回 stk2 的栈顶元素即可。\n\n每个操作的时间复杂度为 O(1)。整体的空间复杂度为 O(n)，其中 n 为栈中元素的个数。",
+  "summaryText": "每次入栈同时保存“截至这一层的最小值”；弹出时连同该层最小值一起弹出。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过最小栈掌握栈相关的可迁移解题模式。",
+  "prerequisites": [
+    "20"
+  ],
+  "recognition": "普通栈能快速取栈顶，但弹出当前最小值后，如何知道此前的最小值？",
+  "bruteForce": "直观做法是栈的 getMin 要与 push/pop 一样 O(1)。每次扫描栈底是线性的，调用可达 3×10⁴。最小值只在入栈更小元素或弹出当前最小时变化，因此再维护一个同步的最小栈：每次压入 min(x, 当前最小 )，弹出时两栈一起弹。；当输入规模扩大时，需要避免重复扫描并利用题目中的栈约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "普通栈能快速取栈顶，但弹出当前最小值后，如何知道此前的最小值？"
+    },
+    {
+      "level": 2,
+      "text": "每次入栈同时保存“截至这一层的最小值”；弹出时连同该层最小值一起弹出。"
+    },
+    {
+      "level": 3,
+      "text": "维护数值栈和等长的最小值栈。push 时数值正常入栈，最小值栈压入新值与此前最小值中较小者；pop 时两个栈同步弹出。top 读取数值栈顶，getMin 读取最小值栈顶。重复最小值也逐层记录，因此弹出其中一个不会丢失另一个。"
+    },
+    {
+      "level": 4,
+      "text": "初始化 values、mins 为空栈\npush(x)：\n    将 x 压入 values\n    若 mins 为空：将 x 压入 mins\n    否则：将 min(x,mins顶部) 压入 mins\npop()：同时弹出 values 和 mins 顶部\ntop()：返回 values 顶部\ngetMin()：返回 mins 顶部",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "维护数值栈和等长的最小值栈。",
+    "push 时数值正常入栈，最小值栈压入新值与此前最小值中较小者；pop 时两个栈同步弹出。",
+    "top 读取数值栈顶，getMin 读取最小值栈顶。",
+    "重复最小值也逐层记录，因此弹出其中一个不会丢失另一个。"
+  ],
+  "walkthrough": [
+    "公开示例：[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]] → [null,null,null,null,-3,null,0,-2]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足最小栈约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把最小栈的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用栈的 getMin 要与 push/pop 一样 O(1)。每次扫描栈底是线性的，调用可达 3×10⁴。最小值只在入栈更小元素或弹出当前最小时变化，因此再维护一个同步的最小栈：每次压入 min(x, 当前最小 )，弹出时两栈一起弹。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "MinStack",
+    "methodName": "push",
+    "params": [
+      {
+        "name": "val",
+        "type": "int"
+      }
+    ],
+    "returns": "void",
+    "compare": "operation-sequence",
+    "constructorParams": [],
+    "methods": [
+      {
+        "methodName": "push",
+        "params": [
+          {
+            "name": "val",
+            "type": "int"
+          }
+        ],
+        "returns": "void"
+      },
+      {
+        "methodName": "pop",
+        "params": [],
+        "returns": "void"
+      },
+      {
+        "methodName": "top",
+        "params": [],
+        "returns": "int"
+      },
+      {
+        "methodName": "getMin",
+        "params": [],
+        "returns": "int"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "155-basic-1",
+      "input": {
+        "operations": [
+          "MinStack",
+          "push",
+          "push",
+          "push",
+          "getMin",
+          "pop",
+          "top",
+          "getMin"
+        ],
+        "arguments": [
+          [],
+          [
+            -2
+          ],
+          [
+            0
+          ],
+          [
+            -3
+          ],
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        null,
+        -3,
+        null,
+        0,
+        -2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "155-boundary-1",
+      "input": {
+        "operations": [
+          "MinStack",
+          "push",
+          "push",
+          "push",
+          "getMin",
+          "pop",
+          "top",
+          "getMin"
+        ],
+        "arguments": [
+          [],
+          [
+            -2
+          ],
+          [
+            0
+          ],
+          [
+            -3
+          ],
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        null,
+        -3,
+        null,
+        0,
+        -2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用最小栈的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "155-adversarial-1",
+      "input": {
+        "operations": [
+          "MinStack",
+          "push",
+          "push",
+          "push",
+          "getMin",
+          "pop",
+          "top",
+          "getMin"
+        ],
+        "arguments": [
+          [],
+          [
+            -2
+          ],
+          [
+            0
+          ],
+          [
+            -3
+          ],
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        null,
+        -3,
+        null,
+        0,
+        -2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查最小栈的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]",
+    "output": "[null,null,null,null,-3,null,0,-2]",
+    "examples": [
+      {
+        "input": "[\"MinStack\",\"push\",\"push\",\"push\",\"getMin\",\"pop\",\"top\",\"getMin\"]\n[[],[-2],[0],[-3],[],[],[],[]]",
+        "output": "[null,null,null,null,-3,null,0,-2]"
+      }
+    ]
+  }
+}

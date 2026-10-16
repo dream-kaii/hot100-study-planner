@@ -1,0 +1,151 @@
+{
+  "id": "279",
+  "description": "给你一个整数 n ，返回 和为 n 的完全平方数的最少数量 。\n\n完全平方数 是一个整数，其值等于另一个整数的平方；换句话说，其值等于一个整数自乘的积。例如，1、4、9 和 16 都是完全平方数，而 3 和 11 不是。\n\n示例 1：\n\n输入：n = 12\n输出：3\n解释：12 = 4 + 4 + 4\n\n示例 2：\n\n输入：n = 13\n输出：2\n解释：13 = 4 + 9\n\n提示：\n\n1 <= n <= 104",
+  "summary": "建立从零到 n 的最少数量表，零需要零个数，其余先设为无穷大。按金额从小到大计算每个 x，枚举不超过 x 的所有平方数 j²，尝试用已有 dp[x−j²] 再加一个平方数来更新。因为较小状态先算好，同一个平方数可以被反复使用。",
+  "explanation": "可能刚看这种题感觉没啥思路，又平方和的，又最小数的。\n\n我来把题目翻译一下：完全平方数就是物品（可以无限件使用），凑个正整数n就是背包，问凑满这个背包最少有多少物品？\n\n感受出来了没，这么浓厚的完全背包氛围，而且和昨天的题目动态规划：322. 零钱兑换就是一样一样的！\n\n动规五部曲分析如下：\n\n1. 确定dp数组（dp table）以及下标的含义\n\ndp[j]：和为j的完全平方数的最少数量为dp[j]\n\n2. 确定递推公式\n\ndp[j] 可以由dp[j - i i]推出， dp[j - i i] + 1 便可以凑成dp[j]。\n\n此时我们要选择最小的dp[j]，所以递推公式：dp[j] = min(dp[j - i i] + 1, dp[j]);\n\n3. dp数组如何初始化\n\ndp[0]表示 和为0的完全平方数的最小数量，那么dp[0]一定是0。\n\n有同学问题，那0 0 也算是一种啊，为啥dp[0] 就是 0呢？\n\n看题目描述，找到若干个完全平方数（比如 1, 4, 9, 16, ...），题目描述中可没说要从0开始，dp[0]=0完全是为了递推公式。\n\n非0下标的dp[j]应该是多少呢？\n\n从递归公式dp[j] = min(dp[j - i i] + 1, dp[j]);中可以看出每次dp[j]都要选最小的，所以非0下标的dp[j]一定要初始为最大值，这样dp[j]在递推的时候才不会被初始值覆盖。\n\n4. 确定遍历顺序\n\n我们知道这是完全背包，\n\n如果求组合数就是外层for循环遍历物品，内层for遍历背包。\n\n如果求排列数就是外层for遍历背包，内层for循环遍历物品。\n\n在动态规划：322. 零钱兑换中我们就深入探讨了这个问题，本题也是一样的，是求最小数！\n\n所以本题外层for遍历背包，内层for遍历物品，还是外层for遍历物品，内层for遍历背包，都是可以的！\n\n我这里先给出外层遍历背包，内层遍历物品的代码：\n\n5. 举例推导dp数组\n\n已输入n为5例，dp状态图如下：\n\ndp[0] = 0\ndp[1] = min(dp[0] + 1) = 1\ndp[2] = min(dp[1] + 1) = 2\ndp[3] = min(dp[2] + 1) = 3\ndp[4] = min(dp[3] + 1, dp[0] + 1) = 1\ndp[5] = min(dp[4] + 1, dp[1] + 1) = 2\n\n最后的dp[n]为最终结果。\n\n以上动规五部曲分析完毕\n\n时间复杂度: O(n √n)\n空间复杂度: O(n)\n\n同样我在给出先遍历物品，在遍历背包的代码，一样的可以AC的。\n\n同上\n\n总结\n如果大家认真做了昨天的题目动态规划：322. 零钱兑换，今天这道就非常简单了，一样的套路一样的味道。\n\n但如果没有按照「代码随想录」的题目顺序来做的话，做动态规划或者做背包问题，上来就做这道题，那还是挺难的！\n\n经过前面的训练这道题已经是简单题了",
+  "java": "class Solution {\n    // 版本一，先遍历物品, 再遍历背包\n    public int numSquares(int n) {\n        int max = Integer.MAX_VALUE;\n        int[] dp = new int[n + 1];\n        //初始化\n        for (int j = 0; j <= n; j++) {\n            dp[j] = max;\n        }\n\t//如果不想要寫for-loop填充數組的話，也可以用JAVA內建的Arrays.fill()函數。\n\t//Arrays.fill(dp, Integer.MAX_VALUE);\n\t\n        //当和为0时，组合的个数为0\n        dp[0] = 0;\n        // 遍历物品\n        for (int i = 1; i * i <= n; i++) {\n            // 遍历背包\n            for (int j = i * i; j <= n; j++) {\n                //if (dp[j - i * i] != max) {\n                    dp[j] = Math.min(dp[j], dp[j - i * i] + 1);\n                //}\n\t\t//不需要這個if statement，因爲在完全平方數這一題不會有\"湊不成\"的狀況發生（ 一定可以用\"1\"來組成任何一個n），故comment掉這個if statement。\n            }\n        }\n        return dp[n];\n    }\n}",
+  "python": "class Solution:\n    def numSquares(self, n: int) -> int:\n        dp = [float('inf')] * (n + 1)\n        dp[0] = 0\n\n        for i in range(1, n + 1):  # 遍历背包\n            for j in range(1, int(i ** 0.5) + 1):  # 遍历物品\n                # 更新凑成数字 i 所需的最少完全平方数数量\n                dp[i] = min(dp[i], dp[i - j * j] + 1)\n\n        return dp[n]",
+  "examples": [
+    {
+      "input": "n = 12",
+      "output": "3"
+    },
+    {
+      "input": "n = 13",
+      "output": "2"
+    }
+  ],
+  "complexity": {
+    "time": "O(n * sqrt(n))",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0279.%E5%AE%8C%E5%85%A8%E5%B9%B3%E6%96%B9%E6%95%B0.html",
+  "fallbackSource": "https://leetcode.cn/problems/perfect-squares/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0279.%E5%AE%8C%E5%85%A8%E5%B9%B3%E6%96%B9%E6%95%B0.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0279.%E5%AE%8C%E5%85%A8%E5%B9%B3%E6%96%B9%E6%95%B0.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0279.%E5%AE%8C%E5%85%A8%E5%B9%B3%E6%96%B9%E6%95%B0.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "可能刚看这种题感觉没啥思路，又平方和的，又最小数的。\n\n我来把题目翻译一下：完全平方数就是物品（可以无限件使用），凑个正整数n就是背包，问凑满这个背包最少有多少物品？\n\n感受出来了没，这么浓厚的完全背包氛围，而且和昨天的题目动态规划：322. 零钱兑换就是一样一样的！\n\n动规五部曲分析如下：\n\n1. 确定dp数组（dp table）以及下标的含义\n\ndp[j]：和为j的完全平方数的最少数量为dp[j]\n\n2. 确定递推公式\n\ndp[j] 可以由dp[j - i i]推出， dp[j - i i] + 1 便可以凑成dp[j]。\n\n此时我们要选择最小的dp[j]，所以递推公式：dp[j] = min(dp[j - i i] + 1, dp[j]);\n\n3. dp数组如何初始化\n\ndp[0]表示 和为0的完全平方数的最小数量，那么dp[0]一定是0。\n\n有同学问题，那0 0 也算是一种啊，为啥dp[0] 就是 0呢？\n\n看题目描述，找到若干个完全平方数（比如 1, 4, 9, 16, ...），题目描述中可没说要从0开始，dp[0]=0完全是为了递推公式。\n\n非0下标的dp[j]应该是多少呢？\n\n从递归公式dp[j] = min(dp[j - i i] + 1, dp[j]);中可以看出每次dp[j]都要选最小的，所以非0下标的dp[j]一定要初始为最大值，这样dp[j]在递推的时候才不会被初始值覆盖。\n\n4. 确定遍历顺序\n\n我们知道这是完全背包，\n\n如果求组合数就是外层for循环遍历物品，内层for遍历背包。\n\n如果求排列数就是外层for遍历背包，内层for循环遍历物品。\n\n在动态规划：322. 零钱兑换中我们就深入探讨了这个问题，本题也是一样的，是求最小数！\n\n所以本题外层for遍历背包，内层for遍历物品，还是外层for遍历物品，内层for遍历背包，都是可以的！\n\n我这里先给出外层遍历背包，内层遍历物品的代码：\n\n5. 举例推导dp数组\n\n已输入n为5例，dp状态图如下：\n\ndp[0] = 0\ndp[1] = min(dp[0] + 1) = 1\ndp[2] = min(dp[1] + 1) = 2\ndp[3] = min(dp[2] + 1) = 3\ndp[4] = min(dp[3] + 1, dp[0] + 1) = 1\ndp[5] = min(dp[4] + 1, dp[1] + 1) = 2\n\n最后的dp[n]为最终结果。\n\n以上动规五部曲分析完毕\n\n时间复杂度: O(n √n)\n空间复杂度: O(n)\n\n同样我在给出先遍历物品，在遍历背包的代码，一样的可以AC的。\n\n同上",
+  "summaryText": "令 dp[x] 表示凑出 x 的最少平方数个数，枚举 j²≤x，用 dp[x−j²]+1 更新。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "279.完全平方数",
+      "url": "https://file1.kamacoder.com/i/algo/20210202112617341.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210202112617341.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过完全平方数掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "70"
+  ],
+  "recognition": "若最后一个选用的完全平方数是 j²，那么此前还需要凑出多少？",
+  "bruteForce": "直观做法是方法一：动态规划(完全背包)；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "若最后一个选用的完全平方数是 j²，那么此前还需要凑出多少？"
+    },
+    {
+      "level": 2,
+      "text": "令 dp[x] 表示凑出 x 的最少平方数个数，枚举 j²≤x，用 dp[x−j²]+1 更新。"
+    },
+    {
+      "level": 3,
+      "text": "建立从零到 n 的最少数量表，零需要零个数，其余先设为无穷大。按金额从小到大计算每个 x，枚举不超过 x 的所有平方数 j²，尝试用已有 dp[x−j²] 再加一个平方数来更新。因为较小状态先算好，同一个平方数可以被反复使用。"
+    },
+    {
+      "level": 4,
+      "text": "dp[0] ← 0，其余 ← 正无穷\n对 x 从 1 到 n：\n    j ← 1\n    当 j×j ≤ x：\n        dp[x] ← min(dp[x],dp[x−j×j]+1)\n        j ← j+1\n返回 dp[n]",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "建立从零到 n 的最少数量表，零需要零个数，其余先设为无穷大。",
+    "按金额从小到大计算每个 x，枚举不超过 x 的所有平方数 j²，尝试用已有 dp[x−j²] 再加一个平方数来更新。",
+    "因为较小状态先算好，同一个平方数可以被反复使用。"
+  ],
+  "walkthrough": [
+    "公开示例：n = 12 → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足完全平方数约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把完全平方数的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：动态规划(完全背包)，额外空间为O(m×n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "numSquares",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "279-basic-1",
+      "input": {
+        "n": 12
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "279-boundary-1",
+      "input": {
+        "n": 1
+      },
+      "expected": 1,
+      "tags": [
+        "boundary"
+      ],
+      "note": "最小正整数。"
+    },
+    {
+      "id": "279-adversarial-1",
+      "input": {
+        "n": 13
+      },
+      "expected": 2,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "贪心先取最大平方数并不总是最优。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nn = 12",
+    "output": "3",
+    "examples": [
+      {
+        "input": "n = 12",
+        "output": "3"
+      }
+    ]
+  }
+}

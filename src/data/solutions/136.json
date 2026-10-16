@@ -1,0 +1,155 @@
+{
+  "id": "136",
+  "description": "给你一个 非空 整数数组 nums ，除了某个元素只出现一次以外，其余每个元素均出现两次。找出那个只出现了一次的元素。\n\n你必须设计并实现线性时间复杂度的算法来解决此问题，且该算法只使用常量额外空间。\n\n示例 1 ：\n\n输入：nums = [2,2,1]\n\n输出：1\n\n示例 2 ：\n\n输入：nums = [4,1,2,1,2]\n\n输出：4\n\n示例 3 ：\n\n输入：nums = [1]\n\n提示：\n\n1 <= nums.length <= 3 104\n-3 104 <= nums[i] <= 3 104\n除了某个元素只出现一次以外，其余每个元素均出现两次。",
+  "summary": "把所有元素逐个异或到同一个累积值中。每个成对出现的数最终都会抵消为零，只出现一次的数会留下。初始值设为零，负数也按照同样的二进制规则处理；不需要排序或额外计数表。",
+  "explanation": "方法一：位运算\n\n思考\n\n其余数出现两次、一个出现一次，要求线性时间、常数空间。哈希计数空间是 O(n)。异或满足 x⊕ x=0、 x⊕ 0=x 且可交换，全部异或后成对的数消掉，剩下即只出现一次的那个。\n\n异或运算的性质：\n\n- 任何数和 0 做异或运算，结果仍然是原来的数，即 x ⊕ 0 = x；\n- 任何数和其自身做异或运算，结果是 0，即 x ⊕ x = 0；\n\n我们对该数组所有元素进行异或运算，结果就是那个只出现一次的数字。\n\n时间复杂度 O(n)，空间复杂度 O(1)。其中 n 是数组 nums 的长度。\n\n总结",
+  "java": "class Solution {\n    public int singleNumber(int[] nums) {\n        int ans = 0;\n        for (int v : nums) {\n            ans ^= v;\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def singleNumber(self, nums: List[int]) -> int:\n        return reduce(xor, nums)",
+  "examples": [
+    {
+      "input": "nums = [2,2,1]",
+      "output": "1"
+    },
+    {
+      "input": "nums = [4,1,2,1,2]",
+      "output": "4"
+    },
+    {
+      "input": "nums = [1]",
+      "output": "1"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/single-number/",
+  "fallbackSource": "https://leetcode.cn/problems/single-number/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/single-number/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0136.Single%20Number/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0136.Single%20Number/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：位运算\n\n思考\n\n其余数出现两次、一个出现一次，要求线性时间、常数空间。哈希计数空间是 O(n)。异或满足 x⊕ x=0、 x⊕ 0=x 且可交换，全部异或后成对的数消掉，剩下即只出现一次的那个。\n\n异或运算的性质：\n\n- 任何数和 0 做异或运算，结果仍然是原来的数，即 x ⊕ 0 = x；\n- 任何数和其自身做异或运算，结果是 0，即 x ⊕ x = 0；\n\n我们对该数组所有元素进行异或运算，结果就是那个只出现一次的数字。\n\n时间复杂度 O(n)，空间复杂度 O(1)。其中 n 是数组 nums 的长度。",
+  "summaryText": "按位异或满足 x⊕x=0、x⊕0=x，且运算顺序不影响结果。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过只出现一次的数字掌握技巧相关的可迁移解题模式。",
+  "prerequisites": [
+    "1"
+  ],
+  "recognition": "除了一个数只出现一次，其余数都出现两次。什么运算能让相同的两个数互相抵消？",
+  "bruteForce": "直观做法是其余数出现两次、一个出现一次，要求线性时间、常数空间。哈希计数空间是 O(n)。异或满足 x⊕ x=0、 x⊕ 0=x 且可交换，全部异或后成对的数消掉，剩下即只出现一次的那个。；当输入规模扩大时，需要避免重复扫描并利用题目中的技巧约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "除了一个数只出现一次，其余数都出现两次。什么运算能让相同的两个数互相抵消？"
+    },
+    {
+      "level": 2,
+      "text": "按位异或满足 x⊕x=0、x⊕0=x，且运算顺序不影响结果。"
+    },
+    {
+      "level": 3,
+      "text": "把所有元素逐个异或到同一个累积值中。每个成对出现的数最终都会抵消为零，只出现一次的数会留下。初始值设为零，负数也按照同样的二进制规则处理；不需要排序或额外计数表。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 0\n对每个数 x：\n    // 每一位独立进行异或\n    answer ← answer ⊕ x\n// 成对元素已抵消\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "把所有元素逐个异或到同一个累积值中。",
+    "每个成对出现的数最终都会抵消为零，只出现一次的数会留下。",
+    "初始值设为零，负数也按照同样的二进制规则处理；不需要排序或额外计数表。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [2,2,1] → 1。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足只出现一次的数字约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把只出现一次的数字的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用其余数出现两次、一个出现一次，要求线性时间、常数空间。哈希计数空间是 O(n)。异或满足 x⊕ x=0、 x⊕ 0=x 且可交换，全部异或后成对的数消掉，剩下即只出现一次的那个。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "singleNumber",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "136-basic-1",
+      "input": {
+        "nums": [
+          2,
+          2,
+          1
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "136-boundary-1",
+      "input": {
+        "nums": [
+          1
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用只出现一次的数字的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "136-adversarial-1",
+      "input": {
+        "nums": [
+          1
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查只出现一次的数字的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [2,2,1]",
+    "output": "1",
+    "examples": [
+      {
+        "input": "nums = [2,2,1]",
+        "output": "1"
+      }
+    ]
+  }
+}

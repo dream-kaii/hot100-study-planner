@@ -1,0 +1,180 @@
+{
+  "id": "189",
+  "description": "给定一个整数数组 nums，将数组中的元素向右轮转 k 个位置，其中 k 是非负数。\n\n示例 1:\n\n输入: nums = [1,2,3,4,5,6,7], k = 3\n输出: [5,6,7,1,2,3,4]\n解释:\n向右轮转 1 步: [7,1,2,3,4,5,6]\n向右轮转 2 步: [6,7,1,2,3,4,5]\n向右轮转 3 步: [5,6,7,1,2,3,4]\n\n示例 2:\n\n输入：nums = [-1,-100,3,99], k = 2\n输出：[3,99,-1,-100]\n解释:\n向右轮转 1 步: [99,-1,-100,3]\n向右轮转 2 步: [3,99,-1,-100]\n\n提示：\n\n1 <= nums.length <= 105\n-231 <= nums[i] <= 231 - 1\n0 <= k <= 105\n\n进阶：\n\n尽可能想出更多的解决方案，至少有 三种 不同的方法可以解决这个问题。\n你可以使用空间复杂度为 O(1) 的 原地 算法解决这个问题吗？",
+  "summary": "把 k 化为 k mod n，避免无效的整圈移动。先反转整个数组，原末尾 k 个数便到达前部但次序颠倒；再反转前 k 个元素恢复其内部顺序，反转剩余部分恢复另一段顺序。每次反转都用两端指针交换，额外空间为常数。",
+  "explanation": "这道题目在字符串里其实很常见，我把字符串反转相关的题目列一下：\n\n字符串：力扣541.反转字符串II\n字符串：力扣151.翻转字符串里的单词\n字符串：剑指Offer58-II.左旋转字符串\n\n本题其实和字符串：剑指Offer58-II.左旋转字符串就非常像了，剑指offer上左旋转，本题是右旋转。\n\n注意题目要求是要求使用空间复杂度为 O(1) 的 原地 算法\n\n那么我来提供一种旋转的方式哈。\n\n在字符串：剑指Offer58-II.左旋转字符串中，我们提到，如下步骤就可以坐旋转字符串：\n\n1. 反转区间为前n的子串\n2. 反转区间为n到末尾的子串\n3. 反转整个字符串\n\n本题是右旋转，其实就是反转的顺序改动一下，优先反转整个字符串，步骤如下：\n\n1. 反转整个字符串\n2. 反转区间为前k的子串\n3. 反转区间为k到末尾的子串\n\n需要注意的是，本题还有一个小陷阱，题目输入中，如果k大于nums.size了应该怎么办？\n\n举个例子，比较容易想，\n\n例如，1,2,3,4,5,6,7 如果右移动15次的话，是 7 1 2 3 4 5 6 。\n\n所以其实就是右移 k % nums.size() 次，即：15 % 7 = 1\n\n总结",
+  "java": "class Solution {\n    private void reverse(int[] nums, int start, int end) {\n        for (int i = start, j = end; i < j; i++, j--) {\n            int temp = nums[j];\n            nums[j] = nums[i];\n            nums[i] = temp;\n        }\n    }\n    public void rotate(int[] nums, int k) {\n        int n = nums.length;\n        k %= n;\n        reverse(nums, 0, n - 1);\n        reverse(nums, 0, k - 1);\n        reverse(nums, k, n - 1);\n    }\n}",
+  "python": "class Solution:\n    def rotate(self, nums: List[int], k: int) -> None:\n        def reverse(i, j):\n            while i < j:\n                nums[i], nums[j] = nums[j], nums[i]\n                i += 1\n                j -= 1\n        n = len(nums)\n        k %= n\n        reverse(0, n - 1)\n        reverse(0, k - 1)\n        reverse(k, n - 1)",
+  "examples": [
+    {
+      "input": "nums = [1,2,3,4,5,6,7], k = 3",
+      "output": "[5,6,7,1,2,3,4]"
+    },
+    {
+      "input": "nums = [-1,-100,3,99], k = 2",
+      "output": "[3,99,-1,-100]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0189.%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84.html",
+  "fallbackSource": "https://leetcode.cn/problems/rotate-array/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0189.%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0189.%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0189.%E6%97%8B%E8%BD%AC%E6%95%B0%E7%BB%84.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "这道题目在字符串里其实很常见，我把字符串反转相关的题目列一下：\n\n字符串：力扣541.反转字符串II\n字符串：力扣151.翻转字符串里的单词\n字符串：剑指Offer58-II.左旋转字符串\n\n本题其实和字符串：剑指Offer58-II.左旋转字符串就非常像了，剑指offer上左旋转，本题是右旋转。\n\n注意题目要求是要求使用空间复杂度为 O(1) 的 原地 算法\n\n那么我来提供一种旋转的方式哈。\n\n在字符串：剑指Offer58-II.左旋转字符串中，我们提到，如下步骤就可以坐旋转字符串：\n\n1. 反转区间为前n的子串\n2. 反转区间为n到末尾的子串\n3. 反转整个字符串\n\n本题是右旋转，其实就是反转的顺序改动一下，优先反转整个字符串，步骤如下：\n\n1. 反转整个字符串\n2. 反转区间为前k的子串\n3. 反转区间为k到末尾的子串\n\n需要注意的是，本题还有一个小陷阱，题目输入中，如果k大于nums.size了应该怎么办？\n\n举个例子，比较容易想，\n\n例如，1,2,3,4,5,6,7 如果右移动15次的话，是 7 1 2 3 4 5 6 。\n\n所以其实就是右移 k % nums.size() 次，即：15 % 7 = 1",
+  "tables": [],
+  "images": [],
+  "summaryText": "先令 k 对数组长度取余。整体反转后再分别反转前 k 个和剩余元素。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过轮转数组掌握普通数组相关的可迁移解题模式。",
+  "prerequisites": [
+    "238"
+  ],
+  "recognition": "右移 k 次后，原数组末尾的 k 个数来到最前面，而两段内部的相对顺序保持不变。",
+  "bruteForce": "直观做法是右旋 k 步。开新数组再拷回是 O(n) 空间； n≤ 10⁵，进阶要原地。右旋 k 位等于「后 k 个移到前面」。整体反转后，前 k 与后 n-k 再各自反转，三段翻转完成轮换，只交换元素。；当输入规模扩大时，需要避免重复扫描并利用题目中的普通数组约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "右移 k 次后，原数组末尾的 k 个数来到最前面，而两段内部的相对顺序保持不变。"
+    },
+    {
+      "level": 2,
+      "text": "先令 k 对数组长度取余。整体反转后再分别反转前 k 个和剩余元素。"
+    },
+    {
+      "level": 3,
+      "text": "把 k 化为 k mod n，避免无效的整圈移动。先反转整个数组，原末尾 k 个数便到达前部但次序颠倒；再反转前 k 个元素恢复其内部顺序，反转剩余部分恢复另一段顺序。每次反转都用两端指针交换，额外空间为常数。"
+    },
+    {
+      "level": 4,
+      "text": "若 n = 0：结束\nk ← k mod n\n反转区间(l, r)：\n    当 l < r：\n        交换 nums[l] 和 nums[r]\n        l ← l+1，r ← r−1\n反转区间(0, n−1)\n反转区间(0, k−1)\n反转区间(k, n−1)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "把 k 化为 k mod n，避免无效的整圈移动。",
+    "先反转整个数组，原末尾 k 个数便到达前部但次序颠倒；再反转前 k 个元素恢复其内部顺序，反转剩余部分恢复另一段顺序。",
+    "每次反转都用两端指针交换，额外空间为常数。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,2,3,4,5,6,7], k = 3 → [5,6,7,1,2,3,4]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足轮转数组约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把轮转数组的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用右旋 k 步。开新数组再拷回是 O(n) 空间； n≤ 10⁵，进阶要原地。右旋 k 位等于「后 k 个移到前面」。整体反转后，前 k 与后 n-k 再各自反转，三段翻转完成轮换，只交换元素。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "rotate",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      }
+    ],
+    "returns": "void",
+    "compare": "in-place-mutate"
+  },
+  "cases": [
+    {
+      "id": "189-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "k": 3
+      },
+      "expected": [
+        5,
+        6,
+        7,
+        1,
+        2,
+        3,
+        4
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "189-boundary-1",
+      "input": {
+        "nums": [
+          1
+        ],
+        "k": 100
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单元素且k远大于数组长度。"
+    },
+    {
+      "id": "189-adversarial-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "k": 6
+      },
+      "expected": [
+        3,
+        4,
+        1,
+        2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "k要先对长度取余。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,2,3,4,5,6,7], k = 3",
+    "output": "[5,6,7,1,2,3,4]",
+    "examples": [
+      {
+        "input": "nums = [1,2,3,4,5,6,7], k = 3",
+        "output": "[5,6,7,1,2,3,4]"
+      }
+    ]
+  }
+}

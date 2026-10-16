@@ -1,0 +1,207 @@
+{
+  "id": "74",
+  "description": "给你一个满足下述两条属性的 m x n 整数矩阵：\n\n每行中的整数从左到右按非严格递增顺序排列。\n每行的第一个整数大于前一行的最后一个整数。\n\n给你一个整数 target ，如果 target 在矩阵中，返回 true ；否则，返回 false 。\n\n你必须编写一个时间复杂度为 O(log(m n)) 的解决方案。\n\n示例 1：\n\n输入：matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3\n输出：true\n\n示例 2：\n\n输入：matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13\n输出：false\n\n提示：\n\nm == matrix.length\nn == matrix[i].length\n1 <= m, n <= 100\n-104 <= matrix[i][j], target <= 104",
+  "summary": "在虚拟的一维有序数组上二分查找，不实际复制矩阵。每次将中点下标转换成行列坐标，比较矩阵值与 target，按普通二分规则缩小范围。相等立即成功，范围为空则失败；这样既利用行内顺序，也利用相邻行的整体顺序。",
+  "explanation": "方法一：二分查找\n\n思考\n\n逐格扫描需要 O(mn) 时间。 m, n ≤ 100 可以接受，但题目要求 O(log(mn))。\n\n二维矩阵本身不便直接二分，但每一行递增，且上一行末尾小于下一行开头，因此按行拼接后是长度为 mn 的有序序列。将逻辑下标 mid 映射为 matrix[⌊mid/n⌋][mid mod n]，即可在 [0, mn-1] 上做一次二分，不必真正展开数组。\n\n我们将二维矩阵逻辑展开，然后二分查找即可。\n\n时间复杂度 O(log (m×n))。其中 m 和 n 分别是矩阵的行数和列数。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public boolean searchMatrix(int[][] matrix, int target) {\n        int m = matrix.length, n = matrix[0].length;\n        int left = 0, right = m * n - 1;\n        while (left < right) {\n            int mid = (left + right) >> 1;\n            int x = mid / n, y = mid % n;\n            if (matrix[x][y] >= target) {\n                right = mid;\n            } else {\n                left = mid + 1;\n            }\n        }\n        return matrix[left / n][left % n] == target;\n    }\n}",
+  "python": "class Solution:\n    def searchMatrix(self, matrix: List[List[int]], target: int) -> bool:\n        m, n = len(matrix), len(matrix[0])\n        left, right = 0, m * n - 1\n        while left < right:\n            mid = (left + right) >> 1\n            x, y = divmod(mid, n)\n            if matrix[x][y] >= target:\n                right = mid\n            else:\n                left = mid + 1\n        return matrix[left // n][left % n] == target",
+  "examples": [
+    {
+      "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3",
+      "output": "true"
+    },
+    {
+      "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 13",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(log(m * n))",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/search-a-2d-matrix/",
+  "fallbackSource": "https://leetcode.cn/problems/search-a-2d-matrix/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/search-a-2d-matrix/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0074.Search%20a%202D%20Matrix/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0074.Search%20a%202D%20Matrix/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：二分查找\n\n思考\n\n逐格扫描需要 O(mn) 时间。 m, n ≤ 100 可以接受，但题目要求 O(log(mn))。\n\n二维矩阵本身不便直接二分，但每一行递增，且上一行末尾小于下一行开头，因此按行拼接后是长度为 mn 的有序序列。将逻辑下标 mid 映射为 matrix[⌊mid/n⌋][mid mod n]，即可在 [0, mn-1] 上做一次二分，不必真正展开数组。\n\n我们将二维矩阵逻辑展开，然后二分查找即可。\n\n时间复杂度 O(log (m×n))。其中 m 和 n 分别是矩阵的行数和列数。空间复杂度 O(1)。",
+  "summaryText": "把矩阵看成长度 m×n 的有序数组，下标 mid 对应行 mid/n 向下取整、列 mid mod n。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过搜索二维矩阵掌握二分查找相关的可迁移解题模式。",
+  "prerequisites": [
+    "35"
+  ],
+  "recognition": "每行有序且下一行首元素大于上一行末元素；把矩阵按行接起来后有什么性质？",
+  "bruteForce": "直观做法是逐格扫描需要 O(mn) 时间。 m, n ≤ 100 可以接受，但题目要求 O(log(mn))。；当输入规模扩大时，需要避免重复扫描并利用题目中的二分查找约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "每行有序且下一行首元素大于上一行末元素；把矩阵按行接起来后有什么性质？"
+    },
+    {
+      "level": 2,
+      "text": "把矩阵看成长度 m×n 的有序数组，下标 mid 对应行 mid/n 向下取整、列 mid mod n。"
+    },
+    {
+      "level": 3,
+      "text": "在虚拟的一维有序数组上二分查找，不实际复制矩阵。每次将中点下标转换成行列坐标，比较矩阵值与 target，按普通二分规则缩小范围。相等立即成功，范围为空则失败；这样既利用行内顺序，也利用相邻行的整体顺序。"
+    },
+    {
+      "level": 4,
+      "text": "left ← 0，right ← m×n−1\n当 left ≤ right：\n    mid ← left+向下取整((right−left)/2)\n    value ← matrix[向下取整(mid/n)][mid mod n]\n    若 value = target：返回 真\n    若 value < target：left ← mid+1\n    否则：right ← mid−1\n返回 假",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "在虚拟的一维有序数组上二分查找，不实际复制矩阵。",
+    "每次将中点下标转换成行列坐标，比较矩阵值与 target，按普通二分规则缩小范围。",
+    "相等立即成功，范围为空则失败；这样既利用行内顺序，也利用相邻行的整体顺序。"
+  ],
+  "walkthrough": [
+    "公开示例：matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3 → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足搜索二维矩阵约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把搜索二维矩阵的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用逐格扫描需要 O(mn) 时间。 m, n ≤ 100 可以接受，但题目要求 O(log(mn))。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "searchMatrix",
+    "params": [
+      {
+        "name": "matrix",
+        "type": "int[][]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "74-basic-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            3,
+            5,
+            7
+          ],
+          [
+            10,
+            11,
+            16,
+            20
+          ],
+          [
+            23,
+            30,
+            34,
+            60
+          ]
+        ],
+        "target": 3
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "74-boundary-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            3,
+            5,
+            7
+          ],
+          [
+            10,
+            11,
+            16,
+            20
+          ],
+          [
+            23,
+            30,
+            34,
+            60
+          ]
+        ],
+        "target": 13
+      },
+      "expected": false,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用搜索二维矩阵的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "74-adversarial-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            3,
+            5,
+            7
+          ],
+          [
+            10,
+            11,
+            16,
+            20
+          ],
+          [
+            23,
+            30,
+            34,
+            60
+          ]
+        ],
+        "target": 13
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查搜索二维矩阵的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nmatrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3",
+    "output": "true",
+    "examples": [
+      {
+        "input": "matrix = [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target = 3",
+        "output": "true"
+      }
+    ]
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "id": "15",
+  "description": "给你一个整数数组 nums ，判断是否存在三元组 [nums[i], nums[j], nums[k]] 满足 i != j、i != k 且 j != k ，同时还满足 nums[i] + nums[j] + nums[k] == 0 。请你返回所有和为 0 且不重复的三元组。\n\n注意：答案中不可以包含重复的三元组。\n\n示例 1：\n\n输入：nums = [-1,0,1,2,-1,-4]\n输出：[[-1,-1,2],[-1,0,1]]\n解释：\nnums[0] + nums[1] + nums[2] = (-1) + 0 + 1 = 0 。\nnums[1] + nums[2] + nums[4] = 0 + 1 + (-1) = 0 。\nnums[0] + nums[3] + nums[4] = (-1) + 2 + (-1) = 0 。\n不同的三元组是 [-1,0,1] 和 [-1,-1,2] 。\n注意，输出的顺序和三元组的顺序并不重要。\n\n示例 2：\n\n输入：nums = [0,1,1]\n输出：[]\n解释：唯一可能的三元组和不为 0 。\n\n示例 3：\n\n输入：nums = [0,0,0]\n输出：[[0,0,0]]\n解释：唯一可能的三元组和为 0 。\n\n提示：\n\n3 <= nums.length <= 3000\n-105 <= nums[i] <= 105",
+  "summary": "先排序，再枚举第一个下标 i，重复的首元素直接跳过。令左右指针位于 i 后和数组末尾，三数和小于零则增加左指针，大于零则减少右指针；等于零时记录三元组并跳过左右重复值。首元素大于零时可结束，结果自然无重复。",
+  "explanation": "哈希解法\n\n两层for循环就可以确定 两个数值，可以使用哈希法来确定 第三个数 0-(a+b) 或者 0 - (a + c) 是否在 数组里出现过，其实这个思路是正确的，但是我们有一个非常棘手的问题，就是题目中说的不可以包含重复的三元组。\n\n把符合条件的三元组放进vector中，然后再去重，这样是非常费时的，很容易超时，也是这道题目通过率如此之低的根源所在。\n\n去重的过程不好处理，有很多小细节，如果在面试中很难想到位。\n\n时间复杂度可以做到O(n²)，但还是比较费时的，因为不好做剪枝操作。\n\n大家可以尝试使用哈希法写一写，就知道其困难的程度了。\n\n时间复杂度: O(n²)\n空间复杂度: O(n)，额外的 set 开销\n\n双指针\n\n其实这道题目使用哈希法并不十分合适，因为在去重的操作中有很多细节需要注意，在面试中很难直接写出没有bug的代码。\n\n而且使用哈希法 在使用两层for循环的时候，能做的剪枝操作很有限，虽然时间复杂度是O(n²)，也是可以在leetcode上通过，但是程序的执行时间依然比较长 。\n\n接下来我来介绍另一个解法：双指针法，这道题目使用双指针法 要比哈希法高效一些，那么来讲解一下具体实现的思路。\n\n动画效果如下：\n\n拿这个nums数组来举例，首先将数组排序，然后有一层for循环，i从下标0的地方开始，同时定一个下标left 定义在i+1的位置上，定义下标right 在数组结尾的位置上。\n\n依然还是在数组中找到 abc 使得a + b +c =0，我们这里相当于 a = nums[i]，b = nums[left]，c = nums[right]。\n\n接下来如何移动left 和right呢， 如果nums[i] + nums[left] + nums[right] 0 就说明 此时三数之和大了，因为数组是排序后了，所以right下标就应该向左移动，这样才能让三数之和小一些。\n\n如果 nums[i] + nums[left] + nums[right] left) 和 if (nums[i] + nums[left] + nums[right] 0) 去完成right-- 的操作。\n\n多加了 while (left < right && nums[right] == nums[right + 1]) right--; 这一行代码，其实就是把 需要执行的逻辑提前执行了，但并没有减少 判断的逻辑。\n\n最直白的思考过程，就是right还是一个数一个数的减下去的，所以在哪里减的都是一样的。\n\n所以这种去重 是可以不加的。 仅仅是 把去重的逻辑提前了而已。\n\n思考题\n\n既然三数之和可以使用双指针法，我们之前讲过的1.两数之和，可不可以使用双指针法呢？\n\n如果不能，题意如何更改就可以使用双指针法呢？ 大家留言说出自己的想法吧！\n\n两数之和 就不能使用双指针法，因为1.两数之和要求返回的是索引下标， 而双指针法一定要排序，一旦排序之后原数组的索引就被改变了。\n\n如果1.两数之和要求返回的是数值的话，就可以使用双指针法了。\n\n总结",
+  "java": "class Solution {\n    public List<List<Integer>> threeSum(int[] nums) {\n        List<List<Integer>> result = new ArrayList<>();\n        Arrays.sort(nums);\n\t// 找出a + b + c = 0\n        // a = nums[i], b = nums[left], c = nums[right]\n        for (int i = 0; i < nums.length; i++) {\n\t    // 排序之后如果第一个元素已经大于零，那么无论如何组合都不可能凑成三元组，直接返回结果就可以了\n            if (nums[i] > 0) { \n                return result;\n            }\n\n            if (i > 0 && nums[i] == nums[i - 1]) {  // 去重a\n                continue;\n            }\n\n            int left = i + 1;\n            int right = nums.length - 1;\n            while (right > left) {\n                int sum = nums[i] + nums[left] + nums[right];\n                if (sum > 0) {\n                    right--;\n                } else if (sum < 0) {\n                    left++;\n                } else {\n                    result.add(Arrays.asList(nums[i], nums[left], nums[right]));\n\t\t    // 去重逻辑应该放在找到一个三元组之后，对b 和 c去重\n                    while (right > left && nums[right] == nums[right - 1]) right--;\n                    while (right > left && nums[left] == nums[left + 1]) left++;\n                    \n                    right--; \n                    left++;\n                }\n            }\n        }\n        return result;\n    }\n}",
+  "python": "class Solution:\n    def threeSum(self, nums: List[int]) -> List[List[int]]:\n        result = []\n        nums.sort()\n        \n        for i in range(len(nums)):\n            # 如果第一个元素已经大于0，不需要进一步检查\n            if nums[i] > 0:\n                return result\n            \n            # 跳过相同的元素以避免重复\n            if i > 0 and nums[i] == nums[i - 1]:\n                continue\n                \n            left = i + 1\n            right = len(nums) - 1\n            \n            while right > left:\n                sum_ = nums[i] + nums[left] + nums[right]\n                \n                if sum_ < 0:\n                    left += 1\n                elif sum_ > 0:\n                    right -= 1\n                else:\n                    result.append([nums[i], nums[left], nums[right]])\n                    \n                    # 跳过相同的元素以避免重复\n                    while right > left and nums[right] == nums[right - 1]:\n                        right -= 1\n                    while right > left and nums[left] == nums[left + 1]:\n                        left += 1\n                        \n                    right -= 1\n                    left += 1\n                    \n        return result",
+  "examples": [
+    {
+      "input": "nums = [-1,0,1,2,-1,-4]",
+      "output": "[[-1,-1,2],[-1,0,1]]"
+    },
+    {
+      "input": "nums = [0,1,1]",
+      "output": "[]"
+    },
+    {
+      "input": "nums = [0,0,0]",
+      "output": "[[0,0,0]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n²)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0015.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.html",
+  "fallbackSource": "https://leetcode.cn/problems/3sum/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0015.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0015.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0015.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "哈希解法\n\n两层for循环就可以确定 两个数值，可以使用哈希法来确定 第三个数 0-(a+b) 或者 0 - (a + c) 是否在 数组里出现过，其实这个思路是正确的，但是我们有一个非常棘手的问题，就是题目中说的不可以包含重复的三元组。\n\n把符合条件的三元组放进vector中，然后再去重，这样是非常费时的，很容易超时，也是这道题目通过率如此之低的根源所在。\n\n去重的过程不好处理，有很多小细节，如果在面试中很难想到位。\n\n时间复杂度可以做到O(n²)，但还是比较费时的，因为不好做剪枝操作。\n\n大家可以尝试使用哈希法写一写，就知道其困难的程度了。\n\n时间复杂度: O(n²)\n空间复杂度: O(n)，额外的 set 开销\n\n双指针\n\n其实这道题目使用哈希法并不十分合适，因为在去重的操作中有很多细节需要注意，在面试中很难直接写出没有bug的代码。\n\n而且使用哈希法 在使用两层for循环的时候，能做的剪枝操作很有限，虽然时间复杂度是O(n²)，也是可以在leetcode上通过，但是程序的执行时间依然比较长 。\n\n接下来我来介绍另一个解法：双指针法，这道题目使用双指针法 要比哈希法高效一些，那么来讲解一下具体实现的思路。\n\n动画效果如下：\n\n拿这个nums数组来举例，首先将数组排序，然后有一层for循环，i从下标0的地方开始，同时定一个下标left 定义在i+1的位置上，定义下标right 在数组结尾的位置上。\n\n依然还是在数组中找到 abc 使得a + b +c =0，我们这里相当于 a = nums[i]，b = nums[left]，c = nums[right]。\n\n接下来如何移动left 和right呢， 如果nums[i] + nums[left] + nums[right] 0 就说明 此时三数之和大了，因为数组是排序后了，所以right下标就应该向左移动，这样才能让三数之和小一些。\n\n如果 nums[i] + nums[left] + nums[right] left) 和 if (nums[i] + nums[left] + nums[right] 0) 去完成right-- 的操作。\n\n多加了 while (left < right && nums[right] == nums[right + 1]) right--; 这一行代码，其实就是把 需要执行的逻辑提前执行了，但并没有减少 判断的逻辑。\n\n最直白的思考过程，就是right还是一个数一个数的减下去的，所以在哪里减的都是一样的。\n\n所以这种去重 是可以不加的。 仅仅是 把去重的逻辑提前了而已。\n\n思考题\n\n既然三数之和可以使用双指针法，我们之前讲过的1.两数之和，可不可以使用双指针法呢？\n\n如果不能，题意如何更改就可以使用双指针法呢？ 大家留言说出自己的想法吧！\n\n两数之和 就不能使用双指针法，因为1.两数之和要求返回的是索引下标， 而双指针法一定要排序，一旦排序之后原数组的索引就被改变了。\n\n如果1.两数之和要求返回的是数值的话，就可以使用双指针法了。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "15.三数之和",
+      "url": "https://file1.kamacoder.com/i/algo/15.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.gif",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/15.%E4%B8%89%E6%95%B0%E4%B9%8B%E5%92%8C.gif",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "排序后枚举第一个数，剩下区间用左右指针找目标和，同时跳过重复值。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过三数之和掌握双指针相关的可迁移解题模式。",
+  "prerequisites": [
+    "11"
+  ],
+  "recognition": "固定三元组的一个数后，剩下两个数的和已经确定。排序后能否避免逐个枚举它们？",
+  "bruteForce": "直观做法是方法一：排序 + 双指针；当输入规模扩大时，需要避免重复扫描并利用题目中的双指针约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "固定三元组的一个数后，剩下两个数的和已经确定。排序后能否避免逐个枚举它们？"
+    },
+    {
+      "level": 2,
+      "text": "排序后枚举第一个数，剩下区间用左右指针找目标和，同时跳过重复值。"
+    },
+    {
+      "level": 3,
+      "text": "先排序，再枚举第一个下标 i，重复的首元素直接跳过。令左右指针位于 i 后和数组末尾，三数和小于零则增加左指针，大于零则减少右指针；等于零时记录三元组并跳过左右重复值。首元素大于零时可结束，结果自然无重复。"
+    },
+    {
+      "level": 4,
+      "text": "排序 nums；answer ← 空列表\n对 i 从 0 到 n−3：\n    若 nums[i] > 0：结束枚举\n    若 i > 0 且 nums[i]=nums[i−1]：继续\n    left ← i+1，right ← n−1\n    当 left < right：\n        sum ← nums[i]+nums[left]+nums[right]\n        若 sum < 0：left ← left+1\n        否则若 sum > 0：right ← right−1\n        否则：记录三元组；左右指针各移动一步并跳过重复值\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先排序，再枚举第一个下标 i，重复的首元素直接跳过。",
+    "令左右指针位于 i 后和数组末尾，三数和小于零则增加左指针，大于零则减少右指针；等于零时记录三元组并跳过左右重复值。",
+    "首元素大于零时可结束，结果自然无重复。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [-1,0,1,2,-1,-4] → [[-1,-1,2],[-1,0,1]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足三数之和约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把三数之和的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：排序 + 双指针，额外空间为O(log n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "threeSum",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "List<List<Integer>>",
+    "compare": "unordered-nested"
+  },
+  "cases": [
+    {
+      "id": "15-basic-1",
+      "input": {
+        "nums": [
+          -1,
+          0,
+          1,
+          2,
+          -1,
+          -4
+        ]
+      },
+      "expected": [
+        [
+          -1,
+          -1,
+          2
+        ],
+        [
+          -1,
+          0,
+          1
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "15-boundary-1",
+      "input": {
+        "nums": [
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用三数之和的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "15-adversarial-1",
+      "input": {
+        "nums": [
+          0,
+          0,
+          0
+        ]
+      },
+      "expected": [
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查三数之和的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [-1,0,1,2,-1,-4]",
+    "output": "[[-1,-1,2],[-1,0,1]]",
+    "examples": [
+      {
+        "input": "nums = [-1,0,1,2,-1,-4]",
+        "output": "[[-1,-1,2],[-1,0,1]]"
+      }
+    ]
+  }
+}

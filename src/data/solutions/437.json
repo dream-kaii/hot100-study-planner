@@ -1,0 +1,183 @@
+{
+  "id": "437",
+  "description": "给定一个二叉树的根节点 root ，和一个整数 targetSum ，求该二叉树里节点值之和等于 targetSum 的 路径 的数目。\n\n路径 不需要从根节点开始，也不需要在叶子节点结束，但是路径方向必须是向下的（只能从父节点到子节点）。\n\n示例 1：\n\n输入：root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8\n输出：3\n解释：和等于 8 的路径有 3 条，如图所示。\n\n示例 2：\n\n输入：root = [5,4,8,11,null,13,4,7,2,null,null,5,1], targetSum = 22\n输出：3\n\n提示:\n\n二叉树的节点个数的范围是 [0,1000]\n-109 9\n-1000",
+  "summary": "深度优先遍历时维护根到当前节点的前缀和。以当前节点为终点的合法路径数，是祖先前缀中 currentSum−target 的出现次数。查询后加入当前前缀，再递归左右子树，返回前将次数减一。撤销保证兄弟分支不会互相影响，空前缀零需初始记录一次。",
+  "explanation": "方法一：哈希表 + 前缀和 + 递归\n\n思考\n\n路径必须向下，枚举每个祖先再向下扫描是 O(n²)。路径和等于 targetSum 可改写成「当前前缀和减去某个祖先前缀和」。\n\n先序累加前缀和 s，用哈希表统计根到当前结点的前缀出现次数， cnt[s-targetSum] 即以此为终点的合法路径数。回溯时撤销 s，避免把另一条分支算进来。\n\n初始 cnt[0]=1，对应从根出发整段刚好等于目标。先查询再插入，路径不含「当前结点用两次」。\n\n我们可以运用前缀和的思想，对二叉树进行递归遍历，同时用哈希表 cnt 统计从根节点到当前节点的路径上各个前缀和出现的次数。\n\n我们设计一个递归函数 dfs(node, s)，表示当前遍历到的节点为 node，从根节点到当前节点的路径上的前缀和为 s。函数的返回值是统计以 node 节点及其子树节点作为路径终点且路径和为 targetSum 的路径数目。那么答案就是 dfs(root, 0)。\n\n函数 dfs(node, s) 的递归过程如下：\n\n- 如果当前节点 node 为空，则返回 0。\n- 计算从根节点到当前节点的路径上的前缀和 s。\n- 用 cnt[s - targetSum] 表示以当前节点为路径终点且路径和为 targetSum 的路径数目，其中 cnt[s - targetSum] 即为 cnt 中前缀和为 s - targetSum 的个数。\n- 将前缀和 s 的计数值加 1，即 cnt[s] = cnt[s] + 1。\n- 递归地遍历当前节点的左右子节点，即调用函数 dfs(node.left, s) 和 dfs(node.right, s)，并将它们的返回值相加。\n- 在返回值计算完成以后，需要将当前节点的前缀和 s 的计数值减 1，即执行 cnt[s] = cnt[s] - 1。\n- 最后返回答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 是二叉树的节点个数。\n\n总结",
+  "java": "/**\n * Definition for a binary tree node.\n * public class TreeNode {\n *     int val;\n *     TreeNode left;\n *     TreeNode right;\n *     TreeNode() {}\n *     TreeNode(int val) { this.val = val; }\n *     TreeNode(int val, TreeNode left, TreeNode right) {\n *         this.val = val;\n *         this.left = left;\n *         this.right = right;\n *     }\n * }\n */\nclass Solution {\n    private Map<Long, Integer> cnt = new HashMap<>();\n    private int targetSum;\n\n    public int pathSum(TreeNode root, int targetSum) {\n        cnt.put(0L, 1);\n        this.targetSum = targetSum;\n        return dfs(root, 0);\n    }\n\n    private int dfs(TreeNode node, long s) {\n        if (node == null) {\n            return 0;\n        }\n        s += node.val;\n        int ans = cnt.getOrDefault(s - targetSum, 0);\n        cnt.merge(s, 1, Integer::sum);\n        ans += dfs(node.left, s);\n        ans += dfs(node.right, s);\n        cnt.merge(s, -1, Integer::sum);\n        return ans;\n    }\n}",
+  "python": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def pathSum(self, root: Optional[TreeNode], targetSum: int) -> int:\n        def dfs(node, s):\n            if node is None:\n                return 0\n            s += node.val\n            ans = cnt[s - targetSum]\n            cnt[s] += 1\n            ans += dfs(node.left, s)\n            ans += dfs(node.right, s)\n            cnt[s] -= 1\n            return ans\n\n        cnt = Counter({0: 1})\n        return dfs(root, 0)",
+  "examples": [
+    {
+      "input": "root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8",
+      "output": "3"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/path-sum-iii/",
+  "fallbackSource": "https://leetcode.cn/problems/path-sum-iii/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/path-sum-iii/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0400-0499/0437.Path%20Sum%20III/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0400-0499/0437.Path%20Sum%20III/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：哈希表 + 前缀和 + 递归\n\n思考\n\n路径必须向下，枚举每个祖先再向下扫描是 O(n²)。路径和等于 targetSum 可改写成「当前前缀和减去某个祖先前缀和」。\n\n先序累加前缀和 s，用哈希表统计根到当前结点的前缀出现次数， cnt[s-targetSum] 即以此为终点的合法路径数。回溯时撤销 s，避免把另一条分支算进来。\n\n初始 cnt[0]=1，对应从根出发整段刚好等于目标。先查询再插入，路径不含「当前结点用两次」。\n\n我们可以运用前缀和的思想，对二叉树进行递归遍历，同时用哈希表 cnt 统计从根节点到当前节点的路径上各个前缀和出现的次数。\n\n我们设计一个递归函数 dfs(node, s)，表示当前遍历到的节点为 node，从根节点到当前节点的路径上的前缀和为 s。函数的返回值是统计以 node 节点及其子树节点作为路径终点且路径和为 targetSum 的路径数目。那么答案就是 dfs(root, 0)。\n\n函数 dfs(node, s) 的递归过程如下：\n\n- 如果当前节点 node 为空，则返回 0。\n- 计算从根节点到当前节点的路径上的前缀和 s。\n- 用 cnt[s - targetSum] 表示以当前节点为路径终点且路径和为 targetSum 的路径数目，其中 cnt[s - targetSum] 即为 cnt 中前缀和为 s - targetSum 的个数。\n- 将前缀和 s 的计数值加 1，即 cnt[s] = cnt[s] + 1。\n- 递归地遍历当前节点的左右子节点，即调用函数 dfs(node.left, s) 和 dfs(node.right, s)，并将它们的返回值相加。\n- 在返回值计算完成以后，需要将当前节点的前缀和 s 的计数值减 1，即执行 cnt[s] = cnt[s] - 1。\n- 最后返回答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 是二叉树的节点个数。",
+  "summaryText": "映射只记录当前祖先路径上的前缀和次数；进入节点先查询，离开节点必须撤销。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过路径总和 III掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "104"
+  ],
+  "recognition": "路径可以从任意祖先开始，但必须向下；沿根到当前节点记录前缀和，能否复用子数组求和的关系？",
+  "bruteForce": "直观做法是方法一：哈希表 + 前缀和 + 递归；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "路径可以从任意祖先开始，但必须向下；沿根到当前节点记录前缀和，能否复用子数组求和的关系？"
+    },
+    {
+      "level": 2,
+      "text": "映射只记录当前祖先路径上的前缀和次数；进入节点先查询，离开节点必须撤销。"
+    },
+    {
+      "level": 3,
+      "text": "深度优先遍历时维护根到当前节点的前缀和。以当前节点为终点的合法路径数，是祖先前缀中 currentSum−target 的出现次数。查询后加入当前前缀，再递归左右子树，返回前将次数减一。撤销保证兄弟分支不会互相影响，空前缀零需初始记录一次。"
+    },
+    {
+      "level": 4,
+      "text": "count ← {0:1}\nvisit(node,sum)：\n    若 node 为空：返回 0\n    sum ← sum+node.val\n    answer ← count[sum−target] 或 0\n    count[sum] 的次数加一\n    answer ← answer+visit(node.left,sum)+visit(node.right,sum)\n    count[sum] 的次数减一\n    返回 answer\n返回 visit(root,0)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "深度优先遍历时维护根到当前节点的前缀和。",
+    "以当前节点为终点的合法路径数，是祖先前缀中 currentSum−target 的出现次数。",
+    "查询后加入当前前缀，再递归左右子树，返回前将次数减一。",
+    "撤销保证兄弟分支不会互相影响，空前缀零需初始记录一次。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8 → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足路径总和 III约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把路径总和 III的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 前缀和 + 递归，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "pathSum",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      },
+      {
+        "name": "targetSum",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "437-basic-1",
+      "input": {
+        "root": [
+          10,
+          5,
+          -3,
+          3,
+          2,
+          null,
+          11,
+          3,
+          -2,
+          null,
+          1
+        ],
+        "targetSum": 8
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "437-boundary-1",
+      "input": {
+        "root": [
+          10,
+          5,
+          -3,
+          3,
+          2,
+          null,
+          11,
+          3,
+          -2,
+          null,
+          1
+        ],
+        "targetSum": 8
+      },
+      "expected": 3,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用路径总和 III的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "437-adversarial-1",
+      "input": {
+        "root": [
+          10,
+          5,
+          -3,
+          3,
+          2,
+          null,
+          11,
+          3,
+          -2,
+          null,
+          1
+        ],
+        "targetSum": 8
+      },
+      "expected": 3,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查路径总和 III的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8",
+    "output": "3",
+    "examples": [
+      {
+        "input": "root = [10,5,-3,3,2,null,11,3,-2,null,1], targetSum = 8",
+        "output": "3"
+      }
+    ]
+  }
+}

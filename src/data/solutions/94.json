@@ -1,0 +1,236 @@
+{
+  "id": "94",
+  "description": "给定一个二叉树的根节点 root ，返回 它的 中序 遍历 。\n\n示例 1：\n\n输入：root = [1,null,2,3]\n输出：[1,3,2]\n\n示例 2：\n\n输入：root = []\n输出：[]\n\n示例 3：\n\n输入：root = [1]\n输出：[1]\n\n提示：\n\n树中节点数目在范围 [0, 100] 内\n-100 <= Node.val <= 100\n\n进阶: 递归算法很简单，你可以通过迭代算法完成吗？",
+  "summary": "定义一个接收节点的递归过程，空节点不做任何事。非空时先完整访问左子树，再把当前节点值追加到答案，最后完整访问右子树。每棵子树都遵循同样的先左后根再右的顺序，因此合并后的序列就是整棵树的中序遍历。",
+  "explanation": "中序遍历的固定顺序是左子树、当前节点、右子树。能把同样的过程交给每个子树吗？\n\n递归处理左孩子，记录当前值，再递归处理右孩子；空节点直接返回。\n\n定义一个接收节点的递归过程，空节点不做任何事。非空时先完整访问左子树，再把当前节点值追加到答案，最后完整访问右子树。每棵子树都遵循同样的先左后根再右的顺序，因此合并后的序列就是整棵树的中序遍历。",
+  "java": "class Solution {\n    public List<Integer> inorderTraversal(TreeNode root) {\n        List<Integer> result = new ArrayList<>();\n        Deque<TreeNode> stack = new ArrayDeque<>();\n        // 先沿左孩子走到底，再访问当前节点和右子树。\n        while (root != null || !stack.isEmpty()) {\n            while (root != null) {\n                stack.push(root);\n                root = root.left;\n            }\n            root = stack.pop();\n            result.add(root.val);\n            root = root.right;\n        }\n        return result;\n    }\n}",
+  "python": "class Solution:\n    def inorderTraversal(self, root: Optional[TreeNode]) -> List[int]:\n        result, stack = [], []\n        # 栈保存尚未访问的祖先节点。\n        while root or stack:\n            while root:\n                stack.append(root)\n                root = root.left\n            root = stack.pop()\n            result.append(root.val)\n            root = root.right\n        return result",
+  "examples": [
+    {
+      "input": "root = [1,null,2,3]",
+      "output": "[1,3,2]"
+    },
+    {
+      "input": "root = []",
+      "output": "[]"
+    },
+    {
+      "input": "root = [1]",
+      "output": "[1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0094.%E5%9F%8E%E5%B8%82%E9%97%B4%E8%B4%A7%E7%89%A9%E8%BF%90%E8%BE%93I-SPFA.html",
+  "fallbackSource": "https://leetcode.cn/problems/binary-tree-inorder-traversal/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0094.%E5%9F%8E%E5%B8%82%E9%97%B4%E8%B4%A7%E7%89%A9%E8%BF%90%E8%BE%93I-SPFA.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/kamacoder/0094.%E5%9F%8E%E5%B8%82%E9%97%B4%E8%B4%A7%E7%89%A9%E8%BF%90%E8%BE%93I-SPFA.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/kamacoder/0094.%E5%9F%8E%E5%B8%82%E9%97%B4%E8%B4%A7%E7%89%A9%E8%BF%90%E8%BE%93I-SPFA.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240328104119.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240328104119.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240411115555.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240411115555.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240411115544.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240411115544.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240412110348.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240412110348.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240412110420.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240412110420.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240412110445.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240412110445.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240729161116.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240729161116.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240411115424.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240411115424.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240416104138.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240416104138.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240412111849.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240412111849.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "thinking": "定义一个接收节点的递归过程，空节点不做任何事。非空时先完整访问左子树，再把当前节点值追加到答案，最后完整访问右子树。每棵子树都遵循同样的先左后根再右的顺序，因此合并后的序列就是整棵树的中序遍历。\n\n递归处理左孩子，记录当前值，再递归处理右孩子；空节点直接返回。",
+  "summaryText": "递归处理左孩子，记录当前值，再递归处理右孩子；空节点直接返回。",
+  "sourceNote": "参考链接保留供核对，站内参考代码与步骤已按本题重写校正。",
+  "learningGoal": "通过二叉树的中序遍历掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "中序遍历的固定顺序是左子树、当前节点、右子树。能把同样的过程交给每个子树吗？",
+  "bruteForce": "直接按左子树、根节点、右子树递归访问即可；若树很深，可改用显式栈保存访问路径，避免递归深度过大。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "中序遍历的固定顺序是左子树、当前节点、右子树。能把同样的过程交给每个子树吗？"
+    },
+    {
+      "level": 2,
+      "text": "递归处理左孩子，记录当前值，再递归处理右孩子；空节点直接返回。"
+    },
+    {
+      "level": 3,
+      "text": "定义一个接收节点的递归过程，空节点不做任何事。非空时先完整访问左子树，再把当前节点值追加到答案，最后完整访问右子树。每棵子树都遵循同样的先左后根再右的顺序，因此合并后的序列就是整棵树的中序遍历。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 空列表\nvisit(node)：\n    若 node 为空：返回\n    visit(node.left)\n    将 node.val 追加到 answer\n    visit(node.right)\nvisit(root)\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "定义一个接收节点的递归过程，空节点不做任何事。",
+    "非空时先完整访问左子树，再把当前节点值追加到答案，最后完整访问右子树。",
+    "每棵子树都遵循同样的先左后根再右的顺序，因此合并后的序列就是整棵树的中序遍历。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [1,null,2,3] → [1,3,2]。"
+  ],
+  "correctness": "每个非空节点先完整处理左子树，再记录自身，最后完整处理右子树。空子树不产生元素，左右子树按相同规则递归，因此每个节点恰好出现一次，整体顺序始终为左、根、右。",
+  "pitfalls": [
+    "不要把二叉树的中序遍历的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用中序遍历的顺序是「左、根、右」。树本身按递归定义，因此可以直接递归：先走完左子树，再记录根，再走右子树。 n ≤ 100，最坏 O(n) 的递归栈可以接受。进阶才要求改成迭代。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "inorderTraversal",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      }
+    ],
+    "returns": "List<Integer>",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "94-basic-1",
+      "input": {
+        "root": [
+          1,
+          null,
+          2,
+          3
+        ]
+      },
+      "expected": [
+        1,
+        3,
+        2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "94-boundary-1",
+      "input": {
+        "root": []
+      },
+      "expected": [],
+      "tags": [
+        "boundary"
+      ],
+      "note": "空树。"
+    },
+    {
+      "id": "94-adversarial-1",
+      "input": {
+        "root": [
+          3,
+          2,
+          null,
+          1
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        3
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "只有左孩子的退化树。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [1,null,2,3]",
+    "output": "[1,3,2]",
+    "examples": [
+      {
+        "input": "root = [1,null,2,3]",
+        "output": "[1,3,2]"
+      }
+    ]
+  }
+}

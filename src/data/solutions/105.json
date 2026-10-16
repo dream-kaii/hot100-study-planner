@@ -1,0 +1,206 @@
+{
+  "id": "105",
+  "description": "给定两个整数数组 preorder 和 inorder ，其中 preorder 是二叉树的先序遍历， inorder 是同一棵树的中序遍历，请构造二叉树并返回其根节点。\n\n示例 1:\n\n输入: preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]\n输出: [3,9,20,null,null,15,7]\n\n示例 2:\n\n输入: preorder = [-1], inorder = [-1]\n输出: [-1]\n\n提示:\n\n1 <= preorder.length <= 3000\ninorder.length == preorder.length\n-3000 <= preorder[i], inorder[i] <= 3000\npreorder 和 inorder 均 无重复 元素\ninorder 均出现在 preorder\npreorder 保证 为二叉树的前序遍历序列\ninorder 保证 为二叉树的中序遍历序列",
+  "summary": "先建立值到中序下标的映射。递归时用前序起点确定根，在中序区间找到根位置，左边元素数量就是左子树长度。左子树从前序下一位开始，右子树则跳过根和整段左子树；中序区间也以根分开。空区间返回空，依次接好左右孩子。",
+  "explanation": "前序第一个数是根，中序里根的左右分别属于左右子树。如何确定左子树占用多少个前序元素？\n\n用映射记录中序下标，根据根的中序位置计算左子树长度，再分割两个遍历区间。\n\n先建立值到中序下标的映射。递归时用前序起点确定根，在中序区间找到根位置，左边元素数量就是左子树长度。左子树从前序下一位开始，右子树则跳过根和整段左子树；中序区间也以根分开。空区间返回空，依次接好左右孩子。",
+  "java": "class Solution {\n    public TreeNode buildTree(int[] preorder, int[] inorder) {\n        Map<Integer, Integer> positions = new HashMap<>();\n        for (int i = 0; i < inorder.length; i++) positions.put(inorder[i], i);\n        return build(preorder, 0, 0, inorder.length, positions);\n    }\n    private TreeNode build(int[] preorder, int preStart, int inStart, int size,\n                           Map<Integer, Integer> positions) {\n        if (size == 0) return null;\n        TreeNode root = new TreeNode(preorder[preStart]);\n        int leftSize = positions.get(root.val) - inStart;\n        // 前序的根之后，先是完整左子树，再是完整右子树。\n        root.left = build(preorder, preStart + 1, inStart, leftSize, positions);\n        root.right = build(preorder, preStart + leftSize + 1,\n                           inStart + leftSize + 1, size - leftSize - 1, positions);\n        return root;\n    }\n}",
+  "python": "class Solution:\n    def buildTree(self, preorder: List[int], inorder: List[int]) -> Optional[TreeNode]:\n        positions = {value: i for i, value in enumerate(inorder)}\n        def build(pre_start, in_start, size):\n            if size == 0:\n                return None\n            root = TreeNode(preorder[pre_start])\n            left_size = positions[root.val] - in_start\n            # 用下标限定区间，避免反复切片。\n            root.left = build(pre_start + 1, in_start, left_size)\n            root.right = build(pre_start + left_size + 1,\n                               in_start + left_size + 1, size - left_size - 1)\n            return root\n        return build(0, 0, len(inorder))",
+  "examples": [
+    {
+      "input": "preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]",
+      "output": "[3,9,20,null,null,15,7]"
+    },
+    {
+      "input": "preorder = [-1], inorder = [-1]",
+      "output": "[-1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0105.%E6%9C%89%E5%90%91%E5%9B%BE%E7%9A%84%E5%AE%8C%E5%85%A8%E5%8F%AF%E8%BE%BE%E6%80%A7.html",
+  "fallbackSource": "https://leetcode.cn/problems/construct-binary-tree-from-preorder-and-inorder-traversal/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0105.%E6%9C%89%E5%90%91%E5%9B%BE%E7%9A%84%E5%AE%8C%E5%85%A8%E5%8F%AF%E8%BE%BE%E6%80%A7.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/kamacoder/0105.%E6%9C%89%E5%90%91%E5%9B%BE%E7%9A%84%E5%AE%8C%E5%85%A8%E5%8F%AF%E8%BE%BE%E6%80%A7.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/kamacoder/0105.%E6%9C%89%E5%90%91%E5%9B%BE%E7%9A%84%E5%AE%8C%E5%85%A8%E5%8F%AF%E8%BE%BE%E6%80%A7.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "先建立值到中序下标的映射。递归时用前序起点确定根，在中序区间找到根位置，左边元素数量就是左子树长度。左子树从前序下一位开始，右子树则跳过根和整段左子树；中序区间也以根分开。空区间返回空，依次接好左右孩子。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240522174707.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240522174707.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240522175451.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240522175451.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "用映射记录中序下标，根据根的中序位置计算左子树长度，再分割两个遍历区间。",
+  "sourceNote": "参考链接保留供核对，站内参考代码与步骤已按本题重写校正。",
+  "learningGoal": "通过从前序与中序遍历序列构造二叉树掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "94",
+    "102"
+  ],
+  "recognition": "前序第一个数是根，中序里根的左右分别属于左右子树。如何确定左子树占用多少个前序元素？",
+  "bruteForce": "可以每次线性扫描中序区间寻找根，再递归切分左右子树；用下标映射可以省去重复查找。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "前序第一个数是根，中序里根的左右分别属于左右子树。如何确定左子树占用多少个前序元素？"
+    },
+    {
+      "level": 2,
+      "text": "用映射记录中序下标，根据根的中序位置计算左子树长度，再分割两个遍历区间。"
+    },
+    {
+      "level": 3,
+      "text": "先建立值到中序下标的映射。递归时用前序起点确定根，在中序区间找到根位置，左边元素数量就是左子树长度。左子树从前序下一位开始，右子树则跳过根和整段左子树；中序区间也以根分开。空区间返回空，依次接好左右孩子。"
+    },
+    {
+      "level": 4,
+      "text": "position ← 中序值到下标的映射\nbuild(preStart,inLeft,inRight)：\n    若 inLeft > inRight：返回 空\n    value ← preorder[preStart]；mid ← position[value]\n    leftSize ← mid−inLeft；node ← 新节点(value)\n    node.left ← build(preStart+1,inLeft,mid−1)\n    node.right ← build(preStart+leftSize+1,mid+1,inRight)\n    返回 node\n返回 build(0,0,n−1)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先建立值到中序下标的映射。",
+    "递归时用前序起点确定根，在中序区间找到根位置，左边元素数量就是左子树长度。",
+    "左子树从前序下一位开始，右子树则跳过根和整段左子树；中序区间也以根分开。",
+    "空区间返回空，依次接好左右孩子。"
+  ],
+  "walkthrough": [
+    "公开示例：preorder = [3,9,20,15,7], inorder = [9,3,15,20,7] → [3,9,20,null,null,15,7]。"
+  ],
+  "correctness": "前序区间的首元素唯一确定根，中序中的根位置唯一分隔左右子树；左子树长度同时确定前序区间的切分位置。每次递归严格缩小对应的同一棵子树区间，空区间终止，因此构造的树同时满足给定前序和中序遍历。",
+  "pitfalls": [
+    "不要把从前序与中序遍历序列构造二叉树的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 递归，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "buildTree",
+    "params": [
+      {
+        "name": "preorder",
+        "type": "int[]"
+      },
+      {
+        "name": "inorder",
+        "type": "int[]"
+      }
+    ],
+    "returns": "TreeNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "105-basic-1",
+      "input": {
+        "preorder": [
+          3,
+          9,
+          20,
+          15,
+          7
+        ],
+        "inorder": [
+          9,
+          3,
+          15,
+          20,
+          7
+        ]
+      },
+      "expected": [
+        3,
+        9,
+        20,
+        null,
+        null,
+        15,
+        7
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "105-boundary-1",
+      "input": {
+        "preorder": [
+          -1
+        ],
+        "inorder": [
+          -1
+        ]
+      },
+      "expected": [
+        -1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单节点树。"
+    },
+    {
+      "id": "105-adversarial-1",
+      "input": {
+        "preorder": [
+          1,
+          2,
+          3
+        ],
+        "inorder": [
+          3,
+          2,
+          1
+        ]
+      },
+      "expected": [
+        1,
+        2,
+        null,
+        3
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "左侧退化树检验区间边界。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\npreorder = [3,9,20,15,7], inorder = [9,3,15,20,7]",
+    "output": "[3,9,20,null,null,15,7]",
+    "examples": [
+      {
+        "input": "preorder = [3,9,20,15,7], inorder = [9,3,15,20,7]",
+        "output": "[3,9,20,null,null,15,7]"
+      }
+    ]
+  }
+}

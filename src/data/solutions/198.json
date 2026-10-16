@@ -1,0 +1,164 @@
+{
+  "id": "198",
+  "description": "你是一个专业的小偷，计划偷窃沿街的房屋。每间房内都藏有一定的现金，影响你偷窃的唯一制约因素就是相邻的房屋装有相互连通的防盗系统，如果两间相邻的房屋在同一晚上被小偷闯入，系统会自动报警。\n\n给定一个代表每个房屋存放金额的非负整数数组，计算你 不触动警报装置的情况下 ，一夜之内能够偷窃到的最高金额。\n\n示例 1：\n\n输入：[1,2,3,1]\n输出：4\n解释：偷窃 1 号房屋 (金额 = 1) ，然后偷窃 3 号房屋 (金额 = 3)。\n偷窃到的最高金额 = 1 + 3 = 4 。\n\n示例 2：\n\n输入：[2,7,9,3,1]\n输出：12\n解释：偷窃 1 号房屋 (金额 = 2), 偷窃 3 号房屋 (金额 = 9)，接着偷窃 5 号房屋 (金额 = 1)。\n偷窃到的最高金额 = 2 + 9 + 1 = 12 。\n\n提示：\n\n1\n0",
+  "summary": "按顺序计算前若干房子的最高收益。当前房不偷时收益是上一状态，偷时收益是当前金额加上前两间的最优值，取两者最大。用两个变量保存前一项与前两项并滚动更新，初值都为零，空前缀没有收益。最终状态即不触发相邻警报的最大金额。",
+  "explanation": "大家如果刚接触这样的题目，会有点困惑，当前的状态我是偷还是不偷呢？\n\n仔细一想，当前房屋偷与不偷取决于 前一个房屋和前两个房屋是否被偷了。\n\n所以这里就更感觉到，当前状态和前面状态会有一种依赖关系，那么这种依赖关系都是动规的递推公式。\n\n当然以上是大概思路，打家劫舍是dp解决的经典问题，接下来我们来动规五部曲分析如下：\n\n1. 确定dp数组（dp table）以及下标的含义\n\ndp[i]：考虑下标i（包括i）以内的房屋，最多可以偷窃的金额为dp[i]。\n\n2. 确定递推公式\n\n决定dp[i]的因素就是第i房间偷还是不偷。\n\n如果偷第i房间，那么dp[i] = dp[i - 2] + nums[i] ，即：第i-1房一定是不考虑的，找出 下标i-2（包括i-2）以内的房屋，最多可以偷窃的金额为dp[i-2] 加上第i房间偷到的钱。\n\n如果不偷第i房间，那么dp[i] = dp[i - 1]，即考 虑i-1房，（注意这里是考虑，并不是一定要偷i-1房，这是很多同学容易混淆的点）\n\n然后dp[i]取最大值，即dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);\n\n3. dp数组如何初始化\n\n从递推公式dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);可以看出，递推公式的基础就是dp[0] 和 dp[1]\n\n从dp[i]的定义上来讲，dp[0] 一定是 nums[0]，dp[1]就是nums[0]和nums[1]的最大值即：dp[1] = max(nums[0], nums[1]);\n\n代码如下：\n\n4. 确定遍历顺序\n\ndp[i] 是根据dp[i - 2] 和 dp[i - 1] 推导出来的，那么一定是从前到后遍历！\n\n5. 举例推导dp数组\n\n以示例二，输入[2,7,9,3,1]为例。\n\n红框dp[nums.size() - 1]为结果。\n\n以上分析完毕，\n\n时间复杂度: O(n)\n空间复杂度: O(n)\n\n总结\n打家劫舍是DP解决的经典题目，这道题也是打家劫舍入门级题目，后面我们还会变种方式来打劫的。",
+  "java": "class Solution {\n\tpublic int rob(int[] nums) {\n\t\tif (nums == null || nums.length == 0) return 0;\n\t\tif (nums.length == 1) return nums[0];\n\n\t\tint[] dp = new int[nums.length];\n\t\tdp[0] = nums[0];\n\t\tdp[1] = Math.max(dp[0], nums[1]);\n\t\tfor (int i = 2; i < nums.length; i++) {\n\t\t\tdp[i] = Math.max(dp[i - 1], dp[i - 2] + nums[i]);\n\t\t}\n\n\t\treturn dp[nums.length - 1];\n\t}\n}",
+  "python": "class Solution:\n    def rob(self, nums: List[int]) -> int:\n        if len(nums) == 0:  # 如果没有房屋，返回0\n            return 0\n        if len(nums) == 1:  # 如果只有一个房屋，返回其金额\n            return nums[0]\n\n        # 创建一个动态规划数组，用于存储最大金额\n        dp = [0] * len(nums)\n        dp[0] = nums[0]  # 将dp的第一个元素设置为第一个房屋的金额\n        dp[1] = max(nums[0], nums[1])  # 将dp的第二个元素设置为第一二个房屋中的金额较大者\n\n        # 遍历剩余的房屋\n        for i in range(2, len(nums)):\n            # 对于每个房屋，选择抢劫当前房屋和抢劫前一个房屋的最大金额\n            dp[i] = max(dp[i - 2] + nums[i], dp[i - 1])\n\n        return dp[-1]  # 返回最后一个房屋中可抢劫的最大金额",
+  "examples": [
+    {
+      "input": "[1,2,3,1]",
+      "output": "4"
+    },
+    {
+      "input": "[2,7,9,3,1]",
+      "output": "12"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0198.%E6%89%93%E5%AE%B6%E5%8A%AB%E8%88%8D.html",
+  "fallbackSource": "https://leetcode.cn/problems/house-robber/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0198.%E6%89%93%E5%AE%B6%E5%8A%AB%E8%88%8D.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0198.%E6%89%93%E5%AE%B6%E5%8A%AB%E8%88%8D.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0198.%E6%89%93%E5%AE%B6%E5%8A%AB%E8%88%8D.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "大家如果刚接触这样的题目，会有点困惑，当前的状态我是偷还是不偷呢？\n\n仔细一想，当前房屋偷与不偷取决于 前一个房屋和前两个房屋是否被偷了。\n\n所以这里就更感觉到，当前状态和前面状态会有一种依赖关系，那么这种依赖关系都是动规的递推公式。\n\n当然以上是大概思路，打家劫舍是dp解决的经典问题，接下来我们来动规五部曲分析如下：\n\n1. 确定dp数组（dp table）以及下标的含义\n\ndp[i]：考虑下标i（包括i）以内的房屋，最多可以偷窃的金额为dp[i]。\n\n2. 确定递推公式\n\n决定dp[i]的因素就是第i房间偷还是不偷。\n\n如果偷第i房间，那么dp[i] = dp[i - 2] + nums[i] ，即：第i-1房一定是不考虑的，找出 下标i-2（包括i-2）以内的房屋，最多可以偷窃的金额为dp[i-2] 加上第i房间偷到的钱。\n\n如果不偷第i房间，那么dp[i] = dp[i - 1]，即考 虑i-1房，（注意这里是考虑，并不是一定要偷i-1房，这是很多同学容易混淆的点）\n\n然后dp[i]取最大值，即dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);\n\n3. dp数组如何初始化\n\n从递推公式dp[i] = max(dp[i - 2] + nums[i], dp[i - 1]);可以看出，递推公式的基础就是dp[0] 和 dp[1]\n\n从dp[i]的定义上来讲，dp[0] 一定是 nums[0]，dp[1]就是nums[0]和nums[1]的最大值即：dp[1] = max(nums[0], nums[1]);\n\n代码如下：\n\n4. 确定遍历顺序\n\ndp[i] 是根据dp[i - 2] 和 dp[i - 1] 推导出来的，那么一定是从前到后遍历！\n\n5. 举例推导dp数组\n\n以示例二，输入[2,7,9,3,1]为例。\n\n红框dp[nums.size() - 1]为结果。\n\n以上分析完毕，\n\n时间复杂度: O(n)\n空间复杂度: O(n)",
+  "summaryText": "不偷当前房子沿用上一间的最优值；偷它则加上隔一间之前的最优值。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "198.打家劫舍",
+      "url": "https://file1.kamacoder.com/i/algo/20210221170954115.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210221170954115.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过打家劫舍掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "70"
+  ],
+  "recognition": "处理一间房子时，选择偷它或不偷它，对前面可用的最大收益分别有什么限制？",
+  "bruteForce": "直观做法是方法一：记忆化搜索；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "处理一间房子时，选择偷它或不偷它，对前面可用的最大收益分别有什么限制？"
+    },
+    {
+      "level": 2,
+      "text": "不偷当前房子沿用上一间的最优值；偷它则加上隔一间之前的最优值。"
+    },
+    {
+      "level": 3,
+      "text": "按顺序计算前若干房子的最高收益。当前房不偷时收益是上一状态，偷时收益是当前金额加上前两间的最优值，取两者最大。用两个变量保存前一项与前两项并滚动更新，初值都为零，空前缀没有收益。最终状态即不触发相邻警报的最大金额。"
+    },
+    {
+      "level": 4,
+      "text": "beforeTwo ← 0；beforeOne ← 0\n对每间房的金额 money：\n    take ← beforeTwo+money\n    skip ← beforeOne\n    current ← max(take,skip)\n    beforeTwo ← beforeOne\n    beforeOne ← current\n返回 beforeOne",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "按顺序计算前若干房子的最高收益。",
+    "当前房不偷时收益是上一状态，偷时收益是当前金额加上前两间的最优值，取两者最大。",
+    "用两个变量保存前一项与前两项并滚动更新，初值都为零，空前缀没有收益。",
+    "最终状态即不触发相邻警报的最大金额。"
+  ],
+  "walkthrough": [
+    "公开示例：[1,2,3,1] → 4。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足打家劫舍约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把打家劫舍的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：记忆化搜索，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "rob",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "198-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3,
+          1
+        ]
+      },
+      "expected": 4,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "198-boundary-1",
+      "input": {
+        "nums": [
+          9
+        ]
+      },
+      "expected": 9,
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有一间房。"
+    },
+    {
+      "id": "198-adversarial-1",
+      "input": {
+        "nums": [
+          2,
+          1,
+          1,
+          2
+        ]
+      },
+      "expected": 4,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "必须跨过相邻房屋，不能只选奇数或偶数位置。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[1,2,3,1]",
+    "output": "4",
+    "examples": [
+      {
+        "input": "[1,2,3,1]",
+        "output": "4"
+      }
+    ]
+  }
+}

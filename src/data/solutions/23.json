@@ -1,0 +1,213 @@
+{
+  "id": "23",
+  "description": "给你一个链表数组，每个链表都已经按升序排列。\n\n请你将所有链表合并到一个升序链表中，返回合并后的链表。\n\n示例 1：\n\n输入：lists = [[1,4,5],[1,3,4],[2,6]]\n输出：[1,1,2,3,4,4,5,6]\n解释：链表数组如下：\n[\n1-4-5,\n1-3-4,\n2-6\n]\n将它们合并到一个有序链表中得到。\n1-1-2-3-4-4-5-6\n\n示例 2：\n\n输入：lists = []\n输出：[]\n\n示例 3：\n\n输入：lists = [[]]\n输出：[]\n\n提示：\n\nk == lists.length\n0 <= k <= 10⁴\n0 <= lists[i].length <= 500\n-10⁴ <= lists[i][j] <= 10⁴\nlists[i] 按 升序 排列\nlists[i].length 的总和不超过 10⁴",
+  "summary": "建立按节点值排序的最小堆，将每条非空链表头节点入堆。反复弹出最小节点接到结果尾部，再把该节点的后继入堆。每条链表始终最多贡献一个候选，因此堆大小不超过 k。数值相等时用编号区分堆元素，避免语言尝试直接比较节点对象。",
+  "explanation": "方法一：优先队列（小根堆）\n\n思考\n\n若将 k 条链表依次两两合并，总节点 n ≤ 10⁴ 时最坏时间 O(nk)。在 k ≤ 10⁴ 的范围下无法通过。全部取出排序再建表虽为 O(nlog n)，却没有利用每条链表已经有序这一条件。\n\n任意时刻，下一步该接到答案上的节点只可能是各链表当前的头。若每次线性扫描这 k 个候选，乘上 n 个节点便回到 O(nk)。\n\n因此用小根堆维护至多 k 个候选头：每次取出最小者接到结果尾部，再把它的后继（若存在）入堆。每个节点进出堆各一次，时间 O(nlog k)。\n\n我们可以创建一个小根堆来 pq 维护所有链表的头节点，每次从小根堆中取出值最小的节点，添加到结果链表的末尾，然后将该节点的下一个节点加入堆中，重复上述步骤直到堆为空。\n\n时间复杂度 O(n×log k)，空间复杂度 O(k)。其中 n 是所有链表节点数目的总和，而 k 是题目给定的链表数目。\n\n总结",
+  "java": "/**\n * Definition for singly-linked list.\n * public class ListNode {\n *     int val;\n *     ListNode next;\n *     ListNode() {}\n *     ListNode(int val) { this.val = val; }\n *     ListNode(int val, ListNode next) { this.val = val; this.next = next; }\n * }\n */\nclass Solution {\n    public ListNode mergeKLists(ListNode[] lists) {\n        PriorityQueue<ListNode> pq = new PriorityQueue<>((a, b) -> a.val - b.val);\n        for (ListNode head : lists) {\n            if (head != null) {\n                pq.offer(head);\n            }\n        }\n        ListNode dummy = new ListNode();\n        ListNode cur = dummy;\n        while (!pq.isEmpty()) {\n            ListNode node = pq.poll();\n            if (node.next != null) {\n                pq.offer(node.next);\n            }\n            cur.next = node;\n            cur = cur.next;\n        }\n        return dummy.next;\n    }\n}",
+  "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def mergeKLists(self, lists: List[Optional[ListNode]]) -> Optional[ListNode]:\n        setattr(ListNode, \"__lt__\", lambda a, b: a.val < b.val)\n        pq = [head for head in lists if head]\n        heapify(pq)\n        dummy = cur = ListNode()\n        while pq:\n            node = heappop(pq)\n            if node.next:\n                heappush(pq, node.next)\n            cur.next = node\n            cur = cur.next\n        return dummy.next",
+  "examples": [
+    {
+      "input": "lists = [[1,4,5],[1,3,4],[2,6]]",
+      "output": "[1,1,2,3,4,4,5,6]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n×log k)",
+    "space": "O(k)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/merge-k-sorted-lists/",
+  "fallbackSource": "https://leetcode.cn/problems/merge-k-sorted-lists/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/merge-k-sorted-lists/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0023.Merge%20k%20Sorted%20Lists/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0023.Merge%20k%20Sorted%20Lists/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：优先队列（小根堆）\n\n思考\n\n若将 k 条链表依次两两合并，总节点 n ≤ 10⁴ 时最坏时间 O(nk)。在 k ≤ 10⁴ 的范围下无法通过。全部取出排序再建表虽为 O(nlog n)，却没有利用每条链表已经有序这一条件。\n\n任意时刻，下一步该接到答案上的节点只可能是各链表当前的头。若每次线性扫描这 k 个候选，乘上 n 个节点便回到 O(nk)。\n\n因此用小根堆维护至多 k 个候选头：每次取出最小者接到结果尾部，再把它的后继（若存在）入堆。每个节点进出堆各一次，时间 O(nlog k)。\n\n我们可以创建一个小根堆来 pq 维护所有链表的头节点，每次从小根堆中取出值最小的节点，添加到结果链表的末尾，然后将该节点的下一个节点加入堆中，重复上述步骤直到堆为空。\n\n时间复杂度 O(n×log k)，空间复杂度 O(k)。其中 n 是所有链表节点数目的总和，而 k 是题目给定的链表数目。",
+  "summaryText": "把各链表的非空头放入最小堆，每次取出最小节点，接到结果后再放入它的后继。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过合并 K 个升序链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "21",
+    "215"
+  ],
+  "recognition": "每条链表都已排序，所有剩余节点中最小值必然来自某条链表的当前头节点。",
+  "bruteForce": "直观做法是方法一：优先队列（小根堆）；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "每条链表都已排序，所有剩余节点中最小值必然来自某条链表的当前头节点。"
+    },
+    {
+      "level": 2,
+      "text": "把各链表的非空头放入最小堆，每次取出最小节点，接到结果后再放入它的后继。"
+    },
+    {
+      "level": 3,
+      "text": "建立按节点值排序的最小堆，将每条非空链表头节点入堆。反复弹出最小节点接到结果尾部，再把该节点的后继入堆。每条链表始终最多贡献一个候选，因此堆大小不超过 k。数值相等时用编号区分堆元素，避免语言尝试直接比较节点对象。"
+    },
+    {
+      "level": 4,
+      "text": "heap ← 所有非空头节点，按值排序并附稳定编号\ndummy ← 哑节点；tail ← dummy\n当 heap 非空：\n    node ← 弹出最小节点\n    tail.next ← node；tail ← node\n    若 node.next 非空：\n        将 node.next 连同新编号加入 heap\n返回 dummy.next",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "建立按节点值排序的最小堆，将每条非空链表头节点入堆。",
+    "反复弹出最小节点接到结果尾部，再把该节点的后继入堆。",
+    "每条链表始终最多贡献一个候选，因此堆大小不超过 k。",
+    "数值相等时用编号区分堆元素，避免语言尝试直接比较节点对象。"
+  ],
+  "walkthrough": [
+    "公开示例：lists = [[1,4,5],[1,3,4],[2,6]] → [1,1,2,3,4,4,5,6]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足合并 K 个升序链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把合并 K 个升序链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：优先队列（小根堆），额外空间为O(k)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "mergeKLists",
+    "params": [
+      {
+        "name": "lists",
+        "type": "ListNode[]"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "23-basic-1",
+      "input": {
+        "lists": [
+          [
+            1,
+            4,
+            5
+          ],
+          [
+            1,
+            3,
+            4
+          ],
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        1,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "23-boundary-1",
+      "input": {
+        "lists": [
+          [
+            1,
+            4,
+            5
+          ],
+          [
+            1,
+            3,
+            4
+          ],
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        1,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用合并 K 个升序链表的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "23-adversarial-1",
+      "input": {
+        "lists": [
+          [
+            1,
+            4,
+            5
+          ],
+          [
+            1,
+            3,
+            4
+          ],
+          [
+            2,
+            6
+          ]
+        ]
+      },
+      "expected": [
+        1,
+        1,
+        2,
+        3,
+        4,
+        4,
+        5,
+        6
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查合并 K 个升序链表的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nlists = [[1,4,5],[1,3,4],[2,6]]",
+    "output": "[1,1,2,3,4,4,5,6]",
+    "examples": [
+      {
+        "input": "lists = [[1,4,5],[1,3,4],[2,6]]",
+        "output": "[1,1,2,3,4,4,5,6]"
+      }
+    ]
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "id": "763",
+  "description": "给你一个字符串 s 。我们要把这个字符串划分为尽可能多的片段，同一字母最多出现在一个片段中。例如，字符串 \"ababcc\" 能够被分为 [\"abab\", \"cc\"]，但类似 [\"aba\", \"bcc\"] 或 [\"ab\", \"ab\", \"cc\"] 的划分是非法的。\n\n注意，划分结果需要满足：将所有划分结果按顺序连接，得到的字符串仍然是 s 。\n\n返回一个表示每个字符串片段的长度的列表。\n\n示例 1：\n\n输入：s = \"ababcbacadefegdehijhklij\"\n输出：[9,7,8]\n解释：\n划分结果为 \"ababcbaca\"、\"defegde\"、\"hijhklij\" 。\n每个字母最多出现在一个片段中。\n像 \"ababcbacadefegde\", \"hijhklij\" 这样的划分是错误的，因为划分的片段数较少。\n\n示例 2：\n\n输入：s = \"eccbbbbdec\"\n输出：[10]\n\n提示：\n\n1 <= s.length <= 500\ns 仅由小写英文字母组成",
+  "summary": "先遍历字符串，记录每个字符的最后下标。第二遍维护当前片段起点和必须覆盖的最远终点，每遇字符就用其最后位置更新终点。当扫描下标恰好到终点时，片段内所有字符都不会再在后面出现，因此立刻切分，记录长度并开始下一片段。",
+  "explanation": "一想到分割字符串就想到了回溯，但本题其实不用回溯去暴力搜索。\n\n题目要求同一字母最多出现在一个片段中，那么如何把同一个字母的都圈在同一个区间里呢？\n\n如果没有接触过这种题目的话，还挺有难度的。\n\n在遍历的过程中相当于是要找每一个字母的边界，如果找到之前遍历过的所有字母的最远边界，说明这个边界就是分割点了。此时前面出现过所有字母，最远也就到这个边界了。\n\n可以分为如下两步：\n\n统计每一个字符最后出现的位置\n从头遍历字符，并更新字符的最远出现下标，如果找到字符最远出现位置下标和当前下标相等了，则找到了分割点\n\n如图：\n\n明白原理之后，代码并不复杂，如下：\n\n时间复杂度：O(n)\n空间复杂度：O(1)，使用的hash数组是固定大小\n\n总结\n这道题目leetcode标记为贪心算法，说实话，我没有感受到贪心，找不出局部最优推出全局最优的过程。就是用最远出现距离模拟了圈字符的行为。\n\n但这道题目的思路是很巧妙的，所以有必要介绍给大家做一做，感受一下。\n\n补充\n\n这里提供一种与452.用最少数量的箭引爆气球、435.无重叠区间相同的思路。\n\n统计字符串中所有字符的起始和结束位置，记录这些区间(实际上也就是435.无重叠区间题目里的输入)，将区间按左边界从小到大排序，找到边界将区间划分成组，互不重叠。找到的边界就是答案。",
+  "java": "class Solution {\n    public List<Integer> partitionLabels(String s) {\n        List<Integer> list = new LinkedList<>();\n        int[] edge = new int[26];\n        char[] chars = s.toCharArray();\n        for (int i = 0; i < chars.length; i++) {\n            edge[chars[i] - 'a'] = i;\n        }\n        int idx = 0;\n        int last = -1;\n        for (int i = 0; i < chars.length; i++) {\n            idx = Math.max(idx,edge[chars[i] - 'a']);\n            if (i == idx) {\n                list.add(i - last);\n                last = i;\n            }\n        }\n        return list;\n    }\n}",
+  "python": "class Solution:\n    def partitionLabels(self, s: str) -> List[int]:\n        last_occurrence = {}  # 存储每个字符最后出现的位置\n        for i, ch in enumerate(s):\n            last_occurrence[ch] = i\n\n        result = []\n        start = 0\n        end = 0\n        for i, ch in enumerate(s):\n            end = max(end, last_occurrence[ch])  # 找到当前字符出现的最远位置\n            if i == end:  # 如果当前位置是最远位置，表示可以分割出一个区间\n                result.append(end - start + 1)\n                start = i + 1\n\n        return result",
+  "examples": [
+    {
+      "input": "s = \"ababcbacadefegdehijhklij\"",
+      "output": "[9,7,8]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(|Σ|)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0763.%E5%88%92%E5%88%86%E5%AD%97%E6%AF%8D%E5%8C%BA%E9%97%B4.html",
+  "fallbackSource": "https://leetcode.cn/problems/partition-labels/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0763.%E5%88%92%E5%88%86%E5%AD%97%E6%AF%8D%E5%8C%BA%E9%97%B4.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0763.%E5%88%92%E5%88%86%E5%AD%97%E6%AF%8D%E5%8C%BA%E9%97%B4.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0763.%E5%88%92%E5%88%86%E5%AD%97%E6%AF%8D%E5%8C%BA%E9%97%B4.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "一想到分割字符串就想到了回溯，但本题其实不用回溯去暴力搜索。\n\n题目要求同一字母最多出现在一个片段中，那么如何把同一个字母的都圈在同一个区间里呢？\n\n如果没有接触过这种题目的话，还挺有难度的。\n\n在遍历的过程中相当于是要找每一个字母的边界，如果找到之前遍历过的所有字母的最远边界，说明这个边界就是分割点了。此时前面出现过所有字母，最远也就到这个边界了。\n\n可以分为如下两步：\n\n统计每一个字符最后出现的位置\n从头遍历字符，并更新字符的最远出现下标，如果找到字符最远出现位置下标和当前下标相等了，则找到了分割点\n\n如图：\n\n明白原理之后，代码并不复杂，如下：\n\n时间复杂度：O(n)\n空间复杂度：O(1)，使用的hash数组是固定大小",
+  "summaryText": "先记录每个字母最后出现的位置；扫描时把当前片段右界扩到所有已见字母的最远末位。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "763.划分字母区间",
+      "url": "https://file1.kamacoder.com/i/algo/20201222191924417.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201222191924417.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过划分字母区间掌握贪心算法相关的可迁移解题模式。",
+  "prerequisites": [
+    "49"
+  ],
+  "recognition": "一个字母不能跨两个片段。如果片段已经包含字母 c，它至少必须延伸到哪里？",
+  "bruteForce": "直观做法是要把串切成尽量多的段，使每段字母不在其他段出现。长度 500，关键是每个字母的最后出现位置决定它必须被圈进哪一段。；当输入规模扩大时，需要避免重复扫描并利用题目中的贪心算法约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "一个字母不能跨两个片段。如果片段已经包含字母 c，它至少必须延伸到哪里？"
+    },
+    {
+      "level": 2,
+      "text": "先记录每个字母最后出现的位置；扫描时把当前片段右界扩到所有已见字母的最远末位。"
+    },
+    {
+      "level": 3,
+      "text": "先遍历字符串，记录每个字符的最后下标。第二遍维护当前片段起点和必须覆盖的最远终点，每遇字符就用其最后位置更新终点。当扫描下标恰好到终点时，片段内所有字符都不会再在后面出现，因此立刻切分，记录长度并开始下一片段。"
+    },
+    {
+      "level": 4,
+      "text": "last ← 每个字符最后下标\nstart ← 0；end ← 0；answer ← 空列表\n对 i 从 0 到 s长度−1：\n    end ← max(end,last[s[i]])\n    若 i=end：\n        answer 追加 end−start+1\n        start ← i+1\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先遍历字符串，记录每个字符的最后下标。",
+    "第二遍维护当前片段起点和必须覆盖的最远终点，每遇字符就用其最后位置更新终点。",
+    "当扫描下标恰好到终点时，片段内所有字符都不会再在后面出现，因此立刻切分，记录长度并开始下一片段。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"ababcbacadefegdehijhklij\" → [9,7,8]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足划分字母区间约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把划分字母区间的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用要把串切成尽量多的段，使每段字母不在其他段出现。长度 500，关键是每个字母的最后出现位置决定它必须被圈进哪一段。，额外空间为O(|Σ|)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "partitionLabels",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      }
+    ],
+    "returns": "List<Integer>",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "763-basic-1",
+      "input": {
+        "s": "ababcbacadefegdehijhklij"
+      },
+      "expected": [
+        9,
+        7,
+        8
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "763-boundary-1",
+      "input": {
+        "s": "a"
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单个字母。"
+    },
+    {
+      "id": "763-adversarial-1",
+      "input": {
+        "s": "abac"
+      },
+      "expected": [
+        3,
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "a的再次出现会合并前面的候选分段。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"ababcbacadefegdehijhklij\"",
+    "output": "[9,7,8]",
+    "examples": [
+      {
+        "input": "s = \"ababcbacadefegdehijhklij\"",
+        "output": "[9,7,8]"
+      }
+    ]
+  }
+}

@@ -1,0 +1,207 @@
+{
+  "id": "118",
+  "description": "给定一个非负整数 numRows，生成「杨辉三角」的前 numRows 行。\n\n在「杨辉三角」中，每个数是它左上方和右上方的数的和。\n\n示例 1:\n\n输入: numRows = 5\n输出: [[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]\n\n示例 2:\n\n输入: numRows = 1\n输出: [[1]]\n\n提示:\n\n1 <= numRows <= 30",
+  "summary": "从第一行开始构建，每行长度比上一行多一，先全部填一。除左右端点之外，按上一行相邻两数之和计算当前行的每个内部位置，再将整行加入答案。只读取已经完成的上一行，不会把当前行刚更新的数据误用到后续计算中。",
+  "explanation": "方法一：模拟\n\n思考\n\n第 i 行由上一行相邻两项相加得到，两端为 1。 numRows≤ 30，按行模拟即可。每一行只依赖上一行，依次生成并保存。\n\n我们先创建一个答案数组 f，然后将 f 的第一行元素设为 [1]。接下来，我们从第二行开始，每一行的开头和结尾元素都是 1，其它 f[i][j] = f[i - 1][j - 1] + f[i - 1][j]。\n\n时间复杂度 O(n²)，其中 n 为给定的行数。忽略答案的空间消耗，空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public List<List<Integer>> generate(int numRows) {\n        List<List<Integer>> f = new ArrayList<>();\n        f.add(Arrays.asList(1));\n        for (int i = 0; i < numRows - 1; ++i) {\n            List<Integer> g = new ArrayList<>();\n            g.add(1);\n            for (int j = 1; j < f.get(i).size(); ++j) {\n                g.add(f.get(i).get(j - 1) + f.get(i).get(j));\n            }\n            g.add(1);\n            f.add(g);\n        }\n        return f;\n    }\n}",
+  "python": "class Solution:\n    def generate(self, numRows: int) -> List[List[int]]:\n        f = [[1]]\n        for i in range(numRows - 1):\n            g = [1] + [a + b for a, b in pairwise(f[-1])] + [1]\n            f.append(g)\n        return f",
+  "examples": [
+    {
+      "input": "numRows = 5",
+      "output": "[[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]"
+    },
+    {
+      "input": "numRows = 1",
+      "output": "[[1]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n²)",
+    "space": "O(n²)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/pascals-triangle/",
+  "fallbackSource": "https://leetcode.cn/problems/pascals-triangle/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/pascals-triangle/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0118.Pascal%27s%20Triangle/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0118.Pascal%27s%20Triangle/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：模拟\n\n思考\n\n第 i 行由上一行相邻两项相加得到，两端为 1。 numRows≤ 30，按行模拟即可。每一行只依赖上一行，依次生成并保存。\n\n我们先创建一个答案数组 f，然后将 f 的第一行元素设为 [1]。接下来，我们从第二行开始，每一行的开头和结尾元素都是 1，其它 f[i][j] = f[i - 1][j - 1] + f[i - 1][j]。\n\n时间复杂度 O(n²)，其中 n 为给定的行数。忽略答案的空间消耗，空间复杂度 O(1)。",
+  "summaryText": "逐行生成长度递增的数组；内部 row[j]=previous[j−1]+previous[j]。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过杨辉三角掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "70"
+  ],
+  "recognition": "杨辉三角每行两端都是一，中间一个数由上一行哪两个位置相加得到？",
+  "bruteForce": "直观做法是第 i 行由上一行相邻两项相加得到，两端为 1。 numRows≤ 30，按行模拟即可。每一行只依赖上一行，依次生成并保存。；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "杨辉三角每行两端都是一，中间一个数由上一行哪两个位置相加得到？"
+    },
+    {
+      "level": 2,
+      "text": "逐行生成长度递增的数组；内部 row[j]=previous[j−1]+previous[j]。"
+    },
+    {
+      "level": 3,
+      "text": "从第一行开始构建，每行长度比上一行多一，先全部填一。除左右端点之外，按上一行相邻两数之和计算当前行的每个内部位置，再将整行加入答案。只读取已经完成的上一行，不会把当前行刚更新的数据误用到后续计算中。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 空列表\n对 i 从 0 到 numRows−1：\n    row ← 长度 i+1、全部为 1 的数组\n    对 j 从 1 到 i−1：\n        row[j] ← answer[i−1][j−1]+answer[i−1][j]\n    answer 追加 row\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从第一行开始构建，每行长度比上一行多一，先全部填一。",
+    "除左右端点之外，按上一行相邻两数之和计算当前行的每个内部位置，再将整行加入答案。",
+    "只读取已经完成的上一行，不会把当前行刚更新的数据误用到后续计算中。"
+  ],
+  "walkthrough": [
+    "公开示例：numRows = 5 → [[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足杨辉三角约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把杨辉三角的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用第 i 行由上一行相邻两项相加得到，两端为 1。 numRows≤ 30，按行模拟即可。每一行只依赖上一行，依次生成并保存。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "generate",
+    "params": [
+      {
+        "name": "numRows",
+        "type": "int"
+      }
+    ],
+    "returns": "List<List<Integer>>",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "118-basic-1",
+      "input": {
+        "numRows": 5
+      },
+      "expected": [
+        [
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          4,
+          6,
+          4,
+          1
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "118-boundary-1",
+      "input": {
+        "numRows": 1
+      },
+      "expected": [
+        [
+          1
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "第一行。"
+    },
+    {
+      "id": "118-adversarial-1",
+      "input": {
+        "numRows": 6
+      },
+      "expected": [
+        [
+          1
+        ],
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          3,
+          3,
+          1
+        ],
+        [
+          1,
+          4,
+          6,
+          4,
+          1
+        ],
+        [
+          1,
+          5,
+          10,
+          10,
+          5,
+          1
+        ]
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "内部元素必须累加上一行相邻的两个值。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnumRows = 5",
+    "output": "[[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]",
+    "examples": [
+      {
+        "input": "numRows = 5",
+        "output": "[[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]"
+      }
+    ]
+  }
+}

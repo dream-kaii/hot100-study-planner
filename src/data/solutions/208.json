@@ -1,0 +1,283 @@
+{
+  "id": "208",
+  "description": "Trie（发音类似 \"try\"）或者说 前缀树 是一种树形数据结构，用于高效地存储和检索字符串数据集中的键。这一数据结构有相当多的应用情景，例如自动补全和拼写检查。\n\n请你实现 Trie 类：\n\nTrie() 初始化前缀树对象。\nvoid insert(String word) 向前缀树中插入字符串 word 。\nboolean search(String word) 如果字符串 word 在前缀树中，返回 true（即，在检索之前已经插入）；否则，返回 false 。\nboolean startsWith(String prefix) 如果之前已经插入的字符串 word 的前缀之一为 prefix ，返回 true ；否则，返回 false 。\n\n示例：\n\n输入\n[\"Trie\", \"insert\", \"search\", \"search\", \"startsWith\", \"insert\", \"search\"]\n[[], [\"apple\"], [\"apple\"], [\"app\"], [\"app\"], [\"app\"], [\"app\"]]\n输出\n[null, null, true, false, true, null, true]\n\n解释\nTrie trie = new Trie();\ntrie.insert(\"apple\");\ntrie.search(\"apple\"); // 返回 True\ntrie.search(\"app\"); // 返回 False\ntrie.startsWith(\"app\"); // 返回 True\ntrie.insert(\"app\");\ntrie.search(\"app\"); // 返回 True\n\n提示：\n\n1 <= word.length, prefix.length <= 2000\nword 和 prefix 仅由小写英文字母组成\ninsert、search 和 startsWith 调用次数 总计 不超过 3 104 次",
+  "summary": "使用根节点表示空前缀。插入时按字符沿孩子移动，缺少对应孩子就创建，走完后将终点标记为完整单词。查找时逐字符走同一路径，缺孩子即失败；search 还要检查最终 end，startsWith 则只要求路径存在，避免把未插入的短前缀当成单词。",
+  "explanation": "方法一：前缀树\n\n思考\n\n多次查询公共前缀时，若对每个单词扫描全部已插入词，则会重复比较相同前缀。字符均为小写，可用 26 叉树按字符分层。\n\n插入时沿路径创建结点并在末尾置 isEnd；查询前缀走同一路径，search 再检查终点是否为词尾。\n\n前缀树每个节点包括两部分：\n\n1. 指向子节点的指针数组 children，对于本题而言，数组长度为 26，即小写英文字母的数量。 children[0] 对应小写字母 a，...， children[25] 对应小写字母 z。\n1. 布尔字段 isEnd，表示该节点是否为字符串的结尾。\n\n1. 插入字符串\n\n我们从字典树的根开始，插入字符串。对于当前字符对应的子节点，有两种情况：\n\n- 子节点存在。沿着指针移动到子节点，继续处理下一个字符。\n- 子节点不存在。创建一个新的子节点，记录在 children 数组的对应位置上，然后沿着指针移动到子节点，继续搜索下一个字符。\n\n重复以上步骤，直到处理字符串的最后一个字符，然后将当前节点标记为字符串的结尾。\n\n2. 查找前缀\n\n我们从字典树的根开始，查找前缀。对于当前字符对应的子节点，有两种情况：\n\n- 子节点存在。沿着指针移动到子节点，继续搜索下一个字符。\n- 子节点不存在。说明字典树中不包含该前缀，返回空指针。\n\n重复以上步骤，直到返回空指针或搜索完前缀的最后一个字符。\n\n若搜索到了前缀的末尾，就说明字典树中存在该前缀。此外，若前缀末尾对应节点的 isEnd 为真，则说明字典树中存在该字符串。\n\n时间复杂度方面，插入字符串的时间复杂度为 O(m×|Σ|)，查找前缀的时间复杂度为 O(m)，其中 m 为字符串的长度，而 |Σ| 为字符集的大小（本题中为 26）。空间复杂度为 O(q×m×|Σ|)，其中 q 为插入的字符串数量。\n\n总结",
+  "java": "class Trie {\n    private Trie[] children;\n    private boolean isEnd;\n\n    public Trie() {\n        children = new Trie[26];\n    }\n\n    public void insert(String word) {\n        Trie node = this;\n        for (char c : word.toCharArray()) {\n            int idx = c - 'a';\n            if (node.children[idx] == null) {\n                node.children[idx] = new Trie();\n            }\n            node = node.children[idx];\n        }\n        node.isEnd = true;\n    }\n\n    public boolean search(String word) {\n        Trie node = searchPrefix(word);\n        return node != null && node.isEnd;\n    }\n\n    public boolean startsWith(String prefix) {\n        Trie node = searchPrefix(prefix);\n        return node != null;\n    }\n\n    private Trie searchPrefix(String s) {\n        Trie node = this;\n        for (char c : s.toCharArray()) {\n            int idx = c - 'a';\n            if (node.children[idx] == null) {\n                return null;\n            }\n            node = node.children[idx];\n        }\n        return node;\n    }\n}\n\n/**\n * Your Trie object will be instantiated and called as such:\n * Trie obj = new Trie();\n * obj.insert(word);\n * boolean param_2 = obj.search(word);\n * boolean param_3 = obj.startsWith(prefix);\n */",
+  "python": "class Trie:\n    def __init__(self):\n        self.children = [None] * 26\n        self.is_end = False\n\n    def insert(self, word: str) -> None:\n        node = self\n        for c in word:\n            idx = ord(c) - ord('a')\n            if node.children[idx] is None:\n                node.children[idx] = Trie()\n            node = node.children[idx]\n        node.is_end = True\n\n    def search(self, word: str) -> bool:\n        node = self._search_prefix(word)\n        return node is not None and node.is_end\n\n    def startsWith(self, prefix: str) -> bool:\n        node = self._search_prefix(prefix)\n        return node is not None\n\n    def _search_prefix(self, prefix: str):\n        node = self\n        for c in prefix:\n            idx = ord(c) - ord('a')\n            if node.children[idx] is None:\n                return None\n            node = node.children[idx]\n        return node\n\n\n# Your Trie object will be instantiated and called as such:\n# obj = Trie()\n# obj.insert(word)\n# param_2 = obj.search(word)\n# param_3 = obj.startsWith(prefix)",
+  "examples": [
+    {
+      "input": "[\"Trie\",\"insert\",\"search\",\"search\",\"startsWith\",\"insert\",\"search\"]\n[[],[\"apple\"],[\"apple\"],[\"app\"],[\"app\"],[\"app\"],[\"app\"]]",
+      "output": "[null,null,true,false,true,null,true]"
+    }
+  ],
+  "complexity": {
+    "time": "O(L)",
+    "space": "O(L)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/implement-trie-prefix-tree/",
+  "fallbackSource": "https://leetcode.cn/problems/implement-trie-prefix-tree/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/implement-trie-prefix-tree/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0208.Implement%20Trie%20%28Prefix%20Tree%29/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0208.Implement%20Trie%20%28Prefix%20Tree%29/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：前缀树\n\n思考\n\n多次查询公共前缀时，若对每个单词扫描全部已插入词，则会重复比较相同前缀。字符均为小写，可用 26 叉树按字符分层。\n\n插入时沿路径创建结点并在末尾置 isEnd；查询前缀走同一路径，search 再检查终点是否为词尾。\n\n前缀树每个节点包括两部分：\n\n1. 指向子节点的指针数组 children，对于本题而言，数组长度为 26，即小写英文字母的数量。 children[0] 对应小写字母 a，...， children[25] 对应小写字母 z。\n1. 布尔字段 isEnd，表示该节点是否为字符串的结尾。\n\n1. 插入字符串\n\n我们从字典树的根开始，插入字符串。对于当前字符对应的子节点，有两种情况：\n\n- 子节点存在。沿着指针移动到子节点，继续处理下一个字符。\n- 子节点不存在。创建一个新的子节点，记录在 children 数组的对应位置上，然后沿着指针移动到子节点，继续搜索下一个字符。\n\n重复以上步骤，直到处理字符串的最后一个字符，然后将当前节点标记为字符串的结尾。\n\n2. 查找前缀\n\n我们从字典树的根开始，查找前缀。对于当前字符对应的子节点，有两种情况：\n\n- 子节点存在。沿着指针移动到子节点，继续搜索下一个字符。\n- 子节点不存在。说明字典树中不包含该前缀，返回空指针。\n\n重复以上步骤，直到返回空指针或搜索完前缀的最后一个字符。\n\n若搜索到了前缀的末尾，就说明字典树中存在该前缀。此外，若前缀末尾对应节点的 isEnd 为真，则说明字典树中存在该字符串。\n\n时间复杂度方面，插入字符串的时间复杂度为 O(m×|Σ|)，查找前缀的时间复杂度为 O(m)，其中 m 为字符串的长度，而 |Σ| 为字符集的大小（本题中为 26）。空间复杂度为 O(q×m×|Σ|)，其中 q 为插入的字符串数量。",
+  "summaryText": "节点保存字符到孩子的映射和 end 标记；完整单词查询要检查 end，前缀查询只需路径存在。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过实现 Trie (前缀树)掌握图论相关的可迁移解题模式。",
+  "prerequisites": [
+    "17"
+  ],
+  "recognition": "多个单词可能共享相同前缀。若每个节点表示一个前缀，下一字符应该如何连接？",
+  "bruteForce": "直观做法是多次查询公共前缀时，若对每个单词扫描全部已插入词，则会重复比较相同前缀。字符均为小写，可用 26 叉树按字符分层。；当输入规模扩大时，需要避免重复扫描并利用题目中的图论约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "多个单词可能共享相同前缀。若每个节点表示一个前缀，下一字符应该如何连接？"
+    },
+    {
+      "level": 2,
+      "text": "节点保存字符到孩子的映射和 end 标记；完整单词查询要检查 end，前缀查询只需路径存在。"
+    },
+    {
+      "level": 3,
+      "text": "使用根节点表示空前缀。插入时按字符沿孩子移动，缺少对应孩子就创建，走完后将终点标记为完整单词。查找时逐字符走同一路径，缺孩子即失败；search 还要检查最终 end，startsWith 则只要求路径存在，避免把未插入的短前缀当成单词。"
+    },
+    {
+      "level": 4,
+      "text": "初始化 root，节点包含 children 与 end=假\ninsert(word)：\n    node ← root\n    对每个字符 c：若缺少孩子 c 则创建；node ← 孩子 c\n    node.end ← 真\nwalk(text)：\n    node ← root\n    对每个字符 c：\n        若孩子 c 不存在：返回 空\n        node ← 孩子 c\n    返回 node\nsearch(word)：node ← walk(word)；返回 node 非空且 node.end\nstartsWith(prefix)：返回 walk(prefix) 非空",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "使用根节点表示空前缀。",
+    "插入时按字符沿孩子移动，缺少对应孩子就创建，走完后将终点标记为完整单词。",
+    "查找时逐字符走同一路径，缺孩子即失败；search 还要检查最终 end，startsWith 则只要求路径存在，避免把未插入的短前缀当成单词。"
+  ],
+  "walkthrough": [
+    "公开示例：[\"Trie\",\"insert\",\"search\",\"search\",\"startsWith\",\"insert\",\"search\"]\n[[],[\"apple\"],[\"apple\"],[\"app\"],[\"app\"],[\"app\"],[\"app\"]] → [null,null,true,false,true,null,true]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足实现 Trie (前缀树)约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把实现 Trie (前缀树)的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用多次查询公共前缀时，若对每个单词扫描全部已插入词，则会重复比较相同前缀。字符均为小写，可用 26 叉树按字符分层。，额外空间为O(q×m×|Σ|)。"
+  ],
+  "func": {
+    "className": "Trie",
+    "methodName": "insert",
+    "params": [
+      {
+        "name": "word",
+        "type": "String"
+      }
+    ],
+    "returns": "void",
+    "compare": "operation-sequence",
+    "constructorParams": [],
+    "methods": [
+      {
+        "methodName": "insert",
+        "params": [
+          {
+            "name": "word",
+            "type": "String"
+          }
+        ],
+        "returns": "void"
+      },
+      {
+        "methodName": "search",
+        "params": [
+          {
+            "name": "word",
+            "type": "String"
+          }
+        ],
+        "returns": "boolean"
+      },
+      {
+        "methodName": "startsWith",
+        "params": [
+          {
+            "name": "prefix",
+            "type": "String"
+          }
+        ],
+        "returns": "boolean"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "208-basic-1",
+      "input": {
+        "operations": [
+          "Trie",
+          "insert",
+          "search",
+          "search",
+          "startsWith",
+          "insert",
+          "search"
+        ],
+        "arguments": [
+          [],
+          [
+            "apple"
+          ],
+          [
+            "apple"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        true,
+        false,
+        true,
+        null,
+        true
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "208-boundary-1",
+      "input": {
+        "operations": [
+          "Trie",
+          "insert",
+          "search",
+          "search",
+          "startsWith",
+          "insert",
+          "search"
+        ],
+        "arguments": [
+          [],
+          [
+            "apple"
+          ],
+          [
+            "apple"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        true,
+        false,
+        true,
+        null,
+        true
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用实现 Trie (前缀树)的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "208-adversarial-1",
+      "input": {
+        "operations": [
+          "Trie",
+          "insert",
+          "search",
+          "search",
+          "startsWith",
+          "insert",
+          "search"
+        ],
+        "arguments": [
+          [],
+          [
+            "apple"
+          ],
+          [
+            "apple"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ],
+          [
+            "app"
+          ]
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        true,
+        false,
+        true,
+        null,
+        true
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查实现 Trie (前缀树)的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[\"Trie\",\"insert\",\"search\",\"search\",\"startsWith\",\"insert\",\"search\"]\n[[],[\"apple\"],[\"apple\"],[\"app\"],[\"app\"],[\"app\"],[\"app\"]]",
+    "output": "[null,null,true,false,true,null,true]",
+    "examples": [
+      {
+        "input": "[\"Trie\",\"insert\",\"search\",\"search\",\"startsWith\",\"insert\",\"search\"]\n[[],[\"apple\"],[\"apple\"],[\"app\"],[\"app\"],[\"app\"],[\"app\"]]",
+        "output": "[null,null,true,false,true,null,true]"
+      }
+    ]
+  }
+}

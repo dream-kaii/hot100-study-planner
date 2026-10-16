@@ -1,0 +1,156 @@
+{
+  "id": "234",
+  "description": "给你一个单链表的头节点 head ，请你判断该链表是否为回文链表。如果是，返回 true ；否则，返回 false 。\n\n示例 1：\n\n输入：head = [1,2,2,1]\n输出：true\n\n示例 2：\n\n输入：head = [1,2]\n输出：false\n\n提示：\n\n链表中节点数目在范围[1, 105] 内\n0 <= Node.val <= 9\n\n进阶：你能否用 O(n) 时间复杂度和 O(1) 空间复杂度解决此题？",
+  "summary": "用快慢指针确定前半段尾部，把后半段反转。随后让一个指针从头部、另一个从反转后的半段头部同步比较，后半段用尽且均相等就为回文。奇数长度的中间元素不参与比较。保存结果后再次反转后半段并接回，恢复原链表结构。",
+  "explanation": "数组模拟\n\n最直接的想法，就是把链表装成数组，然后再判断是否回文。\n\n代码也比较简单。如下：\n\n上面代码可以在优化，就是先求出链表长度，然后给定vector的初始长度，这样避免vector每次添加节点重新开辟空间\n\n反转后半部分链表\n\n分为如下几步：\n\n用快慢指针，快指针有两步，慢指针走一步，快指针遇到终止位置时，慢指针就在链表中间位置\n同时用pre记录慢指针指向节点的前一个节点，用来分割链表\n将链表分为前后均等两部分，如果链表长度是奇数，那么后半部分多一个节点\n将后半部分反转 ，得cur2，前半部分为cur1\n按照cur1的长度，一次比较cur1和cur2的节点数值\n\n如图所示：\n\n代码如下：\n\n总结",
+  "java": "class Solution {\n    public boolean isPalindrome(ListNode head) {\n        int len = 0;\n        // 统计链表长度\n        ListNode cur = head;\n        while (cur != null) {\n            len++;\n            cur = cur.next;\n        }\n        cur = head;\n        int[] res = new int[len];\n        // 将元素加到数组之中\n        for (int i = 0; i < res.length; i++){\n            res[i] = cur.val;\n            cur = cur.next;\n        }\n        // 比较回文\n        for (int i = 0, j = len - 1; i < j; i++, j--){\n            if (res[i] != res[j]){\n                return false;\n            }\n        }\n        return true;\n    }\n}",
+  "python": "#数组模拟\nclass Solution:\n    def isPalindrome(self, head: Optional[ListNode]) -> bool:\n        list=[]\n        while head: \n            list.append(head.val)\n            head=head.next\n        l,r=0, len(list)-1\n        while l<=r: \n            if list[l]!=list[r]:\n                return False\n            l+=1\n            r-=1\n        return True",
+  "examples": [
+    {
+      "input": "head = [1,2,2,1]",
+      "output": "true"
+    },
+    {
+      "input": "head = [1,2]",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0234.%E5%9B%9E%E6%96%87%E9%93%BE%E8%A1%A8.html",
+  "fallbackSource": "https://leetcode.cn/problems/palindrome-linked-list/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0234.%E5%9B%9E%E6%96%87%E9%93%BE%E8%A1%A8.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0234.%E5%9B%9E%E6%96%87%E9%93%BE%E8%A1%A8.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0234.%E5%9B%9E%E6%96%87%E9%93%BE%E8%A1%A8.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "数组模拟\n\n最直接的想法，就是把链表装成数组，然后再判断是否回文。\n\n代码也比较简单。如下：\n\n上面代码可以在优化，就是先求出链表长度，然后给定vector的初始长度，这样避免vector每次添加节点重新开辟空间\n\n反转后半部分链表\n\n分为如下几步：\n\n用快慢指针，快指针有两步，慢指针走一步，快指针遇到终止位置时，慢指针就在链表中间位置\n同时用pre记录慢指针指向节点的前一个节点，用来分割链表\n将链表分为前后均等两部分，如果链表长度是奇数，那么后半部分多一个节点\n将后半部分反转 ，得cur2，前半部分为cur1\n按照cur1的长度，一次比较cur1和cur2的节点数值\n\n如图所示：\n\n代码如下：",
+  "tables": [],
+  "images": [],
+  "summaryText": "快慢指针找到中间位置，反转后半段，再与前半段逐个比较；最后可恢复链表。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过回文链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "206"
+  ],
+  "recognition": "回文链表左右两半顺序相反，但单链表无法直接从尾部往前走。能局部反转哪一段？",
+  "bruteForce": "直观做法是放入数组再比较首尾可行，但要求常数空间。回文关于中点对称，可先找中点、反转后半，再与前半逐一比较。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "回文链表左右两半顺序相反，但单链表无法直接从尾部往前走。能局部反转哪一段？"
+    },
+    {
+      "level": 2,
+      "text": "快慢指针找到中间位置，反转后半段，再与前半段逐个比较；最后可恢复链表。"
+    },
+    {
+      "level": 3,
+      "text": "用快慢指针确定前半段尾部，把后半段反转。随后让一个指针从头部、另一个从反转后的半段头部同步比较，后半段用尽且均相等就为回文。奇数长度的中间元素不参与比较。保存结果后再次反转后半段并接回，恢复原链表结构。"
+    },
+    {
+      "level": 4,
+      "text": "若 head 为空或只有一个节点：返回 真\n用快慢指针找到前半段尾部 mid\nsecond ← 反转(mid.next)\na ← head；b ← second；ok ← 真\n当 b 非空：\n    若 a.val ≠ b.val：ok ← 假\n    a ← a.next；b ← b.next\nmid.next ← 反转(second)\n返回 ok",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "用快慢指针确定前半段尾部，把后半段反转。",
+    "随后让一个指针从头部、另一个从反转后的半段头部同步比较，后半段用尽且均相等就为回文。",
+    "奇数长度的中间元素不参与比较。",
+    "保存结果后再次反转后半段并接回，恢复原链表结构。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [1,2,2,1] → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足回文链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把回文链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用放入数组再比较首尾可行，但要求常数空间。回文关于中点对称，可先找中点、反转后半，再与前半逐一比较。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "isPalindrome",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "234-basic-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          2,
+          1
+        ]
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "234-boundary-1",
+      "input": {
+        "head": [
+          1
+        ]
+      },
+      "expected": true,
+      "tags": [
+        "boundary"
+      ],
+      "note": "单节点链表。"
+    },
+    {
+      "id": "234-adversarial-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          1
+        ]
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "首尾相等仍可能不是回文。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [1,2,2,1]",
+    "output": "true",
+    "examples": [
+      {
+        "input": "head = [1,2,2,1]",
+        "output": "true"
+      }
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+work/
+outputs/
+.superdesign/tmp/
+.wrangler/
+.DS_Store
+*.log

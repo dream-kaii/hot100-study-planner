@@ -1,0 +1,241 @@
+{
+  "id": "295",
+  "description": "中位数是有序整数列表中的中间值。如果列表的大小是偶数，则没有中间值，中位数是两个中间值的平均值。\n\n例如 arr = [2,3,4] 的中位数是 3 。\n例如 arr = [2,3] 的中位数是 (2 + 3) / 2 = 2.5 。\n\n实现 MedianFinder 类:\n\nMedianFinder() 初始化 MedianFinder 对象。\n\nvoid addNum(int num) 将数据流中的整数 num 添加到数据结构中。\n\ndouble findMedian() 返回到目前为止所有元素的中位数。与实际答案相差 10-5 以内的答案将被接受。\n\n示例 1：\n\n输入\n[\"MedianFinder\", \"addNum\", \"addNum\", \"findMedian\", \"addNum\", \"findMedian\"]\n[[], [1], [2], [], [3], []]\n输出\n[null, null, null, 1.5, null, 2.0]\n\n解释\nMedianFinder medianFinder = new MedianFinder();\nmedianFinder.addNum(1); // arr = [1]\nmedianFinder.addNum(2); // arr = [1, 2]\nmedianFinder.findMedian(); // 返回 1.5 ((1 + 2) / 2)\nmedianFinder.addNum(3); // arr[1, 2, 3]\nmedianFinder.findMedian(); // return 2.0\n\n提示:\n\n-105 <= num <= 105\n在调用 findMedian 之前，数据结构中至少有一个元素\n最多 5 104 次调用 addNum 和 findMedian",
+  "summary": "把数据分成较小一半和较大一半，分别用最大堆与最小堆维护，确保所有小半元素不大于大半元素。新数按与小半堆顶比较后入对应堆，再搬动堆顶让大小相等或小半多一。奇数时返回小半堆顶，偶数时返回两堆顶平均值，注意避免整数除法。",
+  "explanation": "方法一：大小根堆（优先队列）\n\n思考\n\n动态求中位数若每次排序则过慢。用大根堆存较小一半、小根堆存较大一半，堆顶即可拼出中位数。\n\n新元素先入大根堆再倒到小根堆，并保持小根堆大小至多大 1；偶数个取两顶平均，奇数个取小根堆顶。\n\n我们可以使用两个堆来维护所有的元素，一个小根堆 minQ 和一个大根堆 maxQ，其中小根堆 minQ 存储较大的一半，大根堆 maxQ 存储较小的一半。\n\n调用 addNum 方法时，我们首先将元素加入到大根堆 maxQ，然后将 maxQ 的堆顶元素弹出并加入到小根堆 minQ。如果此时 minQ 的大小与 maxQ 的大小差值大于 1，我们就将 minQ 的堆顶元素弹出并加入到 maxQ。时间复杂度为 O(log n)。\n\n调用 findMedian 方法时，如果 minQ 的大小等于 maxQ 的大小，说明元素的总数为偶数，我们就可以返回 minQ 的堆顶元素与 maxQ 的堆顶元素的平均值；否则，我们返回 minQ 的堆顶元素。时间复杂度为 O(1)。\n\n空间复杂度为 O(n)。其中 n 为元素的个数。\n\n总结",
+  "java": "class MedianFinder {\n    private PriorityQueue<Integer> minQ = new PriorityQueue<>();\n    private PriorityQueue<Integer> maxQ = new PriorityQueue<>(Collections.reverseOrder());\n\n    public MedianFinder() {\n    }\n\n    public void addNum(int num) {\n        maxQ.offer(num);\n        minQ.offer(maxQ.poll());\n        if (minQ.size() - maxQ.size() > 1) {\n            maxQ.offer(minQ.poll());\n        }\n    }\n\n    public double findMedian() {\n        return minQ.size() == maxQ.size() ? (minQ.peek() + maxQ.peek()) / 2.0 : minQ.peek();\n    }\n}\n\n/**\n * Your MedianFinder object will be instantiated and called as such:\n * MedianFinder obj = new MedianFinder();\n * obj.addNum(num);\n * double param_2 = obj.findMedian();\n */",
+  "python": "class MedianFinder:\n\n    def __init__(self):\n        self.minq = []\n        self.maxq = []\n\n    def addNum(self, num: int) -> None:\n        heappush(self.minq, -heappushpop(self.maxq, -num))\n        if len(self.minq) - len(self.maxq) > 1:\n            heappush(self.maxq, -heappop(self.minq))\n\n    def findMedian(self) -> float:\n        if len(self.minq) == len(self.maxq):\n            return (self.minq[0] - self.maxq[0]) / 2\n        return self.minq[0]\n\n\n# Your MedianFinder object will be instantiated and called as such:\n# obj = MedianFinder()\n# obj.addNum(num)\n# param_2 = obj.findMedian()",
+  "examples": [
+    {
+      "input": "[\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"]\n[[],[1],[2],[],[3],[]]",
+      "output": "[null,null,null,1.5,null,2.0]"
+    }
+  ],
+  "complexity": {
+    "time": "O(log n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/find-median-from-data-stream/",
+  "fallbackSource": "https://leetcode.cn/problems/find-median-from-data-stream/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/find-median-from-data-stream/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0295.Find%20Median%20from%20Data%20Stream/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0295.Find%20Median%20from%20Data%20Stream/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：大小根堆（优先队列）\n\n思考\n\n动态求中位数若每次排序则过慢。用大根堆存较小一半、小根堆存较大一半，堆顶即可拼出中位数。\n\n新元素先入大根堆再倒到小根堆，并保持小根堆大小至多大 1；偶数个取两顶平均，奇数个取小根堆顶。\n\n我们可以使用两个堆来维护所有的元素，一个小根堆 minQ 和一个大根堆 maxQ，其中小根堆 minQ 存储较大的一半，大根堆 maxQ 存储较小的一半。\n\n调用 addNum 方法时，我们首先将元素加入到大根堆 maxQ，然后将 maxQ 的堆顶元素弹出并加入到小根堆 minQ。如果此时 minQ 的大小与 maxQ 的大小差值大于 1，我们就将 minQ 的堆顶元素弹出并加入到 maxQ。时间复杂度为 O(log n)。\n\n调用 findMedian 方法时，如果 minQ 的大小等于 maxQ 的大小，说明元素的总数为偶数，我们就可以返回 minQ 的堆顶元素与 maxQ 的堆顶元素的平均值；否则，我们返回 minQ 的堆顶元素。时间复杂度为 O(1)。\n\n空间复杂度为 O(n)。其中 n 为元素的个数。",
+  "summaryText": "使用小半部分的最大堆与大半部分的最小堆；前者大小等于后者或多一个。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过数据流的中位数掌握堆相关的可迁移解题模式。",
+  "prerequisites": [
+    "215"
+  ],
+  "recognition": "中位数只取决于较小一半的最大值和较大一半的最小值，能分别维护这两个边界吗？",
+  "bruteForce": "直观做法是方法一：大小根堆（优先队列）；当输入规模扩大时，需要避免重复扫描并利用题目中的堆约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "中位数只取决于较小一半的最大值和较大一半的最小值，能分别维护这两个边界吗？"
+    },
+    {
+      "level": 2,
+      "text": "使用小半部分的最大堆与大半部分的最小堆；前者大小等于后者或多一个。"
+    },
+    {
+      "level": 3,
+      "text": "把数据分成较小一半和较大一半，分别用最大堆与最小堆维护，确保所有小半元素不大于大半元素。新数按与小半堆顶比较后入对应堆，再搬动堆顶让大小相等或小半多一。奇数时返回小半堆顶，偶数时返回两堆顶平均值，注意避免整数除法。"
+    },
+    {
+      "level": 4,
+      "text": "初始化 lower 为最大堆，upper 为最小堆\naddNum(x)：\n    若 lower 为空或 x≤lower顶部：加入 lower\n    否则：加入 upper\n    若 lower大小 > upper大小+1：将 lower顶部移入 upper\n    若 upper大小 > lower大小：将 upper顶部移入 lower\nfindMedian()：\n    若 lower大小 > upper大小：返回 lower顶部\n    返回 (lower顶部+upper顶部)/2.0",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "把数据分成较小一半和较大一半，分别用最大堆与最小堆维护，确保所有小半元素不大于大半元素。",
+    "新数按与小半堆顶比较后入对应堆，再搬动堆顶让大小相等或小半多一。",
+    "奇数时返回小半堆顶，偶数时返回两堆顶平均值，注意避免整数除法。"
+  ],
+  "walkthrough": [
+    "公开示例：[\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"]\n[[],[1],[2],[],[3],[]] → [null,null,null,1.5,null,2.0]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足数据流的中位数约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把数据流的中位数的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：大小根堆（优先队列），额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "MedianFinder",
+    "methodName": "addNum",
+    "params": [
+      {
+        "name": "num",
+        "type": "int"
+      }
+    ],
+    "returns": "void",
+    "compare": "operation-sequence",
+    "constructorParams": [],
+    "methods": [
+      {
+        "methodName": "addNum",
+        "params": [
+          {
+            "name": "num",
+            "type": "int"
+          }
+        ],
+        "returns": "void"
+      },
+      {
+        "methodName": "findMedian",
+        "params": [],
+        "returns": "double"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "295-basic-1",
+      "input": {
+        "operations": [
+          "MedianFinder",
+          "addNum",
+          "addNum",
+          "findMedian",
+          "addNum",
+          "findMedian"
+        ],
+        "arguments": [
+          [],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [],
+          [
+            3
+          ],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        1.5,
+        null,
+        2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "295-boundary-1",
+      "input": {
+        "operations": [
+          "MedianFinder",
+          "addNum",
+          "addNum",
+          "findMedian",
+          "addNum",
+          "findMedian"
+        ],
+        "arguments": [
+          [],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [],
+          [
+            3
+          ],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        1.5,
+        null,
+        2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用数据流的中位数的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "295-adversarial-1",
+      "input": {
+        "operations": [
+          "MedianFinder",
+          "addNum",
+          "addNum",
+          "findMedian",
+          "addNum",
+          "findMedian"
+        ],
+        "arguments": [
+          [],
+          [
+            1
+          ],
+          [
+            2
+          ],
+          [],
+          [
+            3
+          ],
+          []
+        ]
+      },
+      "expected": [
+        null,
+        null,
+        null,
+        1.5,
+        null,
+        2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查数据流的中位数的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"]\n[[],[1],[2],[],[3],[]]",
+    "output": "[null,null,null,1.5,null,2.0]",
+    "examples": [
+      {
+        "input": "[\"MedianFinder\",\"addNum\",\"addNum\",\"findMedian\",\"addNum\",\"findMedian\"]\n[[],[1],[2],[],[3],[]]",
+        "output": "[null,null,null,1.5,null,2.0]"
+      }
+    ]
+  }
+}

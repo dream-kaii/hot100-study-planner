@@ -1,0 +1,169 @@
+{
+  "id": "238",
+  "description": "给你一个整数数组 nums，返回 数组 answer ，其中 answer[i] 等于 nums 中除了 nums[i] 之外其余各元素的乘积 。\n\n题目数据 保证 数组 nums之中任意元素的全部前缀元素和后缀的乘积都在 32 位 整数范围内。\n\n请 不要使用除法，且在 O(n) 时间复杂度内完成此题。\n\n示例 1:\n\n输入: nums = [1,2,3,4]\n输出: [24,12,8,6]\n\n示例 2:\n\n输入: nums = [-1,1,0,-3,3]\n输出: [0,0,9,0,0]\n\n提示：\n\n2 <= nums.length <= 105\n-30 <= nums[i] <= 30\n输入 保证 数组 answer[i] 在 32 位 整数范围内\n\n进阶：你可以在 O(1) 的额外空间复杂度内完成这个题目吗？（ 出于对空间复杂度分析的目的，输出数组 不被视为 额外空间。）",
+  "summary": "先令左侧累计乘积为一，从左到右把它写入结果，再乘入当前元素。然后令右侧累计乘积为一，从右到左把它乘到对应结果，再乘入当前元素。两次都在处理当前数之前记录结果，因而排除了自身，也无需除法，含零时同样成立。",
+  "explanation": "方法一：两次遍历\n\n思考\n\n除自身外的乘积等于左侧积乘右侧积。若先开两个数组存前缀、后缀积，空间不是常数。\n\n先从左往右把前缀积写入答案，再从右往左用一个变量累乘后缀并乘入答案，从而只用输出数组。\n\n我们定义两个变量 left 和 right，分别表示当前元素左边所有元素的乘积和右边所有元素的乘积。初始时 left=1, right=1。定义一个长度为 n 的答案数组 ans。\n\n我们先从左到右遍历数组，对于遍历到的第 i 个元素，我们用 left 更新 ans[i]，然后 left 乘以 nums[i]。\n\n然后，我们从右到左遍历数组，对于遍历到的第 i 个元素，我们更新 ans[i] 为 ans[i]×right，然后 right 乘以 nums[i]。\n\n遍历结束后，返回答案数组 ans。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。忽略答案数组的空间消耗，空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int[] productExceptSelf(int[] nums) {\n        int n = nums.length;\n        int[] ans = new int[n];\n        for (int i = 0, left = 1; i < n; ++i) {\n            ans[i] = left;\n            left *= nums[i];\n        }\n        for (int i = n - 1, right = 1; i >= 0; --i) {\n            ans[i] *= right;\n            right *= nums[i];\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def productExceptSelf(self, nums: List[int]) -> List[int]:\n        n = len(nums)\n        ans = [0] * n\n        left = right = 1\n        for i, x in enumerate(nums):\n            ans[i] = left\n            left *= x\n        for i in range(n - 1, -1, -1):\n            ans[i] *= right\n            right *= nums[i]\n        return ans",
+  "examples": [
+    {
+      "input": "nums = [1,2,3,4]",
+      "output": "[24,12,8,6]"
+    },
+    {
+      "input": "nums = [-1,1,0,-3,3]",
+      "output": "[0,0,9,0,0]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/product-of-array-except-self/",
+  "fallbackSource": "https://leetcode.cn/problems/product-of-array-except-self/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/product-of-array-except-self/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0238.Product%20of%20Array%20Except%20Self/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0238.Product%20of%20Array%20Except%20Self/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：两次遍历\n\n思考\n\n除自身外的乘积等于左侧积乘右侧积。若先开两个数组存前缀、后缀积，空间不是常数。\n\n先从左往右把前缀积写入答案，再从右往左用一个变量累乘后缀并乘入答案，从而只用输出数组。\n\n我们定义两个变量 left 和 right，分别表示当前元素左边所有元素的乘积和右边所有元素的乘积。初始时 left=1, right=1。定义一个长度为 n 的答案数组 ans。\n\n我们先从左到右遍历数组，对于遍历到的第 i 个元素，我们用 left 更新 ans[i]，然后 left 乘以 nums[i]。\n\n然后，我们从右到左遍历数组，对于遍历到的第 i 个元素，我们更新 ans[i] 为 ans[i]×right，然后 right 乘以 nums[i]。\n\n遍历结束后，返回答案数组 ans。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。忽略答案数组的空间消耗，空间复杂度 O(1)。",
+  "summaryText": "第一遍把左侧乘积写入结果；第二遍从右往左维护一个右侧乘积，乘到结果上。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过除了自身以外数组的乘积掌握普通数组相关的可迁移解题模式。",
+  "prerequisites": [
+    "121"
+  ],
+  "recognition": "除了自身的乘积可以拆成当前位置左边所有数的乘积与右边所有数的乘积。",
+  "bruteForce": "直观做法是除自身外的乘积等于左侧积乘右侧积。若先开两个数组存前缀、后缀积，空间不是常数。；当输入规模扩大时，需要避免重复扫描并利用题目中的普通数组约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "除了自身的乘积可以拆成当前位置左边所有数的乘积与右边所有数的乘积。"
+    },
+    {
+      "level": 2,
+      "text": "第一遍把左侧乘积写入结果；第二遍从右往左维护一个右侧乘积，乘到结果上。"
+    },
+    {
+      "level": 3,
+      "text": "先令左侧累计乘积为一，从左到右把它写入结果，再乘入当前元素。然后令右侧累计乘积为一，从右到左把它乘到对应结果，再乘入当前元素。两次都在处理当前数之前记录结果，因而排除了自身，也无需除法，含零时同样成立。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 长度为 n 的数组，left ← 1\n对 i 从 0 到 n−1：\n    answer[i] ← left\n    left ← left×nums[i]\nright ← 1\n对 i 从 n−1 到 0：\n    answer[i] ← answer[i]×right\n    right ← right×nums[i]\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先令左侧累计乘积为一，从左到右把它写入结果，再乘入当前元素。",
+    "然后令右侧累计乘积为一，从右到左把它乘到对应结果，再乘入当前元素。",
+    "两次都在处理当前数之前记录结果，因而排除了自身，也无需除法，含零时同样成立。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,2,3,4] → [24,12,8,6]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足除了自身以外数组的乘积约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把除了自身以外数组的乘积的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用除自身外的乘积等于左侧积乘右侧积。若先开两个数组存前缀、后缀积，空间不是常数。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "productExceptSelf",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int[]",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "238-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "expected": [
+        24,
+        12,
+        8,
+        6
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "238-boundary-1",
+      "input": {
+        "nums": [
+          2,
+          3
+        ]
+      },
+      "expected": [
+        3,
+        2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有两个元素。"
+    },
+    {
+      "id": "238-adversarial-1",
+      "input": {
+        "nums": [
+          0,
+          1,
+          0,
+          3
+        ]
+      },
+      "expected": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "两个零使所有乘积为零。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,2,3,4]",
+    "output": "[24,12,8,6]",
+    "examples": [
+      {
+        "input": "nums = [1,2,3,4]",
+        "output": "[24,12,8,6]"
+      }
+    ]
+  }
+}

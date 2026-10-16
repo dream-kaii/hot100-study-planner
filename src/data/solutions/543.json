@@ -1,0 +1,158 @@
+{
+  "id": "543",
+  "description": "给你一棵二叉树的根节点，返回该树的 直径 。\n\n二叉树的 直径 是指树中任意两个节点之间最长路径的 长度 。这条路径可能经过也可能不经过根节点 root 。\n\n两节点之间路径的 长度 由它们之间边数表示。\n\n示例 1：\n\n输入：root = [1,2,3,4,5]\n输出：3\n解释：3 ，取路径 [4,2,1,3] 或 [5,2,1,3] 的长度。\n\n示例 2：\n\n输入：root = [1,2]\n输出：1\n\n提示：\n\n树中节点数目在范围 [1, 104] 内\n-100 <= Node.val <= 100",
+  "summary": "对每个节点递归求左右子树高度，空节点高度为零。经过当前节点的最长路径边数等于左高度加右高度，用它更新全局答案。递归向父节点只返回左右高度较大者加一，因为父节点接入时只能使用一侧路径。遍历所有节点即可覆盖不经过根的直径。",
+  "explanation": "方法一：枚举 + DFS\n\n思考\n\n直径是任意两点路径的最长边数。枚举所有点对再求路径不现实。任一直径必经过某节点，等于该节点左右子树高度之和。\n\nDFS 返回子树高度，并在回溯时用 l+r 更新全局答案，同时向父节点返回 1+max(l,r)。每个节点只访问一次，高度与直径一起算出。\n\n我们可以枚举二叉树的每个节点，以该节点为根节点，计算其左右子树的最大深度 l 和 r，则该节点的直径为 l + r。取所有节点的直径的最大值即为二叉树的直径。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为二叉树的节点个数。\n\n总结",
+  "java": "/**\n * Definition for a binary tree node.\n * public class TreeNode {\n *     int val;\n *     TreeNode left;\n *     TreeNode right;\n *     TreeNode() {}\n *     TreeNode(int val) { this.val = val; }\n *     TreeNode(int val, TreeNode left, TreeNode right) {\n *         this.val = val;\n *         this.left = left;\n *         this.right = right;\n *     }\n * }\n */\nclass Solution {\n    private int ans;\n\n    public int diameterOfBinaryTree(TreeNode root) {\n        dfs(root);\n        return ans;\n    }\n\n    private int dfs(TreeNode root) {\n        if (root == null) {\n            return 0;\n        }\n        int l = dfs(root.left);\n        int r = dfs(root.right);\n        ans = Math.max(ans, l + r);\n        return 1 + Math.max(l, r);\n    }\n}",
+  "python": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass Solution:\n    def diameterOfBinaryTree(self, root: TreeNode) -> int:\n        def dfs(root):\n            if root is None:\n                return 0\n            nonlocal ans\n            left, right = dfs(root.left), dfs(root.right)\n            ans = max(ans, left + right)\n            return 1 + max(left, right)\n\n        ans = 0\n        dfs(root)\n        return ans",
+  "examples": [
+    {
+      "input": "root = [1,2,3,4,5]",
+      "output": "3"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/diameter-of-binary-tree/",
+  "fallbackSource": "https://leetcode.cn/problems/diameter-of-binary-tree/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/diameter-of-binary-tree/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0500-0599/0543.Diameter%20of%20Binary%20Tree/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0500-0599/0543.Diameter%20of%20Binary%20Tree/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：枚举 + DFS\n\n思考\n\n直径是任意两点路径的最长边数。枚举所有点对再求路径不现实。任一直径必经过某节点，等于该节点左右子树高度之和。\n\nDFS 返回子树高度，并在回溯时用 l+r 更新全局答案，同时向父节点返回 1+max(l,r)。每个节点只访问一次，高度与直径一起算出。\n\n我们可以枚举二叉树的每个节点，以该节点为根节点，计算其左右子树的最大深度 l 和 r，则该节点的直径为 l + r。取所有节点的直径的最大值即为二叉树的直径。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为二叉树的节点个数。",
+  "summaryText": "递归返回子树高度，同时用左高度加右高度更新全局直径；直径按边数计算。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过二叉树的直径掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "104"
+  ],
+  "recognition": "最长路径不一定经过根；若路径经过某个节点，它的左右两段长度由什么决定？",
+  "bruteForce": "直观做法是方法一：枚举 + DFS；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "最长路径不一定经过根；若路径经过某个节点，它的左右两段长度由什么决定？"
+    },
+    {
+      "level": 2,
+      "text": "递归返回子树高度，同时用左高度加右高度更新全局直径；直径按边数计算。"
+    },
+    {
+      "level": 3,
+      "text": "对每个节点递归求左右子树高度，空节点高度为零。经过当前节点的最长路径边数等于左高度加右高度，用它更新全局答案。递归向父节点只返回左右高度较大者加一，因为父节点接入时只能使用一侧路径。遍历所有节点即可覆盖不经过根的直径。"
+    },
+    {
+      "level": 4,
+      "text": "best ← 0\nheight(node)：\n    若 node 为空：返回 0\n    left ← height(node.left)\n    right ← height(node.right)\n    best ← max(best,left+right)\n    返回 max(left,right)+1\nheight(root)\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "对每个节点递归求左右子树高度，空节点高度为零。",
+    "经过当前节点的最长路径边数等于左高度加右高度，用它更新全局答案。",
+    "递归向父节点只返回左右高度较大者加一，因为父节点接入时只能使用一侧路径。",
+    "遍历所有节点即可覆盖不经过根的直径。"
+  ],
+  "walkthrough": [
+    "公开示例：root = [1,2,3,4,5] → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足二叉树的直径约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把二叉树的直径的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：枚举 + DFS，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "diameterOfBinaryTree",
+    "params": [
+      {
+        "name": "root",
+        "type": "TreeNode"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "543-basic-1",
+      "input": {
+        "root": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "543-boundary-1",
+      "input": {
+        "root": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用二叉树的直径的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "543-adversarial-1",
+      "input": {
+        "root": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "expected": 3,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查二叉树的直径的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [1,2,3,4,5]",
+    "output": "3",
+    "examples": [
+      {
+        "input": "root = [1,2,3,4,5]",
+        "output": "3"
+      }
+    ]
+  }
+}

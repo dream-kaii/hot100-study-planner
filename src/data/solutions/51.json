@@ -1,0 +1,180 @@
+{
+  "id": "51",
+  "description": "按照国际象棋的规则，皇后可以攻击与之处在同一行或同一列或同一斜线上的棋子。\n\nn 皇后问题 研究的是如何将 n 个皇后放置在 n×n 的棋盘上，并且使皇后彼此之间不能相互攻击。\n\n给你一个整数 n ，返回所有不同的 n 皇后问题 的解决方案。\n\n每一种解法包含一个不同的 n 皇后问题 的棋子放置方案，该方案中 'Q' 和 '.' 分别代表了皇后和空位。\n\n示例 1：\n\n输入：n = 4\n输出：[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]\n解释：如上图所示，4 皇后问题存在两个不同的解法。\n\n示例 2：\n\n输入：n = 1\n输出：[[\"Q\"]]\n\n提示：\n\n1 <= n <= 9",
+  "summary": "递归逐行放皇后，每行枚举所有列。若列、row−col 或 row+col 已被占用则跳过，否则记录三个占用标记并放皇后，递归下一行，返回后撤销。成功放满 n 行时把每行位置转成棋盘字符串，复制到答案。每行只放一个，集合保证其余三种冲突都不会发生。",
+  "explanation": "都知道n皇后问题是回溯算法解决的经典问题，但是用回溯解决多了组合、切割、子集、排列问题之后，遇到这种二维矩阵还会有点不知所措。\n\n首先来看一下皇后们的约束条件：\n\n1. 不能同行\n2. 不能同列\n3. 不能同斜线\n\n确定完约束条件，来看看究竟要怎么去搜索皇后们的位置，其实搜索皇后的位置，可以抽象为一棵树。\n\n下面我用一个 3 3 的棋盘，将搜索过程抽象为一棵树，如图：\n\n从图中，可以看出，二维矩阵中矩阵的高就是这棵树的高度，矩阵的宽就是树形结构中每一个节点的宽度。\n\n那么我们用皇后们的约束条件，来回溯搜索这棵树，只要搜索到了树的叶子节点，说明就找到了皇后们的合理位置了。\n\n回溯三部曲\n\n按照我总结的如下回溯模板，我们来依次分析：\n\n递归函数参数\n\n我依然是定义全局变量二维数组result来记录最终结果。\n\n参数n是棋盘的大小，然后用row来记录当前遍历到棋盘的第几层了。\n\n代码如下：\n\n递归终止条件\n\n在如下树形结构中：\n\n可以看出，当递归到棋盘最底层（也就是叶子节点）的时候，就可以收集结果并返回了。\n\n单层搜索的逻辑\n\n递归深度就是row控制棋盘的行，每一层里for循环的col控制棋盘的列，一行一列，确定了放置皇后的位置。\n\n每次都是要从新的一行的起始位置开始搜，所以都是从0开始。\n\n验证棋盘是否合法\n\n按照如下标准去重：\n\n1. 不能同行\n2. 不能同列\n3. 不能同斜线 （45度和135度角）\n\n在这份代码中，细心的同学可以发现为什么没有在同行进行检查呢？\n\n因为在单层搜索的过程中，每一层递归，只会选for循环（也就是同一行）里的一个元素，所以不用去重了。\n\n那么按照这个模板不难写出如下\n\n时间复杂度: O(n!)\n空间复杂度: O(n)\n\n可以看出，除了验证棋盘合法性的代码，省下来部分就是按照回溯法模板来的。\n\n总结\n本题是我们解决棋盘问题的第一道题目。\n\n如果从来没有接触过N皇后问题的同学看着这样的题会感觉无从下手，可能知道要用回溯法，但也不知道该怎么去搜。\n\n这里我明确给出了棋盘的宽度就是for循环的长度，递归的深度就是棋盘的高度，这样就可以套进回溯法的模板里了。\n\n大家可以在仔细体会体会！\n\n其他语言补充\n\nJava\n\nPython\n\nGo\n\nJavaScript\n\nTypeScript\n\nSwift\n\nRust\n\nC\n\nScala",
+  "java": "class Solution {\n    List<List<String>> res = new ArrayList<>();\n\n    public List<List<String>> solveNQueens(int n) {\n        char[][] chessboard = new char[n][n];\n        for (char[] c : chessboard) {\n            Arrays.fill(c, '.');\n        }\n        backTrack(n, 0, chessboard);\n        return res;\n    }\n\n\n    public void backTrack(int n, int row, char[][] chessboard) {\n        if (row == n) {\n            res.add(Array2List(chessboard));\n            return;\n        }\n\n        for (int col = 0;col < n; ++col) {\n            if (isValid (row, col, n, chessboard)) {\n                chessboard[row][col] = 'Q';\n                backTrack(n, row+1, chessboard);\n                chessboard[row][col] = '.';\n            }\n        }\n\n    }\n\n\n    public List Array2List(char[][] chessboard) {\n        List<String> list = new ArrayList<>();\n\n        for (char[] c : chessboard) {\n            list.add(String.copyValueOf(c));\n        }\n        return list;\n    }\n\n\n    public boolean isValid(int row, int col, int n, char[][] chessboard) {\n        // 检查列\n        for (int i=0; i<row; ++i) { // 相当于剪枝\n            if (chessboard[i][col] == 'Q') {\n                return false;\n            }\n        }\n\n        // 检查45度对角线\n        for (int i=row-1, j=col-1; i>=0 && j>=0; i--, j--) {\n            if (chessboard[i][j] == 'Q') {\n                return false;\n            }\n        }\n\n        // 检查135度对角线\n        for (int i=row-1, j=col+1; i>=0 && j<=n-1; i--, j++) {\n            if (chessboard[i][j] == 'Q') {\n                return false;\n            }\n        }\n        return true;\n    }\n}",
+  "python": "class Solution:\n    def solveNQueens(self, n: int) -> List[List[str]]:\n        result = []  # 存储最终结果的二维字符串数组\n\n        chessboard = ['.' * n for _ in range(n)]  # 初始化棋盘\n        self.backtracking(n, 0, chessboard, result)  # 回溯求解\n        return [[''.join(row) for row in solution] for solution in result]  # 返回结果集\n\n    def backtracking(self, n: int, row: int, chessboard: List[str], result: List[List[str]]) -> None:\n        if row == n:\n            result.append(chessboard[:])  # 棋盘填满，将当前解加入结果集\n            return\n\n        for col in range(n):\n            if self.isValid(row, col, chessboard):\n                chessboard[row] = chessboard[row][:col] + 'Q' + chessboard[row][col+1:]  # 放置皇后\n                self.backtracking(n, row + 1, chessboard, result)  # 递归到下一行\n                chessboard[row] = chessboard[row][:col] + '.' + chessboard[row][col+1:]  # 回溯，撤销当前位置的皇后\n\n    def isValid(self, row: int, col: int, chessboard: List[str]) -> bool:\n        # 检查列\n        for i in range(row):\n            if chessboard[i][col] == 'Q':\n                return False  # 当前列已经存在皇后，不合法\n\n        # 检查 45 度角是否有皇后\n        i, j = row - 1, col - 1\n        while i >= 0 and j >= 0:\n            if chessboard[i][j] == 'Q':\n                return False  # 左上方向已经存在皇后，不合法\n            i -= 1\n            j -= 1\n\n        # 检查 135 度角是否有皇后\n        i, j = row - 1, col + 1\n        while i >= 0 and j < len(chessboard):\n            if chessboard[i][j] == 'Q':\n                return False  # 右上方向已经存在皇后，不合法\n            i -= 1\n            j += 1\n\n        return True  # 当前位置合法",
+  "examples": [
+    {
+      "input": "n = 4",
+      "output": "[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n²×n!)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0051.N%E7%9A%87%E5%90%8E.html",
+  "fallbackSource": "https://leetcode.cn/problems/n-queens/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0051.N%E7%9A%87%E5%90%8E.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0051.N%E7%9A%87%E5%90%8E.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0051.N%E7%9A%87%E5%90%8E.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "都知道n皇后问题是回溯算法解决的经典问题，但是用回溯解决多了组合、切割、子集、排列问题之后，遇到这种二维矩阵还会有点不知所措。\n\n首先来看一下皇后们的约束条件：\n\n1. 不能同行\n2. 不能同列\n3. 不能同斜线\n\n确定完约束条件，来看看究竟要怎么去搜索皇后们的位置，其实搜索皇后的位置，可以抽象为一棵树。\n\n下面我用一个 3 3 的棋盘，将搜索过程抽象为一棵树，如图：\n\n从图中，可以看出，二维矩阵中矩阵的高就是这棵树的高度，矩阵的宽就是树形结构中每一个节点的宽度。\n\n那么我们用皇后们的约束条件，来回溯搜索这棵树，只要搜索到了树的叶子节点，说明就找到了皇后们的合理位置了。\n\n回溯三部曲\n\n按照我总结的如下回溯模板，我们来依次分析：\n\n递归函数参数\n\n我依然是定义全局变量二维数组result来记录最终结果。\n\n参数n是棋盘的大小，然后用row来记录当前遍历到棋盘的第几层了。\n\n代码如下：\n\n递归终止条件\n\n在如下树形结构中：\n\n可以看出，当递归到棋盘最底层（也就是叶子节点）的时候，就可以收集结果并返回了。\n\n单层搜索的逻辑\n\n递归深度就是row控制棋盘的行，每一层里for循环的col控制棋盘的列，一行一列，确定了放置皇后的位置。\n\n每次都是要从新的一行的起始位置开始搜，所以都是从0开始。\n\n验证棋盘是否合法\n\n按照如下标准去重：\n\n1. 不能同行\n2. 不能同列\n3. 不能同斜线 （45度和135度角）\n\n在这份代码中，细心的同学可以发现为什么没有在同行进行检查呢？\n\n因为在单层搜索的过程中，每一层递归，只会选for循环（也就是同一行）里的一个元素，所以不用去重了。\n\n那么按照这个模板不难写出如下\n\n时间复杂度: O(n!)\n空间复杂度: O(n)\n\n可以看出，除了验证棋盘合法性的代码，省下来部分就是按照回溯法模板来的。",
+  "summaryText": "用三个集合记录列 col、主对角线 row−col、副对角线 row+col，按行回溯。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20211020232201.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20211020232201.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "51.N皇后",
+      "url": "https://file1.kamacoder.com/i/algo/20210130182532303.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210130182532303.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "51.N皇后",
+      "url": "https://file1.kamacoder.com/i/algo/20210130182532303-20230310122134167.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210130182532303-20230310122134167.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过N 皇后掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "78",
+    "46"
+  ],
+  "recognition": "每行只能放一个皇后。放到第 row 行、第 col 列时，怎样快速判断列和两条斜线是否已被占用？",
+  "bruteForce": "直观做法是方法一：DFS(回溯)；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "每行只能放一个皇后。放到第 row 行、第 col 列时，怎样快速判断列和两条斜线是否已被占用？"
+    },
+    {
+      "level": 2,
+      "text": "用三个集合记录列 col、主对角线 row−col、副对角线 row+col，按行回溯。"
+    },
+    {
+      "level": 3,
+      "text": "递归逐行放皇后，每行枚举所有列。若列、row−col 或 row+col 已被占用则跳过，否则记录三个占用标记并放皇后，递归下一行，返回后撤销。成功放满 n 行时把每行位置转成棋盘字符串，复制到答案。每行只放一个，集合保证其余三种冲突都不会发生。"
+    },
+    {
+      "level": 4,
+      "text": "cols、diag1、diag2 ← 空集合；positions ← 空列表\nsearch(row)：\n    若 row=n：将 positions 转棋盘并记录；返回\n    对 col 从 0 到 n−1：\n        若 col、row−col、row+col 中任一已占用：继续\n        记录列与两条斜线；positions 追加 col\n        search(row+1)\n        撤销列与斜线；positions 弹出最后位置\nsearch(0)；返回全部棋盘",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "递归逐行放皇后，每行枚举所有列。",
+    "若列、row−col 或 row+col 已被占用则跳过，否则记录三个占用标记并放皇后，递归下一行，返回后撤销。",
+    "成功放满 n 行时把每行位置转成棋盘字符串，复制到答案。",
+    "每行只放一个，集合保证其余三种冲突都不会发生。"
+  ],
+  "walkthrough": [
+    "公开示例：n = 4 → [[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足N 皇后约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把N 皇后的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：DFS(回溯)，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "solveNQueens",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      }
+    ],
+    "returns": "List<List<String>>",
+    "compare": "unordered-array"
+  },
+  "cases": [
+    {
+      "id": "51-basic-1",
+      "input": {
+        "n": 4
+      },
+      "expected": [
+        [
+          ".Q..",
+          "...Q",
+          "Q...",
+          "..Q."
+        ],
+        [
+          "..Q.",
+          "Q...",
+          "...Q",
+          ".Q.."
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "51-boundary-1",
+      "input": {
+        "n": 1
+      },
+      "expected": [
+        [
+          "Q"
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单个皇后。"
+    },
+    {
+      "id": "51-adversarial-1",
+      "input": {
+        "n": 2
+      },
+      "expected": [],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "无解时必须返回空集合。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nn = 4",
+    "output": "[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]",
+    "examples": [
+      {
+        "input": "n = 4",
+        "output": "[[\".Q..\",\"...Q\",\"Q...\",\"..Q.\"],[\"..Q.\",\"Q...\",\"...Q\",\".Q..\"]]"
+      }
+    ]
+  }
+}

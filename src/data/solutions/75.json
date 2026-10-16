@@ -1,0 +1,173 @@
+{
+  "id": "75",
+  "description": "给定一个包含红色、白色和蓝色、共 n 个元素的数组 nums ，原地 对它们进行排序，使得相同颜色的元素相邻，并按照红色、白色、蓝色顺序排列。\n\n我们使用整数 0、 1 和 2 分别表示红色、白色和蓝色。\n\n必须在不使用库内置的 sort 函数的情况下解决这个问题。\n\n示例 1：\n\n输入：nums = [2,0,2,1,1,0]\n\n输出：[0,0,1,1,2,2]\n\n解释：\n\n该数组包含两个 0、两个 1 和两个 2。将它们原地排序后，所有 0 排在最前面，接着是所有 1，最后是所有 2。\n\n示例 2：\n\n输入：nums = [2,0,1]\n\n输出：[0,1,2]\n\n数组中有且仅有一个 0、一个 1 和一个 2，按 0、1、2 的顺序原地排列。\n\n提示：\n\nn == nums.length\n1 <= n <= 300\nnums[i] 为 0、1 或 2\n\n进阶：\n\n你能想出一个仅使用常数空间的一趟扫描算法吗？",
+  "summary": "维护 low 左边全为零，low 到 current 前全为一，high 右边全为二。当前为零时与 low 交换并同时推进二者；为一时只推进 current；为二时与 high 交换并缩小 high，重新检查换来的元素。未知区间消失时原数组已按零一二排列。",
+  "explanation": "方法一：三指针\n\n思考\n\n统计 0、 1、 2 的个数再覆写需要两趟扫描；直接排序也能得到结果， n ≤ 300 时间足够。题目不允许使用库函数排序，进阶还要求一趟扫描且仅用常数额外空间。\n\n数组中只有三个取值，需要划分成「全 0 / 全 1 / 全 2」三段。为此用 i、 j 分别框住已经归位的 0 与 2， k 扫描未知区间。与 2 交换时，换回来的元素尚未考察，因此 k 不能前进；与 0 交换时，换回来的元素来自已扫描区间，因此 k 可以同步右移。一遍结束后三段自然有序。\n\n我们定义三个指针 i, j 和 k，其中指针 i 用于指向数组中元素值为 0 的最右边界，指针 j 用于指向数组中元素值为 2 的最左边界，初始时 i=-1, j=n。指针 k 用于指向当前遍历的元素，初始时 k=0。\n\n当 k < j 时，我们执行如下操作：\n\n- 若 nums[k]=0，则将其与 nums[i+1] 交换，然后 i 和 k 都加 1；\n- 若 nums[k]=2，则将其与 nums[j-1] 交换，然后 j 减 1；\n- 若 nums[k]=1，则 k 加 1。\n\n遍历结束后，数组中的元素就被分成了 [0,i], [i+1,j-1] 和 [j,n-1] 三个部分。\n\n时间复杂度 O(n)，其中 n 是数组的长度。只需要遍历一遍数组即可。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public void sortColors(int[] nums) {\n        int i = -1, j = nums.length, k = 0;\n        while (k < j) {\n            if (nums[k] == 0) {\n                swap(nums, ++i, k++);\n            } else if (nums[k] == 2) {\n                swap(nums, --j, k);\n            } else {\n                ++k;\n            }\n        }\n    }\n\n    private void swap(int[] nums, int i, int j) {\n        int t = nums[i];\n        nums[i] = nums[j];\n        nums[j] = t;\n    }\n}",
+  "python": "class Solution:\n    def sortColors(self, nums: List[int]) -> None:\n        i, j, k = -1, len(nums), 0\n        while k < j:\n            if nums[k] == 0:\n                i += 1\n                nums[i], nums[k] = nums[k], nums[i]\n                k += 1\n            elif nums[k] == 2:\n                j -= 1\n                nums[j], nums[k] = nums[k], nums[j]\n            else:\n                k += 1",
+  "examples": [
+    {
+      "input": "nums = [2,0,2,1,1,0]",
+      "output": "[0,0,1,1,2,2]"
+    },
+    {
+      "input": "nums = [2,0,1]",
+      "output": "[0,1,2]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/sort-colors/",
+  "fallbackSource": "https://leetcode.cn/problems/sort-colors/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/sort-colors/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0075.Sort%20Colors/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0075.Sort%20Colors/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：三指针\n\n思考\n\n统计 0、 1、 2 的个数再覆写需要两趟扫描；直接排序也能得到结果， n ≤ 300 时间足够。题目不允许使用库函数排序，进阶还要求一趟扫描且仅用常数额外空间。\n\n数组中只有三个取值，需要划分成「全 0 / 全 1 / 全 2」三段。为此用 i、 j 分别框住已经归位的 0 与 2， k 扫描未知区间。与 2 交换时，换回来的元素尚未考察，因此 k 不能前进；与 0 交换时，换回来的元素来自已扫描区间，因此 k 可以同步右移。一遍结束后三段自然有序。\n\n我们定义三个指针 i, j 和 k，其中指针 i 用于指向数组中元素值为 0 的最右边界，指针 j 用于指向数组中元素值为 2 的最左边界，初始时 i=-1, j=n。指针 k 用于指向当前遍历的元素，初始时 k=0。\n\n当 k < j 时，我们执行如下操作：\n\n- 若 nums[k]=0，则将其与 nums[i+1] 交换，然后 i 和 k 都加 1；\n- 若 nums[k]=2，则将其与 nums[j-1] 交换，然后 j 减 1；\n- 若 nums[k]=1，则 k 加 1。\n\n遍历结束后，数组中的元素就被分成了 [0,i], [i+1,j-1] 和 [j,n-1] 三个部分。\n\n时间复杂度 O(n)，其中 n 是数组的长度。只需要遍历一遍数组即可。空间复杂度 O(1)。",
+  "summaryText": "用 low、current、high 三指针。交换到右端的未知值还要继续检查，不能立刻推进 current。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过颜色分类掌握技巧相关的可迁移解题模式。",
+  "prerequisites": [
+    "283"
+  ],
+  "recognition": "数组只有三种颜色，能否把已处理区分成全零、全一、未知、全二四段？",
+  "bruteForce": "直观做法是统计 0、 1、 2 的个数再覆写需要两趟扫描；直接排序也能得到结果， n ≤ 300 时间足够。题目不允许使用库函数排序，进阶还要求一趟扫描且仅用常数额外空间。；当输入规模扩大时，需要避免重复扫描并利用题目中的技巧约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "数组只有三种颜色，能否把已处理区分成全零、全一、未知、全二四段？"
+    },
+    {
+      "level": 2,
+      "text": "用 low、current、high 三指针。交换到右端的未知值还要继续检查，不能立刻推进 current。"
+    },
+    {
+      "level": 3,
+      "text": "维护 low 左边全为零，low 到 current 前全为一，high 右边全为二。当前为零时与 low 交换并同时推进二者；为一时只推进 current；为二时与 high 交换并缩小 high，重新检查换来的元素。未知区间消失时原数组已按零一二排列。"
+    },
+    {
+      "level": 4,
+      "text": "low ← 0；current ← 0；high ← n−1\n当 current ≤ high：\n    若 nums[current]=0：\n        交换 nums[low],nums[current]；low 加一；current 加一\n    否则若 nums[current]=1：current 加一\n    否则：\n        交换 nums[current],nums[high]；high 减一\n// 未知区间已空，原地排序完成",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "维护 low 左边全为零，low 到 current 前全为一，high 右边全为二。",
+    "当前为零时与 low 交换并同时推进二者；为一时只推进 current；为二时与 high 交换并缩小 high，重新检查换来的元素。",
+    "未知区间消失时原数组已按零一二排列。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [2,0,2,1,1,0] → [0,0,1,1,2,2]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足颜色分类约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把颜色分类的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用统计 0、 1、 2 的个数再覆写需要两趟扫描；直接排序也能得到结果， n ≤ 300 时间足够。题目不允许使用库函数排序，进阶还要求一趟扫描且仅用常数额外空间。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "sortColors",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "void",
+    "compare": "in-place-mutate"
+  },
+  "cases": [
+    {
+      "id": "75-basic-1",
+      "input": {
+        "nums": [
+          2,
+          0,
+          2,
+          1,
+          1,
+          0
+        ]
+      },
+      "expected": [
+        0,
+        0,
+        1,
+        1,
+        2,
+        2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "75-boundary-1",
+      "input": {
+        "nums": [
+          2,
+          0,
+          1
+        ]
+      },
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用颜色分类的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "75-adversarial-1",
+      "input": {
+        "nums": [
+          2,
+          0,
+          1
+        ]
+      },
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查颜色分类的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [2,0,2,1,1,0]",
+    "output": "[0,0,1,1,2,2]",
+    "examples": [
+      {
+        "input": "nums = [2,0,2,1,1,0]",
+        "output": "[0,0,1,1,2,2]"
+      }
+    ]
+  }
+}

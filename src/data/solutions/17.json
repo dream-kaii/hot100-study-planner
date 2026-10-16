@@ -1,0 +1,185 @@
+{
+  "id": "17",
+  "description": "给定一个仅包含数字 2-9 的字符串，返回所有它能表示的字母组合。答案可以按 任意顺序 返回。\n\n给出数字到字母的映射如下（与电话按键相同）。注意 1 不对应任何字母。\n\n示例 1：\n\n输入：digits = \"23\"\n输出：[\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]\n\n示例 2：\n\n输入：digits = \"2\"\n输出：[\"a\",\"b\",\"c\"]\n\n提示：\n\n1 <= digits.length <= 4\ndigits[i] 是范围 ['2', '9'] 的一个数字。",
+  "summary": "先建立数字到字母的固定映射。若输入为空直接返回空列表；否则从第一位开始递归，将该位对应的每个字母依次追加到路径，然后处理下一位，回来后撤销。递归下标等于输入长度时，路径恰好包含每位一个字母，记录其副本即可。",
+  "explanation": "从示例上来说，输入\"23\"，最直接的想法就是两层for循环遍历了吧，正好把组合的情况都输出了。\n\n如果输入\"233\"呢，那么就三层for循环，如果\"2333\"呢，就四层for循环.......\n\n大家应该感觉出和77.组合遇到的一样的问题，就是这for循环的层数如何写出来，此时又是回溯法登场的时候了。\n\n理解本题后，要解决如下三个问题：\n\n1. 数字和字母如何映射\n2. 两个字母就两个for循环，三个字符我就三个for循环，以此类推，然后发现代码根本写不出来\n3. 输入1 按键等等异常情况\n\n数字和字母如何映射\n\n可以使用map或者定义一个二维数组，例如：string letterMap[10]，来做映射，我这里定义一个二维数组，代码如下：\n\n回溯法来解决n个for循环的问题\n\n对于回溯法还不了解的同学看这篇：关于回溯算法，你该了解这些！\n\n例如：输入：\"23\"，抽象为树形结构，如图所示：\n\n图中可以看出遍历的深度，就是输入\"23\"的长度，而叶子节点就是我们要收集的结果，输出[\"ad\", \"ae\", \"af\", \"bd\", \"be\", \"bf\", \"cd\", \"ce\", \"cf\"]。\n\n回溯三部曲：\n\n确定回溯函数参数\n\n首先需要一个字符串s来收集叶子节点的结果，然后用一个字符串数组result保存起来，这两个变量我依然定义为全局。\n\n再来看参数，参数指定是有题目中给的string digits，然后还要有一个参数就是int型的index。\n\n注意这个index可不是 77.组合和216.组合总和III中的startIndex了。\n\n这个index是记录遍历第几个数字了，就是用来遍历digits的（题目中给出数字字符串），同时index也表示树的深度。\n\n代码如下：\n\n确定终止条件\n\n例如输入用例\"23\"，两个数字，那么根节点往下递归两层就可以了，叶子节点就是要收集的结果集。\n\n那么终止条件就是如果index 等于 输入的数字个数（digits.size）了（本来index就是用来遍历digits的）。\n\n然后收集结果，结束本层递归。\n\n确定单层遍历逻辑\n\n首先要取index指向的数字，并找到对应的字符集（手机键盘的字符集）。\n\n然后for循环来处理这个字符集，代码如下：\n\n注意这里for循环，可不像是在回溯算法：求组合问题！和回溯算法：求组合总和！中从startIndex开始遍历的。\n\n因为本题每一个数字代表的是不同集合，也就是求不同集合之间的组合，而77. 组合和216.组合总和III都是求同一个集合中的组合！\n\n注意：输入1 按键等等异常情况\n\n代码中最好考虑这些异常情况，但题目的测试数据中应该没有异常情况的数据，所以我就没有加了。\n\n但是要知道会有这些异常，如果是现场面试中，一定要考虑到！\n\n关键地方都讲完了，按照关于回溯算法，你该了解这些！中的回溯法模板，不难写出如下\n\n时间复杂度: O(3^m 4ⁿ)，其中 m 是对应三个字母的数字个数，n 是对应四个字母的数字个数\n空间复杂度: O(3^m 4ⁿ)\n\n一些写法，是把回溯的过程放在递归函数里了，例如如下代码，我可以写成这样：（注意注释中不一样的地方）\n\n我不建议把回溯藏在递归的参数里这种写法，很不直观，我在二叉树：以为使用了递归，其实还隐藏着回溯这篇文章中也深度分析了，回溯隐藏在了哪里。\n\n所以大家可以按照版本一来写就可以了。\n\n总结\n本篇将题目的三个要点一一列出，并重点强调了和前面讲解过的77. 组合和216.组合总和III的区别，本题是多个集合求组合，所以在回溯的搜索过程中，都有一些细节需要注意的。\n\n其实本题不算难，但也处处是细节，大家还要自己亲自动手写一写。",
+  "java": "class Solution {\n\n    //设置全局列表存储最后的结果\n    List<String> list = new ArrayList<>();\n\n    public List<String> letterCombinations(String digits) {\n        if (digits == null || digits.length() == 0) {\n            return list;\n        }\n        //初始对应所有的数字，为了直接对应2-9，新增了两个无效的字符串\"\"\n        String[] numString = {\"\", \"\", \"abc\", \"def\", \"ghi\", \"jkl\", \"mno\", \"pqrs\", \"tuv\", \"wxyz\"};\n        //迭代处理\n        backTracking(digits, numString, 0);\n        return list;\n\n    }\n\n    //每次迭代获取一个字符串，所以会涉及大量的字符串拼接，所以这里选择更为高效的 StringBuilder\n    StringBuilder temp = new StringBuilder();\n\n    //比如digits如果为\"23\",num 为0，则str表示2对应的 abc\n    public void backTracking(String digits, String[] numString, int num) {\n        //遍历全部一次记录一次得到的字符串\n        if (num == digits.length()) {\n            list.add(temp.toString());\n            return;\n        }\n        //str 表示当前num对应的字符串\n        String str = numString[digits.charAt(num) - '0'];\n        for (int i = 0; i < str.length(); i++) {\n            temp.append(str.charAt(i));\n            //递归，处理下一层\n            backTracking(digits, numString, num + 1);\n            //剔除末尾的继续尝试\n            temp.deleteCharAt(temp.length() - 1);\n        }\n    }\n}",
+  "python": "class Solution:\n    def __init__(self):\n        self.letterMap = [\n            \"\",     # 0\n            \"\",     # 1\n            \"abc\",  # 2\n            \"def\",  # 3\n            \"ghi\",  # 4\n            \"jkl\",  # 5\n            \"mno\",  # 6\n            \"pqrs\", # 7\n            \"tuv\",  # 8\n            \"wxyz\"  # 9\n        ]\n        self.result = []\n        self.s = \"\"\n    \n    def backtracking(self, digits, index):\n        if index == len(digits):\n            self.result.append(self.s)\n            return\n        digit = int(digits[index])    # 将索引处的数字转换为整数\n        letters = self.letterMap[digit]    # 获取对应的字符集\n        for i in range(len(letters)):\n            self.s += letters[i]    # 处理字符\n            self.backtracking(digits, index + 1)    # 递归调用，注意索引加1，处理下一个数字\n            self.s = self.s[:-1]    # 回溯，删除最后添加的字符\n    \n    def letterCombinations(self, digits):\n        if len(digits) == 0:\n            return self.result\n        self.backtracking(digits, 0)\n        return self.result",
+  "examples": [
+    {
+      "input": "digits = \"23\"",
+      "output": "[\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]"
+    },
+    {
+      "input": "digits = \"2\"",
+      "output": "[\"a\",\"b\",\"c\"]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n * 4ⁿ)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0017.%E7%94%B5%E8%AF%9D%E5%8F%B7%E7%A0%81%E7%9A%84%E5%AD%97%E6%AF%8D%E7%BB%84%E5%90%88.html",
+  "fallbackSource": "https://leetcode.cn/problems/letter-combinations-of-a-phone-number/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0017.%E7%94%B5%E8%AF%9D%E5%8F%B7%E7%A0%81%E7%9A%84%E5%AD%97%E6%AF%8D%E7%BB%84%E5%90%88.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0017.%E7%94%B5%E8%AF%9D%E5%8F%B7%E7%A0%81%E7%9A%84%E5%AD%97%E6%AF%8D%E7%BB%84%E5%90%88.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0017.%E7%94%B5%E8%AF%9D%E5%8F%B7%E7%A0%81%E7%9A%84%E5%AD%97%E6%AF%8D%E7%BB%84%E5%90%88.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "从示例上来说，输入\"23\"，最直接的想法就是两层for循环遍历了吧，正好把组合的情况都输出了。\n\n如果输入\"233\"呢，那么就三层for循环，如果\"2333\"呢，就四层for循环.......\n\n大家应该感觉出和77.组合遇到的一样的问题，就是这for循环的层数如何写出来，此时又是回溯法登场的时候了。\n\n理解本题后，要解决如下三个问题：\n\n1. 数字和字母如何映射\n2. 两个字母就两个for循环，三个字符我就三个for循环，以此类推，然后发现代码根本写不出来\n3. 输入1 按键等等异常情况\n\n数字和字母如何映射\n\n可以使用map或者定义一个二维数组，例如：string letterMap[10]，来做映射，我这里定义一个二维数组，代码如下：\n\n回溯法来解决n个for循环的问题\n\n对于回溯法还不了解的同学看这篇：关于回溯算法，你该了解这些！\n\n例如：输入：\"23\"，抽象为树形结构，如图所示：\n\n图中可以看出遍历的深度，就是输入\"23\"的长度，而叶子节点就是我们要收集的结果，输出[\"ad\", \"ae\", \"af\", \"bd\", \"be\", \"bf\", \"cd\", \"ce\", \"cf\"]。\n\n回溯三部曲：\n\n确定回溯函数参数\n\n首先需要一个字符串s来收集叶子节点的结果，然后用一个字符串数组result保存起来，这两个变量我依然定义为全局。\n\n再来看参数，参数指定是有题目中给的string digits，然后还要有一个参数就是int型的index。\n\n注意这个index可不是 77.组合和216.组合总和III中的startIndex了。\n\n这个index是记录遍历第几个数字了，就是用来遍历digits的（题目中给出数字字符串），同时index也表示树的深度。\n\n代码如下：\n\n确定终止条件\n\n例如输入用例\"23\"，两个数字，那么根节点往下递归两层就可以了，叶子节点就是要收集的结果集。\n\n那么终止条件就是如果index 等于 输入的数字个数（digits.size）了（本来index就是用来遍历digits的）。\n\n然后收集结果，结束本层递归。\n\n确定单层遍历逻辑\n\n首先要取index指向的数字，并找到对应的字符集（手机键盘的字符集）。\n\n然后for循环来处理这个字符集，代码如下：\n\n注意这里for循环，可不像是在回溯算法：求组合问题！和回溯算法：求组合总和！中从startIndex开始遍历的。\n\n因为本题每一个数字代表的是不同集合，也就是求不同集合之间的组合，而77. 组合和216.组合总和III都是求同一个集合中的组合！\n\n注意：输入1 按键等等异常情况\n\n代码中最好考虑这些异常情况，但题目的测试数据中应该没有异常情况的数据，所以我就没有加了。\n\n但是要知道会有这些异常，如果是现场面试中，一定要考虑到！\n\n关键地方都讲完了，按照关于回溯算法，你该了解这些！中的回溯法模板，不难写出如下\n\n时间复杂度: O(3^m 4ⁿ)，其中 m 是对应三个字母的数字个数，n 是对应四个字母的数字个数\n空间复杂度: O(3^m 4ⁿ)\n\n一些写法，是把回溯的过程放在递归函数里了，例如如下代码，我可以写成这样：（注意注释中不一样的地方）\n\n我不建议把回溯藏在递归的参数里这种写法，很不直观，我在二叉树：以为使用了递归，其实还隐藏着回溯这篇文章中也深度分析了，回溯隐藏在了哪里。\n\n所以大家可以按照版本一来写就可以了。",
+  "summaryText": "递归处理数字下标，当前位依次尝试它映射的字母；处理完所有位就记录字符串。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "17.电话号码的字母组合",
+      "url": "https://file1.kamacoder.com/i/algo/2020102916424043.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/2020102916424043.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "17. 电话号码的字母组合",
+      "url": "https://file1.kamacoder.com/i/algo/20201123200304469.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201123200304469.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过电话号码的字母组合掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "46"
+  ],
+  "recognition": "每个数字对应几个字母，最终组合就是从每一位对应的字母中各选一个。",
+  "bruteForce": "直观做法是数字长度 n ≤ 4，答案至多 4ⁿ 种，枚举全部组合在复杂度上可以接受。本质是若干字母集合的笛卡尔积；若手写 n 层循环，则 n 不固定时无法写出。；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "每个数字对应几个字母，最终组合就是从每一位对应的字母中各选一个。"
+    },
+    {
+      "level": 2,
+      "text": "递归处理数字下标，当前位依次尝试它映射的字母；处理完所有位就记录字符串。"
+    },
+    {
+      "level": 3,
+      "text": "先建立数字到字母的固定映射。若输入为空直接返回空列表；否则从第一位开始递归，将该位对应的每个字母依次追加到路径，然后处理下一位，回来后撤销。递归下标等于输入长度时，路径恰好包含每位一个字母，记录其副本即可。"
+    },
+    {
+      "level": 4,
+      "text": "若 digits 为空：返回 空列表\nmapping ← 电话键盘映射；answer ← 空列表\nsearch(index,path)：\n    若 index=digits长度：记录 path；返回\n    对 mapping[digits[index]] 中每个字母 c：\n        将 c 追加到 path\n        search(index+1,path)\n        撤销最后一个字母\nsearch(0,空路径)；返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先建立数字到字母的固定映射。",
+    "若输入为空直接返回空列表；否则从第一位开始递归，将该位对应的每个字母依次追加到路径，然后处理下一位，回来后撤销。",
+    "递归下标等于输入长度时，路径恰好包含每位一个字母，记录其副本即可。"
+  ],
+  "walkthrough": [
+    "公开示例：digits = \"23\" → [\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足电话号码的字母组合约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把电话号码的字母组合的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用数字长度 n ≤ 4，答案至多 4ⁿ 种，枚举全部组合在复杂度上可以接受。本质是若干字母集合的笛卡尔积；若手写 n 层循环，则 n 不固定时无法写出。，额外空间为O(4ⁿ)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "letterCombinations",
+    "params": [
+      {
+        "name": "digits",
+        "type": "String"
+      }
+    ],
+    "returns": "List<String>",
+    "compare": "unordered-array"
+  },
+  "cases": [
+    {
+      "id": "17-basic-1",
+      "input": {
+        "digits": "23"
+      },
+      "expected": [
+        "ad",
+        "ae",
+        "af",
+        "bd",
+        "be",
+        "bf",
+        "cd",
+        "ce",
+        "cf"
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "17-boundary-1",
+      "input": {
+        "digits": ""
+      },
+      "expected": [],
+      "tags": [
+        "boundary"
+      ],
+      "note": "没有数字就没有组合。"
+    },
+    {
+      "id": "17-adversarial-1",
+      "input": {
+        "digits": "79"
+      },
+      "expected": [
+        "pw",
+        "px",
+        "py",
+        "pz",
+        "qw",
+        "qx",
+        "qy",
+        "qz",
+        "rw",
+        "rx",
+        "ry",
+        "rz",
+        "sw",
+        "sx",
+        "sy",
+        "sz"
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "7和9各有四个字母。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ndigits = \"23\"",
+    "output": "[\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]",
+    "examples": [
+      {
+        "input": "digits = \"23\"",
+        "output": "[\"ad\",\"ae\",\"af\",\"bd\",\"be\",\"bf\",\"cd\",\"ce\",\"cf\"]"
+      }
+    ]
+  }
+}

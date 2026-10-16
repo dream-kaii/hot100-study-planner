@@ -1,0 +1,176 @@
+{
+  "id": "139",
+  "description": "给你一个字符串 s 和一个字符串列表 wordDict 作为字典。如果可以利用字典中出现的一个或多个单词拼接出 s 则返回 true。\n\n注意：不要求字典中出现的单词全部都使用，并且字典中的单词可以重复使用。\n\n示例 1：\n\n输入: s = \"leetcode\", wordDict = [\"leet\", \"code\"]\n输出: true\n解释: 返回 true 因为 \"leetcode\" 可以由 \"leet\" 和 \"code\" 拼接成。\n\n示例 2：\n\n输入: s = \"applepenapple\", wordDict = [\"apple\", \"pen\"]\n输出: true\n解释: 返回 true 因为 \"applepenapple\" 可以由 \"apple\" \"pen\" \"apple\" 拼接成。\n注意，你可以重复使用字典中的单词。\n\n示例 3：\n\n输入: s = \"catsandog\", wordDict = [\"cats\", \"dog\", \"sand\", \"and\", \"cat\"]\n输出: false\n\n提示：\n\n1 <= s.length <= 300\n1 <= wordDict.length <= 1000\n1 <= wordDict[i].length <= 20\ns 和 wordDict[i] 仅由小写英文字母组成\nwordDict 中的所有字符串 互不相同",
+  "summary": "把字典放入集合，设 dp[0] 为真，表示空前缀可拆。按前缀长度从短到长计算 dp[i]，枚举分割点 j；若前 j 个字符可拆且从 j 到 i 的子串属于字典，就令 dp[i] 为真并停止枚举。本题不限制一个词使用次数，因此无需额外删除或计数。",
+  "explanation": "看到这道题目的时候，大家应该回想起我们之前讲解回溯法专题的时候，讲过的一道题目回溯算法：分割回文串，就是枚举字符串的所有分割情况。\n\n回溯算法：分割回文串：是枚举分割后的所有子串，判断是否回文。\n\n本道是枚举分割所有字符串，判断是否在字典里出现过。\n\n那么这里我也给出回溯法\n\n时间复杂度：O(2ⁿ)，因为每一个单词都有两个状态，切割和不切割\n空间复杂度：O(n)，算法递归系统调用栈的空间\n\n那么以上代码很明显要超时了，超时的数据如下：\n\n递归的过程中有很多重复计算，可以使用数组保存一下递归过程中计算的结果。\n\n这个叫做记忆化递归，这种方法我们之前已经提过很多次了。\n\n使用memory数组保存每次计算的以startIndex起始的计算结果，如果memory[startIndex]里已经被赋值了，直接用memory[startIndex]的结果。\n\n总结\n本题和我们之前讲解回溯专题的回溯算法：分割回文串非常像，所以我也给出了对应的回溯解法。\n\n稍加分析，便可知道本题是完全背包，是求能否组成背包，而且这里要求物品是要有顺序的。",
+  "java": "class Solution {\n    public boolean wordBreak(String s, List<String> wordDict) {\n        HashSet<String> set = new HashSet<>(wordDict);\n        boolean[] valid = new boolean[s.length() + 1];\n        valid[0] = true;\n\n        for (int i = 1; i <= s.length(); i++) {\n            for (int j = 0; j < i && !valid[i]; j++) {\n                if (set.contains(s.substring(j, i)) && valid[j]) {\n                    valid[i] = true;\n                }\n            }\n        }\n\n        return valid[s.length()];\n    }\n}",
+  "python": "class Solution:\n    def backtracking(self, s: str, wordSet: set[str], startIndex: int) -> bool:\n        # 边界情况：已经遍历到字符串末尾，返回True\n        if startIndex >= len(s):\n            return True\n\n        # 遍历所有可能的拆分位置\n        for i in range(startIndex, len(s)):\n            word = s[startIndex:i + 1]  # 截取子串\n            if word in wordSet and self.backtracking(s, wordSet, i + 1):\n                # 如果截取的子串在字典中，并且后续部分也可以被拆分成单词，返回True\n                return True\n\n        # 无法进行有效拆分，返回False\n        return False\n\n    def wordBreak(self, s: str, wordDict: List[str]) -> bool:\n        wordSet = set(wordDict)  # 转换为哈希集合，提高查找效率\n        return self.backtracking(s, wordSet, 0)",
+  "examples": [
+    {
+      "input": "s = \"leetcode\", wordDict = [\"leet\", \"code\"]",
+      "output": "true"
+    },
+    {
+      "input": "s = \"applepenapple\", wordDict = [\"apple\", \"pen\"]",
+      "output": "true"
+    }
+  ],
+  "complexity": {
+    "time": "O(n²)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0139.%E5%8D%95%E8%AF%8D%E6%8B%86%E5%88%86.html",
+  "fallbackSource": "https://leetcode.cn/problems/word-break/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0139.%E5%8D%95%E8%AF%8D%E6%8B%86%E5%88%86.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0139.%E5%8D%95%E8%AF%8D%E6%8B%86%E5%88%86.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0139.%E5%8D%95%E8%AF%8D%E6%8B%86%E5%88%86.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "看到这道题目的时候，大家应该回想起我们之前讲解回溯法专题的时候，讲过的一道题目回溯算法：分割回文串，就是枚举字符串的所有分割情况。\n\n回溯算法：分割回文串：是枚举分割后的所有子串，判断是否回文。\n\n本道是枚举分割所有字符串，判断是否在字典里出现过。\n\n那么这里我也给出回溯法\n\n时间复杂度：O(2ⁿ)，因为每一个单词都有两个状态，切割和不切割\n空间复杂度：O(n)，算法递归系统调用栈的空间\n\n那么以上代码很明显要超时了，超时的数据如下：\n\n递归的过程中有很多重复计算，可以使用数组保存一下递归过程中计算的结果。\n\n这个叫做记忆化递归，这种方法我们之前已经提过很多次了。\n\n使用memory数组保存每次计算的以startIndex起始的计算结果，如果memory[startIndex]里已经被赋值了，直接用memory[startIndex]的结果。",
+  "summaryText": "dp[i] 表示前 i 个字符可拆分；尝试所有分割点 j，检查 dp[j] 和 s[j..i) 是否为词。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "139.单词拆分",
+      "url": "https://file1.kamacoder.com/i/algo/20210202162652727.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210202162652727.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20240809155103.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20240809155103.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过单词拆分掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "416"
+  ],
+  "recognition": "字符串能拆分，意味着某个前缀能拆分，而且紧接着的一段正好在字典里。",
+  "bruteForce": "直观做法是方法一：哈希表 + 动态规划；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "字符串能拆分，意味着某个前缀能拆分，而且紧接着的一段正好在字典里。"
+    },
+    {
+      "level": 2,
+      "text": "dp[i] 表示前 i 个字符可拆分；尝试所有分割点 j，检查 dp[j] 和 s[j..i) 是否为词。"
+    },
+    {
+      "level": 3,
+      "text": "把字典放入集合，设 dp[0] 为真，表示空前缀可拆。按前缀长度从短到长计算 dp[i]，枚举分割点 j；若前 j 个字符可拆且从 j 到 i 的子串属于字典，就令 dp[i] 为真并停止枚举。本题不限制一个词使用次数，因此无需额外删除或计数。"
+    },
+    {
+      "level": 4,
+      "text": "dict ← wordDict 的集合；dp[0] ← 真，其余 ← 假\n对 i 从 1 到 s长度：\n    对 j 从 0 到 i−1：\n        若 dp[j] 且 s[j..i) 在 dict：\n            dp[i] ← 真\n            结束内层循环\n返回 dp[s长度]",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "把字典放入集合，设 dp[0] 为真，表示空前缀可拆。",
+    "按前缀长度从短到长计算 dp[i]，枚举分割点 j；若前 j 个字符可拆且从 j 到 i 的子串属于字典，就令 dp[i] 为真并停止枚举。",
+    "本题不限制一个词使用次数，因此无需额外删除或计数。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"leetcode\", wordDict = [\"leet\", \"code\"] → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足单词拆分约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把单词拆分的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 动态规划，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "wordBreak",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      },
+      {
+        "name": "wordDict",
+        "type": "List<String>"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "139-basic-1",
+      "input": {
+        "s": "leetcode",
+        "wordDict": [
+          "leet",
+          "code"
+        ]
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "139-boundary-1",
+      "input": {
+        "s": "a",
+        "wordDict": [
+          "a"
+        ]
+      },
+      "expected": true,
+      "tags": [
+        "boundary"
+      ],
+      "note": "单字符能被字典匹配。"
+    },
+    {
+      "id": "139-adversarial-1",
+      "input": {
+        "s": "catsandog",
+        "wordDict": [
+          "cats",
+          "dog",
+          "sand",
+          "and",
+          "cat"
+        ]
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "局部匹配不能保证整串可以拼接。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"leetcode\", wordDict = [\"leet\", \"code\"]",
+    "output": "true",
+    "examples": [
+      {
+        "input": "s = \"leetcode\", wordDict = [\"leet\", \"code\"]",
+        "output": "true"
+      }
+    ]
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "id": "994",
+  "description": "在给定的 m x n 网格 grid 中，每个单元格可以有以下三个值之一：\n\n值 0 代表空单元格；\n值 1 代表新鲜橘子；\n值 2 代表腐烂的橘子。\n\n每分钟，腐烂的橘子 周围 4 个方向上相邻 的新鲜橘子都会腐烂。\n\n返回 直到单元格中没有新鲜橘子为止所必须经过的最小分钟数。如果不可能，返回 -1 。\n\n示例 1：\n\n输入：grid = [[2,1,1],[1,1,0],[0,1,1]]\n输出：4\n\n示例 2：\n\n输入：grid = [[2,1,1],[0,1,1],[1,0,1]]\n输出：-1\n解释：左下角的橘子（第 2 行， 第 0 列）永远不会腐烂，因为腐烂只会发生在 4 个方向上。\n\n示例 3：\n\n输入：grid = [[0,2]]\n输出：0\n解释：因为 0 分钟时已经没有新鲜橘子了，所以答案就是 0 。\n\n提示：\n\nm == grid.length\nn == grid[i].length\n1 <= m, n <= 10\ngrid[i][j] 仅为 0、1 或 2",
+  "summary": "先扫描网格，把全部腐烂橘子加入队列并统计新鲜橘子数量。每分钟只处理队列当前这一层，将四邻新鲜橘子立即标为腐烂并入队，数量减一。新一层属于下一分钟。没有新鲜橘子返回累计分钟；队列耗尽却还有新鲜橘子则返回 −1。",
+  "explanation": "方法一：BFS\n\n思考\n\n腐烂每分钟向四邻扩散，求全部变烂的最短时间。多源同时扩散，属于无权最短路。先把所有烂橘入队并统计鲜橘，按层 BFS；鲜橘计数归零时的层数即为答案，队列空仍有鲜橘则返回 -1。\n\n我们首先遍历一遍整个网格，统计出新鲜橘子的数量，记为 cnt，并且将所有腐烂的橘子的坐标加入队列 q 中。\n\n接下来，我们进行广度优先搜索，每一轮搜索，我们将队列中的所有腐烂的橘子向四个方向腐烂新鲜橘子，直到队列为空或者新鲜橘子的数量为 0 为止。\n\n最后，如果新鲜橘子的数量为 0，则返回当前的轮数，否则返回 -1。\n\n时间复杂度 O(m×n)，空间复杂度 O(m×n)。其中 m 和 n 分别是网格的行数和列数。\n\n总结",
+  "java": "class Solution {\n    public int orangesRotting(int[][] grid) {\n        int m = grid.length, n = grid[0].length;\n        Deque<int[]> q = new ArrayDeque<>();\n        int cnt = 0;\n        for (int i = 0; i < m; ++i) {\n            for (int j = 0; j < n; ++j) {\n                if (grid[i][j] == 1) {\n                    ++cnt;\n                } else if (grid[i][j] == 2) {\n                    q.offer(new int[] {i, j});\n                }\n            }\n        }\n        final int[] dirs = {-1, 0, 1, 0, -1};\n        for (int ans = 1; !q.isEmpty() && cnt > 0; ++ans) {\n            for (int k = q.size(); k > 0; --k) {\n                int[] p = q.poll();\n                for (int d = 0; d < 4; ++d) {\n                    int x = p[0] + dirs[d], y = p[1] + dirs[d + 1];\n                    if (x >= 0 && x < m && y >= 0 && y < n && grid[x][y] == 1) {\n                        grid[x][y] = 2;\n                        q.offer(new int[] {x, y});\n                        if (--cnt == 0) {\n                            return ans;\n                        }\n                    }\n                }\n            }\n        }\n        return cnt > 0 ? -1 : 0;\n    }\n}",
+  "python": "class Solution:\n    def orangesRotting(self, grid: List[List[int]]) -> int:\n        m, n = len(grid), len(grid[0])\n        cnt = 0\n        q = deque()\n        for i, row in enumerate(grid):\n            for j, x in enumerate(row):\n                if x == 2:\n                    q.append((i, j))\n                elif x == 1:\n                    cnt += 1\n        ans = 0\n        dirs = (-1, 0, 1, 0, -1)\n        while q and cnt:\n            ans += 1\n            for _ in range(len(q)):\n                i, j = q.popleft()\n                for a, b in pairwise(dirs):\n                    x, y = i + a, j + b\n                    if 0 <= x < m and 0 <= y < n and grid[x][y] == 1:\n                        grid[x][y] = 2\n                        q.append((x, y))\n                        cnt -= 1\n                        if cnt == 0:\n                            return ans\n        return -1 if cnt else 0",
+  "examples": [
+    {
+      "input": "grid = [[2,1,1],[0,1,1],[1,0,1]]",
+      "output": "-1"
+    },
+    {
+      "input": "grid = [[0,2]]",
+      "output": "0"
+    }
+  ],
+  "complexity": {
+    "time": "O(m×n)",
+    "space": "O(m×n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/rotting-oranges/",
+  "fallbackSource": "https://leetcode.cn/problems/rotting-oranges/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/rotting-oranges/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0900-0999/0994.Rotting%20Oranges/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0900-0999/0994.Rotting%20Oranges/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：BFS\n\n思考\n\n腐烂每分钟向四邻扩散，求全部变烂的最短时间。多源同时扩散，属于无权最短路。先把所有烂橘入队并统计鲜橘，按层 BFS；鲜橘计数归零时的层数即为答案，队列空仍有鲜橘则返回 -1。\n\n我们首先遍历一遍整个网格，统计出新鲜橘子的数量，记为 cnt，并且将所有腐烂的橘子的坐标加入队列 q 中。\n\n接下来，我们进行广度优先搜索，每一轮搜索，我们将队列中的所有腐烂的橘子向四个方向腐烂新鲜橘子，直到队列为空或者新鲜橘子的数量为 0 为止。\n\n最后，如果新鲜橘子的数量为 0，则返回当前的轮数，否则返回 -1。\n\n时间复杂度 O(m×n)，空间复杂度 O(m×n)。其中 m 和 n 分别是网格的行数和列数。",
+  "summaryText": "将最初所有腐烂橘子同时入队，按层广度搜索，并统计剩余新鲜橘子。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过腐烂的橘子掌握图论相关的可迁移解题模式。",
+  "prerequisites": [
+    "200"
+  ],
+  "recognition": "所有腐烂橘子会同时传播，逐个起点单独模拟会重复计时。怎样一轮处理同一分钟的传播？",
+  "bruteForce": "直观做法是腐烂每分钟向四邻扩散，求全部变烂的最短时间。多源同时扩散，属于无权最短路。先把所有烂橘入队并统计鲜橘，按层 BFS；鲜橘计数归零时的层数即为答案，队列空仍有鲜橘则返回 -1。；当输入规模扩大时，需要避免重复扫描并利用题目中的图论约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "所有腐烂橘子会同时传播，逐个起点单独模拟会重复计时。怎样一轮处理同一分钟的传播？"
+    },
+    {
+      "level": 2,
+      "text": "将最初所有腐烂橘子同时入队，按层广度搜索，并统计剩余新鲜橘子。"
+    },
+    {
+      "level": 3,
+      "text": "先扫描网格，把全部腐烂橘子加入队列并统计新鲜橘子数量。每分钟只处理队列当前这一层，将四邻新鲜橘子立即标为腐烂并入队，数量减一。新一层属于下一分钟。没有新鲜橘子返回累计分钟；队列耗尽却还有新鲜橘子则返回 −1。"
+    },
+    {
+      "level": 4,
+      "text": "queue ← 所有腐烂橘子；fresh ← 新鲜橘子数；minutes ← 0\n当 queue 非空 且 fresh > 0：\n    size ← queue长度\n    重复 size 次：\n        cell ← 出队\n        对 cell 的四邻格：\n            若是新鲜橘子：标腐烂；入队；fresh ← fresh−1\n    minutes ← minutes+1\n若 fresh > 0：返回 −1\n返回 minutes",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先扫描网格，把全部腐烂橘子加入队列并统计新鲜橘子数量。",
+    "每分钟只处理队列当前这一层，将四邻新鲜橘子立即标为腐烂并入队，数量减一。",
+    "新一层属于下一分钟。",
+    "没有新鲜橘子返回累计分钟；队列耗尽却还有新鲜橘子则返回 −1。"
+  ],
+  "walkthrough": [
+    "公开示例：grid = [[2,1,1],[0,1,1],[1,0,1]] → -1。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足腐烂的橘子约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把腐烂的橘子的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用腐烂每分钟向四邻扩散，求全部变烂的最短时间。多源同时扩散，属于无权最短路。先把所有烂橘入队并统计鲜橘，按层 BFS；鲜橘计数归零时的层数即为答案，队列空仍有鲜橘则返回 -1。，额外空间为O(m×n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "orangesRotting",
+    "params": [
+      {
+        "name": "grid",
+        "type": "int[][]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "994-basic-1",
+      "input": {
+        "grid": [
+          [
+            2,
+            1,
+            1
+          ],
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            0,
+            1
+          ]
+        ]
+      },
+      "expected": -1,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "994-boundary-1",
+      "input": {
+        "grid": [
+          [
+            0
+          ]
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "boundary"
+      ],
+      "note": "没有橘子就无需等待。"
+    },
+    {
+      "id": "994-adversarial-1",
+      "input": {
+        "grid": [
+          [
+            2,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            0
+          ],
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      },
+      "expected": 4,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "传播必须逐分钟分层计算。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ngrid = [[2,1,1],[0,1,1],[1,0,1]]",
+    "output": "-1",
+    "examples": [
+      {
+        "input": "grid = [[2,1,1],[0,1,1],[1,0,1]]",
+        "output": "-1"
+      }
+    ]
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "id": "3",
+  "description": "给定一个字符串 s ，请你找出其中不含有重复字符的 最长 子串 的长度。\n\n示例 1:\n\n输入: s = \"abcabcbb\"\n输出: 3\n解释: 因为无重复字符的最长子串是 \"abc\"，所以其长度为 3。注意 \"bca\" 和 \"cab\" 也是正确答案。\n\n示例 2:\n\n输入: s = \"bbbbb\"\n输出: 1\n解释: 因为无重复字符的最长子串是 \"b\"，所以其长度为 1。\n\n示例 3:\n\n输入: s = \"pwwkew\"\n输出: 3\n解释: 因为无重复字符的最长子串是 \"wke\"，所以其长度为 3。\n请注意，你的答案必须是 子串 的长度，\"pwke\" 是一个子序列，不是子串。\n\n提示：\n\n0 <= s.length <= 105\ns 由英文字母、数字、符号和空格组成",
+  "summary": "从左到右枚举窗口右端点，用映射保存每个字符最近出现的下标。若当前字符上次位置在窗口内，将 left 移到该位置后一格；否则保持 left。更新最近位置，再用 right−left+1 更新最大长度。left 取最大值以免退回已经排除的区间。",
+  "explanation": "方法一：滑动窗口\n\n思考\n\n若枚举所有子串再判断是否含有重复字符，时间复杂度至少为 O(n²)。 n ≤ 10⁵，无法通过。\n\n子串之间大量重叠：一旦区间 [l, r] 已经不含重复字符，右端再纳入字符 c 时，只需处理 c 是否在窗口内再次出现，而不必重新扫描整段。若出现重复，合法解不可能再包含左侧多出来的那个 c，应当右移 l。用计数表维护 cnt[c]，大于 1 时收缩左端，直到 c 只出现一次；此时当前窗口就是以 r 结尾的最长无重复子串。\n\n我们可以用两个指针 l 和 r 维护一个滑动窗口，使其始终满足窗口内没有重复字符，初始时 l 和 r 都指向字符串的第一个字符。用一个哈希表或者长度为 128 的数组 cnt 来记录每个字符出现的次数，其中 cnt[c] 表示字符 c 出现的次数。\n\n接下来，我们依次移动右指针 r，每次移动时，将 cnt[s[r]] 的值加 1，然后判断当前窗口 [l, r] 内 cnt[s[r]] 是否大于 1，如果大于 1，说明当前窗口内有重复字符，我们需要移动左指针 l，直到窗口内没有重复字符为止。然后，我们更新答案 ans = max(ans, r - l + 1)。\n\n最终，我们返回答案 ans 即可。\n\n时间复杂度 O(n)，其中 n 为字符串的长度。空间复杂度 O(|Σ|)，其中 Σ 表示字符集，这里 Σ 的大小为 128。\n\n总结",
+  "java": "class Solution {\n    public int lengthOfLongestSubstring(String s) {\n        int[] cnt = new int[128];\n        int ans = 0, n = s.length();\n        for (int l = 0, r = 0; r < n; ++r) {\n            char c = s.charAt(r);\n            ++cnt[c];\n            while (cnt[c] > 1) {\n                --cnt[s.charAt(l++)];\n            }\n            ans = Math.max(ans, r - l + 1);\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def lengthOfLongestSubstring(self, s: str) -> int:\n        cnt = Counter()\n        ans = l = 0\n        for r, c in enumerate(s):\n            cnt[c] += 1\n            while cnt[c] > 1:\n                cnt[s[l]] -= 1\n                l += 1\n            ans = max(ans, r - l + 1)\n        return ans",
+  "examples": [
+    {
+      "input": "s = \"abcabcbb\"",
+      "output": "3"
+    },
+    {
+      "input": "s = \"bbbbb\"",
+      "output": "1"
+    },
+    {
+      "input": "s = \"pwwkew\"",
+      "output": "3"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(min(n, |Σ|))"
+  },
+  "solutionSource": "https://leetcode.cn/problems/longest-substring-without-repeating-characters/",
+  "fallbackSource": "https://leetcode.cn/problems/longest-substring-without-repeating-characters/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/longest-substring-without-repeating-characters/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0003.Longest%20Substring%20Without%20Repeating%20Characters/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0003.Longest%20Substring%20Without%20Repeating%20Characters/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：滑动窗口\n\n思考\n\n若枚举所有子串再判断是否含有重复字符，时间复杂度至少为 O(n²)。 n ≤ 10⁵，无法通过。\n\n子串之间大量重叠：一旦区间 [l, r] 已经不含重复字符，右端再纳入字符 c 时，只需处理 c 是否在窗口内再次出现，而不必重新扫描整段。若出现重复，合法解不可能再包含左侧多出来的那个 c，应当右移 l。用计数表维护 cnt[c]，大于 1 时收缩左端，直到 c 只出现一次；此时当前窗口就是以 r 结尾的最长无重复子串。\n\n我们可以用两个指针 l 和 r 维护一个滑动窗口，使其始终满足窗口内没有重复字符，初始时 l 和 r 都指向字符串的第一个字符。用一个哈希表或者长度为 128 的数组 cnt 来记录每个字符出现的次数，其中 cnt[c] 表示字符 c 出现的次数。\n\n接下来，我们依次移动右指针 r，每次移动时，将 cnt[s[r]] 的值加 1，然后判断当前窗口 [l, r] 内 cnt[s[r]] 是否大于 1，如果大于 1，说明当前窗口内有重复字符，我们需要移动左指针 l，直到窗口内没有重复字符为止。然后，我们更新答案 ans = max(ans, r - l + 1)。\n\n最终，我们返回答案 ans 即可。\n\n时间复杂度 O(n)，其中 n 为字符串的长度。空间复杂度 O(|Σ|)，其中 Σ 表示字符集，这里 Σ 的大小为 128。",
+  "summaryText": "滑动窗口用 left 表示起点，记录字符最近出现的位置；重复时 left 只能向右移动。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过无重复字符的最长子串掌握滑动窗口相关的可迁移解题模式。",
+  "prerequisites": [
+    "15"
+  ],
+  "recognition": "最长子串必须连续；若新字符与窗口内字符重复，哪些旧字符必须离开窗口？",
+  "bruteForce": "直观做法是若枚举所有子串再判断是否含有重复字符，时间复杂度至少为 O(n²)。 n ≤ 10⁵，无法通过。；当输入规模扩大时，需要避免重复扫描并利用题目中的滑动窗口约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "最长子串必须连续；若新字符与窗口内字符重复，哪些旧字符必须离开窗口？"
+    },
+    {
+      "level": 2,
+      "text": "滑动窗口用 left 表示起点，记录字符最近出现的位置；重复时 left 只能向右移动。"
+    },
+    {
+      "level": 3,
+      "text": "从左到右枚举窗口右端点，用映射保存每个字符最近出现的下标。若当前字符上次位置在窗口内，将 left 移到该位置后一格；否则保持 left。更新最近位置，再用 right−left+1 更新最大长度。left 取最大值以免退回已经排除的区间。"
+    },
+    {
+      "level": 4,
+      "text": "left ← 0，best ← 0，last ← 空映射\n对 right 从 0 到 字符串长度−1：\n    char ← s[right]\n    若 last 含 char：\n        left ← max(left,last[char]+1)\n    last[char] ← right\n    best ← max(best,right−left+1)\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从左到右枚举窗口右端点，用映射保存每个字符最近出现的下标。",
+    "若当前字符上次位置在窗口内，将 left 移到该位置后一格；否则保持 left。",
+    "更新最近位置，再用 right−left+1 更新最大长度。",
+    "left 取最大值以免退回已经排除的区间。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"abcabcbb\" → 3。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足无重复字符的最长子串约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把无重复字符的最长子串的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若枚举所有子串再判断是否含有重复字符，时间复杂度至少为 O(n²)。 n ≤ 10⁵，无法通过。，额外空间为O(|Σ|)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "lengthOfLongestSubstring",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "3-basic-1",
+      "input": {
+        "s": "abcabcbb"
+      },
+      "expected": 3,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "3-boundary-1",
+      "input": {
+        "s": "pwwkew"
+      },
+      "expected": 3,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用无重复字符的最长子串的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "3-adversarial-1",
+      "input": {
+        "s": "pwwkew"
+      },
+      "expected": 3,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查无重复字符的最长子串的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"abcabcbb\"",
+    "output": "3",
+    "examples": [
+      {
+        "input": "s = \"abcabcbb\"",
+        "output": "3"
+      }
+    ]
+  }
+}

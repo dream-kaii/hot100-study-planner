@@ -1,0 +1,156 @@
+{
+  "id": "76",
+  "description": "给定两个字符串 s 和 t，长度分别是 m 和 n，返回 s 中的 最短窗口 子串，使得该子串包含 t 中的每一个字符（包括重复字符）。如果没有这样的子串，返回空字符串 \"\"。\n\n测试用例保证答案唯一。\n\n示例 1：\n\n输入：s = \"ADOBECODEBANC\", t = \"ABC\"\n输出：\"BANC\"\n解释：最小覆盖子串 \"BANC\" 包含来自字符串 t 的 'A'、'B' 和 'C'。\n\n示例 2：\n\n输入：s = \"a\", t = \"a\"\n输出：\"a\"\n解释：整个字符串 s 是最小覆盖子串。\n\n示例 3:\n\n输入: s = \"a\", t = \"aa\"\n输出: \"\"\n解释: t 中两个字符 'a' 均应包含在 s 的子串中，\n因此没有符合条件的子字符串，返回空字符串。\n\n提示：\n\nm == s.length\nn == t.length\n1 <= m, n <= 105\ns 和 t 由英文字母组成\n\n进阶：你能设计一个在 O(m + n) 时间内解决此问题的算法吗？",
+  "summary": "先统计 t 的各字符需求次数。右指针扩展窗口并更新计数，某个字符计数首次达到需求时增加满足种类数。全部满足后记录当前最短窗口，再逐个移出左端字符；若移出后某个需求不再满足，就停止收缩并继续扩右。重复字符按次数而非存在性判断。",
+  "explanation": "方法一：计数 + 双指针\n\n思考\n\n若枚举 s 的所有子串再检查是否覆盖 t，窗口有 O(m²) 个， m ≤ 10⁵ 无法通过。进阶要求 O(m+n)。\n\n覆盖一旦成立，左端多余字符可以移出窗口；尚未覆盖则只能继续右扩。因此维护 t 的字符配额 need、窗口计数 window，并用 cnt 记录已经凑齐的必要出现次数，判断覆盖只需常数时间。右指针扫描 s，窗口合法时尽量收缩左端并记录最短区间。\n\n我们用一个哈希表或数组 need 统计字符串 t 中每个字符出现的次数，用另一个哈希表或数组 window 统计滑动窗口中每个字符出现的次数。另外，定义两个指针 l 和 r 分别指向窗口的左右边界，变量 cnt 表示窗口中已经包含了 t 中的多少个字符，变量 k 和 mi 分别表示最小覆盖子串的起始位置和长度。\n\n我们从左到右遍历字符串 s，对于当前遍历到的字符 s[r]：\n\n- 我们将其加入窗口中，即 window[s[r]] = window[s[r]] + 1，如果此时 need[s[r]] ≥ window[s[r]]，则说明 s[r] 是一个「必要的字符」，我们将 cnt 加一。\n- 如果 cnt 等于 t 的长度，说明此时窗口中已经包含了 t 中的所有字符，我们就可以尝试更新最小覆盖子串的起始位置和长度了。如果 r - l + 1 < mi，说明当前窗口表示的子串更短，我们就更新 mi = r - l + 1 和 k = l。\n- 然后，我们尝试移动左边界 l，如果此时 need[s[l]] ≥ window[s[l]]，则说明 s[l] 是一个「必要的字符」，移动左边界时会把 s[l] 这个字符从窗口中移除，因此我们需要将 cnt 减一，然后更新 window[s[l]] = window[s[l]] - 1，并将 l 右移一位。\n- 如果 cnt 与 t 的长度不相等，说明此时窗口中还没有包含 t 中的所有字符，我们就不需要移动左边界了，直接将 r 右移一位，继续遍历即可。\n\n遍历结束，如果没有找到最小覆盖子串，返回空字符串，否则返回 s[k:k+mi] 即可。\n\n时间复杂度 O(m + n)，空间复杂度 O(|Σ|)。其中 m 和 n 分别是字符串 s 和 t 的长度；而 |Σ| 是字符集的大小，本题中 |Σ| = 128。\n\n总结",
+  "java": "class Solution {\n    public String minWindow(String s, String t) {\n        int[] need = new int[128];\n        int[] window = new int[128];\n        for (char c : t.toCharArray()) {\n            ++need[c];\n        }\n        int m = s.length(), n = t.length();\n        int k = -1, mi = m + 1, cnt = 0;\n        for (int l = 0, r = 0; r < m; ++r) {\n            char c = s.charAt(r);\n            if (++window[c] <= need[c]) {\n                ++cnt;\n            }\n            while (cnt == n) {\n                if (r - l + 1 < mi) {\n                    mi = r - l + 1;\n                    k = l;\n                }\n                c = s.charAt(l);\n                if (window[c] <= need[c]) {\n                    --cnt;\n                }\n                --window[c];\n                ++l;\n            }\n        }\n        return k < 0 ? \"\" : s.substring(k, k + mi);\n    }\n}",
+  "python": "class Solution:\n    def minWindow(self, s: str, t: str) -> str:\n        need = Counter(t)\n        window = Counter()\n        cnt = l = 0\n        k, mi = -1, inf\n        for r, c in enumerate(s):\n            window[c] += 1\n            if need[c] >= window[c]:\n                cnt += 1\n            while cnt == len(t):\n                if r - l + 1 < mi:\n                    mi = r - l + 1\n                    k = l\n                if need[s[l]] >= window[s[l]]:\n                    cnt -= 1\n                window[s[l]] -= 1\n                l += 1\n        return \"\" if k < 0 else s[k : k + mi]",
+  "examples": [
+    {
+      "input": "s = \"ADOBECODEBANC\", t = \"ABC\"",
+      "output": "\"BANC\""
+    },
+    {
+      "input": "s = \"a\", t = \"a\"",
+      "output": "\"a\""
+    },
+    {
+      "input": "s = \"a\", t = \"aa\"",
+      "output": "\"\""
+    }
+  ],
+  "complexity": {
+    "time": "O(m + n)",
+    "space": "O(|Σ|)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/minimum-window-substring/",
+  "fallbackSource": "https://leetcode.cn/problems/minimum-window-substring/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/minimum-window-substring/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0076.Minimum%20Window%20Substring/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0076.Minimum%20Window%20Substring/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：计数 + 双指针\n\n思考\n\n若枚举 s 的所有子串再检查是否覆盖 t，窗口有 O(m²) 个， m ≤ 10⁵ 无法通过。进阶要求 O(m+n)。\n\n覆盖一旦成立，左端多余字符可以移出窗口；尚未覆盖则只能继续右扩。因此维护 t 的字符配额 need、窗口计数 window，并用 cnt 记录已经凑齐的必要出现次数，判断覆盖只需常数时间。右指针扫描 s，窗口合法时尽量收缩左端并记录最短区间。\n\n我们用一个哈希表或数组 need 统计字符串 t 中每个字符出现的次数，用另一个哈希表或数组 window 统计滑动窗口中每个字符出现的次数。另外，定义两个指针 l 和 r 分别指向窗口的左右边界，变量 cnt 表示窗口中已经包含了 t 中的多少个字符，变量 k 和 mi 分别表示最小覆盖子串的起始位置和长度。\n\n我们从左到右遍历字符串 s，对于当前遍历到的字符 s[r]：\n\n- 我们将其加入窗口中，即 window[s[r]] = window[s[r]] + 1，如果此时 need[s[r]] ≥ window[s[r]]，则说明 s[r] 是一个「必要的字符」，我们将 cnt 加一。\n- 如果 cnt 等于 t 的长度，说明此时窗口中已经包含了 t 中的所有字符，我们就可以尝试更新最小覆盖子串的起始位置和长度了。如果 r - l + 1 < mi，说明当前窗口表示的子串更短，我们就更新 mi = r - l + 1 和 k = l。\n- 然后，我们尝试移动左边界 l，如果此时 need[s[l]] ≥ window[s[l]]，则说明 s[l] 是一个「必要的字符」，移动左边界时会把 s[l] 这个字符从窗口中移除，因此我们需要将 cnt 减一，然后更新 window[s[l]] = window[s[l]] - 1，并将 l 右移一位。\n- 如果 cnt 与 t 的长度不相等，说明此时窗口中还没有包含 t 中的所有字符，我们就不需要移动左边界了，直接将 r 右移一位，继续遍历即可。\n\n遍历结束，如果没有找到最小覆盖子串，返回空字符串，否则返回 s[k:k+mi] 即可。\n\n时间复杂度 O(m + n)，空间复杂度 O(|Σ|)。其中 m 和 n 分别是字符串 s 和 t 的长度；而 |Σ| 是字符集的大小，本题中 |Σ| = 128。",
+  "summaryText": "记录每个字符的需求次数与已满足字符种类数；满足后不断缩左，直到刚好失去覆盖。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过最小覆盖子串掌握子串相关的可迁移解题模式。",
+  "prerequisites": [
+    "3",
+    "438"
+  ],
+  "recognition": "窗口包含 t 的全部字符后，继续扩大不会让它更短。此时应该移动哪一端，还要怎样处理重复字符？",
+  "bruteForce": "直观做法是方法一：计数 + 双指针；当输入规模扩大时，需要避免重复扫描并利用题目中的子串约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "窗口包含 t 的全部字符后，继续扩大不会让它更短。此时应该移动哪一端，还要怎样处理重复字符？"
+    },
+    {
+      "level": 2,
+      "text": "记录每个字符的需求次数与已满足字符种类数；满足后不断缩左，直到刚好失去覆盖。"
+    },
+    {
+      "level": 3,
+      "text": "先统计 t 的各字符需求次数。右指针扩展窗口并更新计数，某个字符计数首次达到需求时增加满足种类数。全部满足后记录当前最短窗口，再逐个移出左端字符；若移出后某个需求不再满足，就停止收缩并继续扩右。重复字符按次数而非存在性判断。"
+    },
+    {
+      "level": 4,
+      "text": "need ← t 的字符次数；window ← 空计数；valid ← 0；left ← 0\n对 right 从 0 到 s长度−1：\n    增加 window[s[right]]；若刚达到 need 次数则 valid 加一\n    当 valid=need 的字符种类数：\n        用 [left,right] 更新最短窗口\n        c ← s[left]；left 加一\n        若 c 有需求且移出前次数恰等于需求：valid 减一\n        window[c] 减一\n返回最短窗口，若不存在则返回空串",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先统计 t 的各字符需求次数。",
+    "右指针扩展窗口并更新计数，某个字符计数首次达到需求时增加满足种类数。",
+    "全部满足后记录当前最短窗口，再逐个移出左端字符；若移出后某个需求不再满足，就停止收缩并继续扩右。",
+    "重复字符按次数而非存在性判断。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"ADOBECODEBANC\", t = \"ABC\" → \"BANC\"。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足最小覆盖子串约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把最小覆盖子串的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：计数 + 双指针，额外空间为O(|Σ|)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "minWindow",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      },
+      {
+        "name": "t",
+        "type": "String"
+      }
+    ],
+    "returns": "String",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "76-basic-1",
+      "input": {
+        "s": "ADOBECODEBANC",
+        "t": "ABC"
+      },
+      "expected": "BANC",
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "76-boundary-1",
+      "input": {
+        "s": "a",
+        "t": "aa"
+      },
+      "expected": "",
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用最小覆盖子串的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "76-adversarial-1",
+      "input": {
+        "s": "a",
+        "t": "aa"
+      },
+      "expected": "",
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查最小覆盖子串的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"ADOBECODEBANC\", t = \"ABC\"",
+    "output": "\"BANC\"",
+    "examples": [
+      {
+        "input": "s = \"ADOBECODEBANC\", t = \"ABC\"",
+        "output": "\"BANC\""
+      }
+    ]
+  }
+}

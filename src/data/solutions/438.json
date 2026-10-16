@@ -1,0 +1,162 @@
+{
+  "id": "438",
+  "description": "给定两个字符串 s 和 p，找到 s 中所有 p 的 异位词 的子串，返回这些子串的起始索引。不考虑答案输出的顺序。\n\n示例 1:\n\n输入: s = \"cbaebabacd\", p = \"abc\"\n输出: [0,6]\n解释:\n起始索引等于 0 的子串是 \"cba\", 它是 \"abc\" 的异位词。\n起始索引等于 6 的子串是 \"bac\", 它是 \"abc\" 的异位词。\n\n示例 2:\n\n输入: s = \"abab\", p = \"ab\"\n输出: [0,1,2]\n解释:\n起始索引等于 0 的子串是 \"ab\", 它是 \"ab\" 的异位词。\n起始索引等于 1 的子串是 \"ba\", 它是 \"ab\" 的异位词。\n起始索引等于 2 的子串是 \"ab\", 它是 \"ab\" 的异位词。\n\n提示:\n\n1 <= s.length, p.length <= 3 104\ns 和 p 仅包含小写字母",
+  "summary": "先统计 p 的字母次数。从左到右扫描 s，增加新进入窗口的字符计数；窗口超过 p 长度时减去离开窗口的字符计数。只有窗口长度恰好等于 p 时才比较计数，全部一致就记录窗口起点。字母表固定，比较两组计数的代价是常数。",
+  "explanation": "方法一：滑动窗口\n\n思考\n\n异位词是字母计数相同的等长子串。枚举每个起点再排序比较过慢。\n\n固定长度 n=|p| 的窗口，维护窗口计数与 p 的计数，相等则记录左端。先放入前 n-1 个字符，右端每进一步比较并弹出左端。\n\n窗口长度始终为 n，只需比较两个长度为 26 的计数。\n\n我们不妨设字符串 s 的长度为 m，字符串 p 的长度为 n。\n\n如果 m < n，那么 s 中不可能存在任何一个子串同 p 为异位词，返回空列表即可。\n\n当 m ≥ n 时，我们可以使用一个固定长度为 n 的滑动窗口来维护 s 的子串。为了判断子串是否为 p 的异位词，我们可以用一个固定长度为 26 的数组 cnt1 记录 p 中每个字母的出现次数，再用另一个数组 cnt2 记录当前滑动窗口中每个字母的出现次数，如果这两个数组相同，那么当前滑动窗口的子串就是 p 的异位词，我们记录下起始位置。\n\n时间复杂度 O(m×C)，空间复杂度 O(C)。其中 m 是字符串 s 的长度；而 C 是字符集大小，在本题中字符集为所有小写字母，所以 C = 26。\n\n总结",
+  "java": "class Solution {\n    public List<Integer> findAnagrams(String s, String p) {\n        int m = s.length(), n = p.length();\n        List<Integer> ans = new ArrayList<>();\n        if (m < n) {\n            return ans;\n        }\n        int[] cnt1 = new int[26];\n        for (int i = 0; i < n; ++i) {\n            ++cnt1[p.charAt(i) - 'a'];\n        }\n        int[] cnt2 = new int[26];\n        for (int i = 0; i < n - 1; ++i) {\n            ++cnt2[s.charAt(i) - 'a'];\n        }\n        for (int i = n - 1; i < m; ++i) {\n            ++cnt2[s.charAt(i) - 'a'];\n            if (Arrays.equals(cnt1, cnt2)) {\n                ans.add(i - n + 1);\n            }\n            --cnt2[s.charAt(i - n + 1) - 'a'];\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def findAnagrams(self, s: str, p: str) -> List[int]:\n        m, n = len(s), len(p)\n        ans = []\n        if m < n:\n            return ans\n        cnt1 = Counter(p)\n        cnt2 = Counter(s[: n - 1])\n        for i in range(n - 1, m):\n            cnt2[s[i]] += 1\n            if cnt1 == cnt2:\n                ans.append(i - n + 1)\n            cnt2[s[i - n + 1]] -= 1\n        return ans",
+  "examples": [
+    {
+      "input": "s = \"cbaebabacd\", p = \"abc\"",
+      "output": "[0,6]"
+    },
+    {
+      "input": "s = \"abab\", p = \"ab\"",
+      "output": "[0,1,2]"
+    }
+  ],
+  "complexity": {
+    "time": "O(m + n)",
+    "space": "O(|Σ|)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/find-all-anagrams-in-a-string/",
+  "fallbackSource": "https://leetcode.cn/problems/find-all-anagrams-in-a-string/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/find-all-anagrams-in-a-string/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0400-0499/0438.Find%20All%20Anagrams%20in%20a%20String/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0400-0499/0438.Find%20All%20Anagrams%20in%20a%20String/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：滑动窗口\n\n思考\n\n异位词是字母计数相同的等长子串。枚举每个起点再排序比较过慢。\n\n固定长度 n=|p| 的窗口，维护窗口计数与 p 的计数，相等则记录左端。先放入前 n-1 个字符，右端每进一步比较并弹出左端。\n\n窗口长度始终为 n，只需比较两个长度为 26 的计数。\n\n我们不妨设字符串 s 的长度为 m，字符串 p 的长度为 n。\n\n如果 m < n，那么 s 中不可能存在任何一个子串同 p 为异位词，返回空列表即可。\n\n当 m ≥ n 时，我们可以使用一个固定长度为 n 的滑动窗口来维护 s 的子串。为了判断子串是否为 p 的异位词，我们可以用一个固定长度为 26 的数组 cnt1 记录 p 中每个字母的出现次数，再用另一个数组 cnt2 记录当前滑动窗口中每个字母的出现次数，如果这两个数组相同，那么当前滑动窗口的子串就是 p 的异位词，我们记录下起始位置。\n\n时间复杂度 O(m×C)，空间复杂度 O(C)。其中 m 是字符串 s 的长度；而 C 是字符集大小，在本题中字符集为所有小写字母，所以 C = 26。",
+  "summaryText": "维护长度等于 p 的窗口字母计数；向右移动时只加入一个字母、移出一个字母。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过找到字符串中所有字母异位词掌握滑动窗口相关的可迁移解题模式。",
+  "prerequisites": [
+    "3"
+  ],
+  "recognition": "异位词的长度固定，而且每个字母的出现次数必须一致，是否需要比较所有子串？",
+  "bruteForce": "直观做法是异位词是字母计数相同的等长子串。枚举每个起点再排序比较过慢。；当输入规模扩大时，需要避免重复扫描并利用题目中的滑动窗口约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "异位词的长度固定，而且每个字母的出现次数必须一致，是否需要比较所有子串？"
+    },
+    {
+      "level": 2,
+      "text": "维护长度等于 p 的窗口字母计数；向右移动时只加入一个字母、移出一个字母。"
+    },
+    {
+      "level": 3,
+      "text": "先统计 p 的字母次数。从左到右扫描 s，增加新进入窗口的字符计数；窗口超过 p 长度时减去离开窗口的字符计数。只有窗口长度恰好等于 p 时才比较计数，全部一致就记录窗口起点。字母表固定，比较两组计数的代价是常数。"
+    },
+    {
+      "level": 4,
+      "text": "need ← p 的字母计数；window ← 全零计数；answer ← 空列表\n对 right 从 0 到 s长度−1：\n    window[s[right]] 加一\n    若 right ≥ p长度：\n        window[s[right−p长度]] 减一\n    若 right ≥ p长度−1 且 window=need：\n        记录 right−p长度+1\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先统计 p 的字母次数。",
+    "从左到右扫描 s，增加新进入窗口的字符计数；窗口超过 p 长度时减去离开窗口的字符计数。",
+    "只有窗口长度恰好等于 p 时才比较计数，全部一致就记录窗口起点。",
+    "字母表固定，比较两组计数的代价是常数。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"cbaebabacd\", p = \"abc\" → [0,6]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足找到字符串中所有字母异位词约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把找到字符串中所有字母异位词的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用异位词是字母计数相同的等长子串。枚举每个起点再排序比较过慢。，额外空间为O(C)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "findAnagrams",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      },
+      {
+        "name": "p",
+        "type": "String"
+      }
+    ],
+    "returns": "List<Integer>",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "438-basic-1",
+      "input": {
+        "s": "cbaebabacd",
+        "p": "abc"
+      },
+      "expected": [
+        0,
+        6
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "438-boundary-1",
+      "input": {
+        "s": "abab",
+        "p": "ab"
+      },
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用找到字符串中所有字母异位词的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "438-adversarial-1",
+      "input": {
+        "s": "abab",
+        "p": "ab"
+      },
+      "expected": [
+        0,
+        1,
+        2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查找到字符串中所有字母异位词的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"cbaebabacd\", p = \"abc\"",
+    "output": "[0,6]",
+    "examples": [
+      {
+        "input": "s = \"cbaebabacd\", p = \"abc\"",
+        "output": "[0,6]"
+      }
+    ]
+  }
+}

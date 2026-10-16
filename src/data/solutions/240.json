@@ -1,0 +1,200 @@
+{
+  "id": "240",
+  "description": "编写一个高效的算法来搜索 m x n 矩阵 matrix 中的一个目标值 target 。该矩阵具有以下特性：\n\n每行的元素从左到右升序排列。\n每列的元素从上到下升序排列。\n\n示例 1：\n\n输入：matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 5\n输出：true\n\n示例 2：\n\n输入：matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 20\n输出：false\n\n提示：\n\nm == matrix.length\nn == matrix[i].length\n1 <= n, m <= 300\n-109 <= matrix[i][j] <= 109\n每行的所有元素从左到右升序排列\n每列的所有元素从上到下升序排列\n-109 <= target <= 109",
+  "summary": "从第一行最后一列出发。如果当前值过大，因为该列下面都更大，所以排除当前列；如果过小，因为该行左边都更小，所以排除当前行。相等即找到，不断左移或下移，越过边界即不存在。每一步都根据行列有序性排除确定无解的区域。",
+  "explanation": "方法一：二分查找\n\n思考\n\n每行、每列均递增，可对每一行二分查找 target。行数为 m、列为 n 时时间为 O(mlog n)，无需额外空间。\n\n由于每一行的所有元素升序排列，因此，对于每一行，我们可以使用二分查找找到第一个大于等于 target 的元素，然后判断该元素是否等于 target。如果等于 target，说明找到了目标值，直接返回 true。如果不等于 target，说明这一行的所有元素都小于 target，应该继续搜索下一行。\n\n如果所有行都搜索完了，都没有找到目标值，说明目标值不存在，返回 false。\n\n时间复杂度 O(m×log n)，其中 m 和 n 分别为矩阵的行数和列数。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public boolean searchMatrix(int[][] matrix, int target) {\n        for (int[] row : matrix) {\n            int j = Arrays.binarySearch(row, target);\n            if (j >= 0) {\n                return true;\n            }\n        }\n        return false;\n    }\n}",
+  "python": "class Solution:\n    def searchMatrix(self, matrix: List[List[int]], target: int) -> bool:\n        for row in matrix:\n            j = bisect_left(row, target)\n            if j < len(matrix[0]) and row[j] == target:\n                return True\n        return False",
+  "examples": [
+    {
+      "input": "matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 5",
+      "output": "true"
+    },
+    {
+      "input": "matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 20",
+      "output": "false"
+    }
+  ],
+  "complexity": {
+    "time": "O(m log n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/search-a-2d-matrix-ii/",
+  "fallbackSource": "https://leetcode.cn/problems/search-a-2d-matrix-ii/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/search-a-2d-matrix-ii/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0240.Search%20a%202D%20Matrix%20II/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0200-0299/0240.Search%20a%202D%20Matrix%20II/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：二分查找\n\n思考\n\n每行、每列均递增，可对每一行二分查找 target。行数为 m、列为 n 时时间为 O(mlog n)，无需额外空间。\n\n由于每一行的所有元素升序排列，因此，对于每一行，我们可以使用二分查找找到第一个大于等于 target 的元素，然后判断该元素是否等于 target。如果等于 target，说明找到了目标值，直接返回 true。如果不等于 target，说明这一行的所有元素都小于 target，应该继续搜索下一行。\n\n如果所有行都搜索完了，都没有找到目标值，说明目标值不存在，返回 false。\n\n时间复杂度 O(m×log n)，其中 m 和 n 分别为矩阵的行数和列数。空间复杂度 O(1)。",
+  "summaryText": "从右上角开始，大于 target 就向左，小于 target 就向下，每次排除一整行或一整列。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过搜索二维矩阵 II掌握矩阵相关的可迁移解题模式。",
+  "prerequisites": [
+    "74"
+  ],
+  "recognition": "从左上角出发时，向右和向下都会增大。有没有一个角能让两个方向分别变大、变小？",
+  "bruteForce": "直观做法是每行、每列均递增，可对每一行二分查找 target。行数为 m、列为 n 时时间为 O(mlog n)，无需额外空间。；当输入规模扩大时，需要避免重复扫描并利用题目中的矩阵约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "从左上角出发时，向右和向下都会增大。有没有一个角能让两个方向分别变大、变小？"
+    },
+    {
+      "level": 2,
+      "text": "从右上角开始，大于 target 就向左，小于 target 就向下，每次排除一整行或一整列。"
+    },
+    {
+      "level": 3,
+      "text": "从第一行最后一列出发。如果当前值过大，因为该列下面都更大，所以排除当前列；如果过小，因为该行左边都更小，所以排除当前行。相等即找到，不断左移或下移，越过边界即不存在。每一步都根据行列有序性排除确定无解的区域。"
+    },
+    {
+      "level": 4,
+      "text": "row ← 0，col ← n−1\n当 row < m 且 col ≥ 0：\n    value ← matrix[row][col]\n    若 value=target：返回 真\n    若 value > target：col ← col−1\n    否则：row ← row+1\n返回 假",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从第一行最后一列出发。",
+    "如果当前值过大，因为该列下面都更大，所以排除当前列；如果过小，因为该行左边都更小，所以排除当前行。",
+    "相等即找到，不断左移或下移，越过边界即不存在。",
+    "每一步都根据行列有序性排除确定无解的区域。"
+  ],
+  "walkthrough": [
+    "公开示例：matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 5 → true。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足搜索二维矩阵 II约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把搜索二维矩阵 II的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用每行、每列均递增，可对每一行二分查找 target。行数为 m、列为 n 时时间为 O(mlog n)，无需额外空间。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "searchMatrix",
+    "params": [
+      {
+        "name": "matrix",
+        "type": "int[][]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "boolean",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "240-basic-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            4,
+            7,
+            11,
+            15
+          ],
+          [
+            2,
+            5,
+            8,
+            12,
+            19
+          ],
+          [
+            3,
+            6,
+            9,
+            16,
+            22
+          ],
+          [
+            10,
+            13,
+            14,
+            17,
+            24
+          ],
+          [
+            18,
+            21,
+            23,
+            26,
+            30
+          ]
+        ],
+        "target": 5
+      },
+      "expected": true,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "240-boundary-1",
+      "input": {
+        "matrix": [
+          [
+            1
+          ]
+        ],
+        "target": 1
+      },
+      "expected": true,
+      "tags": [
+        "boundary"
+      ],
+      "note": "单格矩阵。"
+    },
+    {
+      "id": "240-adversarial-1",
+      "input": {
+        "matrix": [
+          [
+            1,
+            4
+          ],
+          [
+            2,
+            5
+          ]
+        ],
+        "target": 3
+      },
+      "expected": false,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "目标处于数值范围内，但不在矩阵中。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nmatrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 5",
+    "output": "true",
+    "examples": [
+      {
+        "input": "matrix = [[1,4,7,11,15],[2,5,8,12,19],[3,6,9,16,22],[10,13,14,17,24],[18,21,23,26,30]], target = 5",
+        "output": "true"
+      }
+    ]
+  }
+}

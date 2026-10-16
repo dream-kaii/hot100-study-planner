@@ -1,0 +1,157 @@
+{
+  "id": "11",
+  "description": "给定一个长度为 n 的整数数组 height 。有 n 条垂线，第 i 条线的两个端点是 (i, 0) 和 (i, height[i]) 。\n\n找出其中的两条线，使得它们与 x 轴共同构成的容器可以容纳最多的水。\n\n返回容器可以储存的最大水量。\n\n说明：你不能倾斜容器。\n\n示例 1：\n\n输入：[1,8,6,2,5,4,8,3,7]\n输出：49\n解释：图中垂直线代表输入数组 [1,8,6,2,5,4,8,3,7]。在此情况下，容器能够容纳水（表示为蓝色部分）的最大值为 49。\n\n示例 2：\n\n输入：height = [1,1]\n输出：1\n\n提示：\n\nn == height.length\n2 <= n <= 105\n0 <= height[i] <= 104",
+  "summary": "从数组两端计算当前容积并更新最大值。如果左端较低，保留左端而缩小宽度不会得到更优解，因此舍弃左端；右端较低时同理。不断移动较低的一侧直到相遇，所有被舍弃端点对应的更窄容器都已经不可能超过当前容积。",
+  "explanation": "方法一：双指针\n\n思考\n\n若枚举所有下标对 (i, j)，面积为 min(height[i], height[j])×(j - i)，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。\n\n容器的高度由较短的那根线决定。从最宽的区间 [0, n-1] 出发：若向内移动较高的一端，宽度减小，高度仍受较短边限制，面积不会变大。因此每次应当舍弃较短的那根，尝试碰到更高的边。用左右指针向中间收缩，每次移动较矮的一侧，每个下标至多访问一次。\n\n我们使用两个指针 l 和 r 分别指向数组的左右两端，即 l = 0，而 r = n - 1，其中 n 是数组的长度。\n\n接下来，我们使用变量 ans 记录容器的最大容量，初始化为 0。\n\n然后，我们开始进行循环，每次循环中，我们计算当前容器的容量，即 min(height[l], height[r])×(r - l)，并将其与 ans 进行比较，将较大值赋给 ans。然后，我们判断 height[l] 和 height[r] 的大小，如果 height[l] < height[r]，移动 r 指针不会使得结果变得更好，因为容器的高度由较短的那根垂直线决定，所以我们移动 l 指针。反之，我们移动 r 指针。\n\n遍历结束后，返回 ans 即可。\n\n时间复杂度 O(n)，其中 n 是数组 height 的长度。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int maxArea(int[] height) {\n        int l = 0, r = height.length - 1;\n        int ans = 0;\n        while (l < r) {\n            int t = Math.min(height[l], height[r]) * (r - l);\n            ans = Math.max(ans, t);\n            if (height[l] < height[r]) {\n                ++l;\n            } else {\n                --r;\n            }\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def maxArea(self, height: List[int]) -> int:\n        l, r = 0, len(height) - 1\n        ans = 0\n        while l < r:\n            t = min(height[l], height[r]) * (r - l)\n            ans = max(ans, t)\n            if height[l] < height[r]:\n                l += 1\n            else:\n                r -= 1\n        return ans",
+  "examples": [
+    {
+      "input": "[1,8,6,2,5,4,8,3,7]",
+      "output": "49"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/container-with-most-water/",
+  "fallbackSource": "https://leetcode.cn/problems/container-with-most-water/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/container-with-most-water/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0011.Container%20With%20Most%20Water/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0011.Container%20With%20Most%20Water/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：双指针\n\n思考\n\n若枚举所有下标对 (i, j)，面积为 min(height[i], height[j])×(j - i)，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。\n\n容器的高度由较短的那根线决定。从最宽的区间 [0, n-1] 出发：若向内移动较高的一端，宽度减小，高度仍受较短边限制，面积不会变大。因此每次应当舍弃较短的那根，尝试碰到更高的边。用左右指针向中间收缩，每次移动较矮的一侧，每个下标至多访问一次。\n\n我们使用两个指针 l 和 r 分别指向数组的左右两端，即 l = 0，而 r = n - 1，其中 n 是数组的长度。\n\n接下来，我们使用变量 ans 记录容器的最大容量，初始化为 0。\n\n然后，我们开始进行循环，每次循环中，我们计算当前容器的容量，即 min(height[l], height[r])×(r - l)，并将其与 ans 进行比较，将较大值赋给 ans。然后，我们判断 height[l] 和 height[r] 的大小，如果 height[l] < height[r]，移动 r 指针不会使得结果变得更好，因为容器的高度由较短的那根垂直线决定，所以我们移动 l 指针。反之，我们移动 r 指针。\n\n遍历结束后，返回 ans 即可。\n\n时间复杂度 O(n)，其中 n 是数组 height 的长度。空间复杂度 O(1)。",
+  "summaryText": "两端指针向中间收缩，每次移动高度较小的一端；相等时移动任一端即可。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过盛最多水的容器掌握双指针相关的可迁移解题模式。",
+  "prerequisites": [
+    "283"
+  ],
+  "recognition": "容积由宽度和两端较矮的高度决定。若移动较高端，较矮端仍在，容积可能增大吗？",
+  "bruteForce": "直观做法是若枚举所有下标对 (i, j)，面积为 min(height[i], height[j])×(j - i)，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。；当输入规模扩大时，需要避免重复扫描并利用题目中的双指针约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "容积由宽度和两端较矮的高度决定。若移动较高端，较矮端仍在，容积可能增大吗？"
+    },
+    {
+      "level": 2,
+      "text": "两端指针向中间收缩，每次移动高度较小的一端；相等时移动任一端即可。"
+    },
+    {
+      "level": 3,
+      "text": "从数组两端计算当前容积并更新最大值。如果左端较低，保留左端而缩小宽度不会得到更优解，因此舍弃左端；右端较低时同理。不断移动较低的一侧直到相遇，所有被舍弃端点对应的更窄容器都已经不可能超过当前容积。"
+    },
+    {
+      "level": 4,
+      "text": "left ← 0，right ← n−1，best ← 0\n当 left < right：\n    area ← min(height[left],height[right])×(right−left)\n    best ← max(best, area)\n    若 height[left] ≤ height[right]：left ← left+1\n    否则：right ← right−1\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从数组两端计算当前容积并更新最大值。",
+    "如果左端较低，保留左端而缩小宽度不会得到更优解，因此舍弃左端；右端较低时同理。",
+    "不断移动较低的一侧直到相遇，所有被舍弃端点对应的更窄容器都已经不可能超过当前容积。"
+  ],
+  "walkthrough": [
+    "公开示例：[1,8,6,2,5,4,8,3,7] → 49。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足盛最多水的容器约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把盛最多水的容器的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若枚举所有下标对 (i, j)，面积为 min(height[i], height[j])×(j - i)，时间复杂度为 O(n²)。 n ≤ 10⁵，无法通过。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "maxArea",
+    "params": [
+      {
+        "name": "height",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "11-basic-1",
+      "input": {
+        "height": [
+          1,
+          8,
+          6,
+          2,
+          5,
+          4,
+          8,
+          3,
+          7
+        ]
+      },
+      "expected": 49,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "11-boundary-1",
+      "input": {
+        "height": [
+          1,
+          1
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有两条边。"
+    },
+    {
+      "id": "11-adversarial-1",
+      "input": {
+        "height": [
+          1,
+          2,
+          4,
+          3
+        ]
+      },
+      "expected": 4,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "最高两条边不一定组成最优容器。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[1,8,6,2,5,4,8,3,7]",
+    "output": "49",
+    "examples": [
+      {
+        "input": "[1,8,6,2,5,4,8,3,7]",
+        "output": "49"
+      }
+    ]
+  }
+}

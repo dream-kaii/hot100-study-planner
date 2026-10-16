@@ -1,0 +1,157 @@
+{
+  "id": "152",
+  "description": "给你一个整数数组 nums ，请你找出数组中乘积最大的非空连续 子数组（该子数组中至少包含一个数字），并返回该子数组所对应的乘积。\n\n测试用例的答案是一个 32-位 整数。\n\n请注意，一个只包含一个元素的数组的乘积是这个元素的值。\n\n示例 1:\n\n输入: nums = [2,3,-2,4]\n输出: 6\n解释: 子数组 [2,3] 有最大乘积 6。\n\n示例 2:\n\n输入: nums = [-2,0,-1]\n输出: 0\n解释: 结果不能为 2, 因为 [-2,-1] 不是子数组。\n\n提示:\n\n1 <= nums.length <= 2 104\n-10 <= nums[i] <= 10\nnums 的任何子数组的乘积都 保证 是一个 32-位 整数",
+  "summary": "初始化最大、最小结尾乘积及全局答案为第一个数。每读入新元素，使用更新前的最大与最小值，分别比较当前数本身、当前数乘旧最大、当前数乘旧最小，得到新最大和新最小。再更新全局答案。零会自然重新开始，负数造成的符号翻转也不会遗漏。",
+  "explanation": "方法一：动态规划\n\n思考\n\n最大子数组和可以用 Kadane，乘积则不同：负数会让最大变最小、最小变最大，零会切断。 n≤ 2×10⁴。同时维护以当前位置结尾的最大与最小乘积，新数乘上两者或单独成段，三者取最大/最小。答案是扫描过程中最大乘积的最大值。\n\n我们定义两个变量 f 和 g，其中 f 表示以 nums[i] 结尾的乘积最大子数组的乘积，而 g 表示以 nums[i] 结尾的乘积最小子数组的乘积。初始时 f 和 g 都等于 nums[0]。答案为所有 f 中的最大值。\n\n从 i=1 开始，我们可以考虑将第 i 个数 nums[i] 添加到前面的乘积最大或者乘积最小的子数组乘积的后面，或者单独作为一个子数组乘积（即此时子数组长度只有 1）。我们将此前的乘积最大值记为 ff，乘积最小值记为 gg，那么 f = max(f, ff×nums[i], gg×nums[i])，而 g = min(g, ff×nums[i], gg×nums[i])。接下来，我们更新答案 ans = max(ans, f)，然后继续计算下一个位置。\n\n最后的答案即为 ans。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。我们只需要遍历数组一次即可求得答案。空间复杂度 O(1)。\n\n总结",
+  "java": "class Solution {\n    public int maxProduct(int[] nums) {\n        int f = nums[0], g = nums[0], ans = nums[0];\n        for (int i = 1; i < nums.length; ++i) {\n            int ff = f, gg = g;\n            f = Math.max(nums[i], Math.max(ff * nums[i], gg * nums[i]));\n            g = Math.min(nums[i], Math.min(ff * nums[i], gg * nums[i]));\n            ans = Math.max(ans, f);\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def maxProduct(self, nums: List[int]) -> int:\n        ans = f = g = nums[0]\n        for x in nums[1:]:\n            ff, gg = f, g\n            f = max(x, ff * x, gg * x)\n            g = min(x, ff * x, gg * x)\n            ans = max(ans, f)\n        return ans",
+  "examples": [
+    {
+      "input": "nums = [2,3,-2,4]",
+      "output": "6"
+    },
+    {
+      "input": "nums = [-2,0,-1]",
+      "output": "0"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/maximum-product-subarray/",
+  "fallbackSource": "https://leetcode.cn/problems/maximum-product-subarray/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/maximum-product-subarray/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0152.Maximum%20Product%20Subarray/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0100-0199/0152.Maximum%20Product%20Subarray/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：动态规划\n\n思考\n\n最大子数组和可以用 Kadane，乘积则不同：负数会让最大变最小、最小变最大，零会切断。 n≤ 2×10⁴。同时维护以当前位置结尾的最大与最小乘积，新数乘上两者或单独成段，三者取最大/最小。答案是扫描过程中最大乘积的最大值。\n\n我们定义两个变量 f 和 g，其中 f 表示以 nums[i] 结尾的乘积最大子数组的乘积，而 g 表示以 nums[i] 结尾的乘积最小子数组的乘积。初始时 f 和 g 都等于 nums[0]。答案为所有 f 中的最大值。\n\n从 i=1 开始，我们可以考虑将第 i 个数 nums[i] 添加到前面的乘积最大或者乘积最小的子数组乘积的后面，或者单独作为一个子数组乘积（即此时子数组长度只有 1）。我们将此前的乘积最大值记为 ff，乘积最小值记为 gg，那么 f = max(f, ff×nums[i], gg×nums[i])，而 g = min(g, ff×nums[i], gg×nums[i])。接下来，我们更新答案 ans = max(ans, f)，然后继续计算下一个位置。\n\n最后的答案即为 ans。\n\n时间复杂度 O(n)，其中 n 是数组 nums 的长度。我们只需要遍历数组一次即可求得答案。空间复杂度 O(1)。",
+  "summaryText": "同时保存以当前位置结尾的最大和最小乘积，新元素与旧的两者相乘都要考虑。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过乘积最大子数组掌握动态规划相关的可迁移解题模式。",
+  "prerequisites": [
+    "53"
+  ],
+  "recognition": "乘积遇到负数会把最大值变最小、最小值变最大，只保留当前最大乘积够吗？",
+  "bruteForce": "直观做法是最大子数组和可以用 Kadane，乘积则不同：负数会让最大变最小、最小变最大，零会切断。 n≤ 2×10⁴。同时维护以当前位置结尾的最大与最小乘积，新数乘上两者或单独成段，三者取最大/最小。答案是扫描过程中最大乘积的最大值。；当输入规模扩大时，需要避免重复扫描并利用题目中的动态规划约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "乘积遇到负数会把最大值变最小、最小值变最大，只保留当前最大乘积够吗？"
+    },
+    {
+      "level": 2,
+      "text": "同时保存以当前位置结尾的最大和最小乘积，新元素与旧的两者相乘都要考虑。"
+    },
+    {
+      "level": 3,
+      "text": "初始化最大、最小结尾乘积及全局答案为第一个数。每读入新元素，使用更新前的最大与最小值，分别比较当前数本身、当前数乘旧最大、当前数乘旧最小，得到新最大和新最小。再更新全局答案。零会自然重新开始，负数造成的符号翻转也不会遗漏。"
+    },
+    {
+      "level": 4,
+      "text": "high ← nums[0]；low ← nums[0]；best ← nums[0]\n对 x 从第二个元素开始：\n    oldHigh ← high；oldLow ← low\n    high ← max(x,x×oldHigh,x×oldLow)\n    low ← min(x,x×oldHigh,x×oldLow)\n    best ← max(best,high)\n返回 best",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "初始化最大、最小结尾乘积及全局答案为第一个数。",
+    "每读入新元素，使用更新前的最大与最小值，分别比较当前数本身、当前数乘旧最大、当前数乘旧最小，得到新最大和新最小。",
+    "再更新全局答案。",
+    "零会自然重新开始，负数造成的符号翻转也不会遗漏。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [2,3,-2,4] → 6。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足乘积最大子数组约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把乘积最大子数组的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用最大子数组和可以用 Kadane，乘积则不同：负数会让最大变最小、最小变最大，零会切断。 n≤ 2×10⁴。同时维护以当前位置结尾的最大与最小乘积，新数乘上两者或单独成段，三者取最大/最小。答案是扫描过程中最大乘积的最大值。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "maxProduct",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "152-basic-1",
+      "input": {
+        "nums": [
+          2,
+          3,
+          -2,
+          4
+        ]
+      },
+      "expected": 6,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "152-boundary-1",
+      "input": {
+        "nums": [
+          -2,
+          0,
+          -1
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用乘积最大子数组的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "152-adversarial-1",
+      "input": {
+        "nums": [
+          -2,
+          0,
+          -1
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查乘积最大子数组的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [2,3,-2,4]",
+    "output": "6",
+    "examples": [
+      {
+        "input": "nums = [2,3,-2,4]",
+        "output": "6"
+      }
+    ]
+  }
+}

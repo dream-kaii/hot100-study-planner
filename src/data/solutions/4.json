@@ -1,0 +1,169 @@
+{
+  "id": "4",
+  "description": "给定两个大小分别为 m 和 n 的正序（从小到大）数组 nums1 和 nums2。请你找出并返回这两个正序数组的 中位数 。\n\n算法的时间复杂度应该为 O(log (m+n)) 。\n\n示例 1：\n\n输入：nums1 = [1,3], nums2 = [2]\n输出：2.00000\n解释：合并数组 = [1,2,3] ，中位数 2\n\n示例 2：\n\n输入：nums1 = [1,2], nums2 = [3,4]\n输出：2.50000\n解释：合并数组 = [1,2,3,4] ，中位数 (2 + 3) / 2 = 2.5\n\n提示：\n\nnums1.length == m\nnums2.length == n\n0 <= m <= 1000\n0 <= n <= 1000\n1 <= m + n <= 2000\n-106 <= nums1[i], nums2[i] <= 106",
+  "summary": "令较短数组在前，左半总数取两数组长度和加一后除二向下取整。二分其分割点 i，另一分割点 j 随之确定，越界边界用正负无穷取代。若左一大于右二则左移 i，若左二大于右一则右移 i；合法时奇数取左侧最大，偶数取左右边界平均。",
+  "explanation": "方法一：分治\n\n思考\n\n若将两个有序数组合并后再取中位数，时间复杂度为 O(m+n)。在 m,n ≤ 10³ 的范围内可以接受，但题目要求 O(log(m+n))，因此不能线性扫描。\n\n注意到中位数只取决于合并后正中间的一两个位置，比它更小的元素只需知道个数，而不必真正列出。两数组均有序，比较各自第 ⌊k/2⌋ 个数，即可判断其中一侧的前一半不可能是第 k 小，从而一次排除一半候选。\n\n因此我们在剩余区间上求第 k 小，而不构造合并数组。将中位数统一为第 ⌊(m+n+1)/2⌋ 与第 ⌊(m+n+2)/2⌋ 个数的平均，奇数与偶数长度可以共用同一套逻辑。若某一侧不足 ⌊k/2⌋ 个元素，则将该侧视为 +∞，只会排除另一侧。\n\n题目要求算法的时间复杂度为 O(log (m + n))，因此不能直接遍历两个数组，而是需要使用二分查找的方法。\n\n如果 m + n 是奇数，那么中位数就是第 ⌊(m + n + 1)/(2)⌋ 个数；如果 m + n 是偶数，那么中位数就是第 ⌊(m + n + 1)/(2)⌋ 和第 ⌊(m + n + 2)/(2)⌋ 个数的平均数。实际上，我们可以统一为求第 ⌊(m + n + 1)/(2)⌋ 个数和第 ⌊(m + n + 2)/(2)⌋ 个数的平均数。\n\n因此，我们可以设计一个函数 f(i, j, k)，表示在数组 nums1 的区间 [i, m) 和数组 nums2 的区间 [j, n) 中，求第 k 小的数。那么中位数就是 f(0, 0, ⌊(m + n + 1)/(2)⌋) 和 f(0, 0, ⌊(m + n + 2)/(2)⌋) 的平均数。\n\n函数 f(i, j, k) 的实现思路如下：\n\n- 如果 i ≥ m，说明数组 nums1 的区间 [i, m) 为空，因此直接返回 nums2[j + k - 1]；\n- 如果 j ≥ n，说明数组 nums2 的区间 [j, n) 为空，因此直接返回 nums1[i + k - 1]；\n- 如果 k = 1，说明要找第一个数，因此只需要返回 nums1[i] 和 nums2[j] 中的最小值；\n- 否则，我们分别在两个数组中查找第 ⌊(k)/(2)⌋ 个数，设为 x 和 y。（注意，如果某个数组不存在第 ⌊(k)/(2)⌋ 个数，那么我们将第 ⌊(k)/(2)⌋ 个数视为 +∞。）比较 x 和 y 的大小：\n- 如果 x ≤ y，则说明数组 nums1 的第 ⌊(k)/(2)⌋ 个数不可能是第 k 小的数，因此我们可以排除数组 nums1 的区间 [i, i + ⌊(k)/(2)⌋)，递归调用 f(i + ⌊(k)/(2)⌋, j, k - ⌊(k)/(2)⌋)。\n- 如果 x y，则说明数组 nums2 的第 ⌊(k)/(2)⌋ 个数不可能是第 k 小的数，因此我们可以排除数组 nums2 的区间 [j, j + ⌊(k)/(2)⌋)，递归调用 f(i, j + ⌊(k)/(2)⌋, k - ⌊(k)/(2)⌋)。\n\n时间复杂度 O(log(m + n))，空间复杂度 O(log(m + n))。其中 m 和 n 分别是数组 nums1 和 nums2 的长度。\n\n总结",
+  "java": "class Solution {\n    private int m;\n    private int n;\n    private int[] nums1;\n    private int[] nums2;\n\n    public double findMedianSortedArrays(int[] nums1, int[] nums2) {\n        m = nums1.length;\n        n = nums2.length;\n        this.nums1 = nums1;\n        this.nums2 = nums2;\n        int a = f(0, 0, (m + n + 1) / 2);\n        int b = f(0, 0, (m + n + 2) / 2);\n        return (a + b) / 2.0;\n    }\n\n    private int f(int i, int j, int k) {\n        if (i >= m) {\n            return nums2[j + k - 1];\n        }\n        if (j >= n) {\n            return nums1[i + k - 1];\n        }\n        if (k == 1) {\n            return Math.min(nums1[i], nums2[j]);\n        }\n        int p = k / 2;\n        int x = i + p - 1 < m ? nums1[i + p - 1] : 1 << 30;\n        int y = j + p - 1 < n ? nums2[j + p - 1] : 1 << 30;\n        return x < y ? f(i + p, j, k - p) : f(i, j + p, k - p);\n    }\n}",
+  "python": "class Solution:\n    def findMedianSortedArrays(self, nums1: List[int], nums2: List[int]) -> float:\n        def f(i: int, j: int, k: int) -> int:\n            if i >= m:\n                return nums2[j + k - 1]\n            if j >= n:\n                return nums1[i + k - 1]\n            if k == 1:\n                return min(nums1[i], nums2[j])\n            p = k // 2\n            x = nums1[i + p - 1] if i + p - 1 < m else inf\n            y = nums2[j + p - 1] if j + p - 1 < n else inf\n            return f(i + p, j, k - p) if x < y else f(i, j + p, k - p)\n\n        m, n = len(nums1), len(nums2)\n        a = f(0, 0, (m + n + 1) // 2)\n        b = f(0, 0, (m + n + 2) // 2)\n        return (a + b) / 2",
+  "examples": [
+    {
+      "input": "nums1 = [1,3], nums2 = [2]",
+      "output": "2.00000"
+    },
+    {
+      "input": "nums1 = [1,2], nums2 = [3,4]",
+      "output": "2.50000"
+    }
+  ],
+  "complexity": {
+    "time": "O(log(min(m, n)))",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/median-of-two-sorted-arrays/",
+  "fallbackSource": "https://leetcode.cn/problems/median-of-two-sorted-arrays/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/median-of-two-sorted-arrays/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0004.Median%20of%20Two%20Sorted%20Arrays/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0004.Median%20of%20Two%20Sorted%20Arrays/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：分治\n\n思考\n\n若将两个有序数组合并后再取中位数，时间复杂度为 O(m+n)。在 m,n ≤ 10³ 的范围内可以接受，但题目要求 O(log(m+n))，因此不能线性扫描。\n\n注意到中位数只取决于合并后正中间的一两个位置，比它更小的元素只需知道个数，而不必真正列出。两数组均有序，比较各自第 ⌊k/2⌋ 个数，即可判断其中一侧的前一半不可能是第 k 小，从而一次排除一半候选。\n\n因此我们在剩余区间上求第 k 小，而不构造合并数组。将中位数统一为第 ⌊(m+n+1)/2⌋ 与第 ⌊(m+n+2)/2⌋ 个数的平均，奇数与偶数长度可以共用同一套逻辑。若某一侧不足 ⌊k/2⌋ 个元素，则将该侧视为 +∞，只会排除另一侧。\n\n题目要求算法的时间复杂度为 O(log (m + n))，因此不能直接遍历两个数组，而是需要使用二分查找的方法。\n\n如果 m + n 是奇数，那么中位数就是第 ⌊(m + n + 1)/(2)⌋ 个数；如果 m + n 是偶数，那么中位数就是第 ⌊(m + n + 1)/(2)⌋ 和第 ⌊(m + n + 2)/(2)⌋ 个数的平均数。实际上，我们可以统一为求第 ⌊(m + n + 1)/(2)⌋ 个数和第 ⌊(m + n + 2)/(2)⌋ 个数的平均数。\n\n因此，我们可以设计一个函数 f(i, j, k)，表示在数组 nums1 的区间 [i, m) 和数组 nums2 的区间 [j, n) 中，求第 k 小的数。那么中位数就是 f(0, 0, ⌊(m + n + 1)/(2)⌋) 和 f(0, 0, ⌊(m + n + 2)/(2)⌋) 的平均数。\n\n函数 f(i, j, k) 的实现思路如下：\n\n- 如果 i ≥ m，说明数组 nums1 的区间 [i, m) 为空，因此直接返回 nums2[j + k - 1]；\n- 如果 j ≥ n，说明数组 nums2 的区间 [j, n) 为空，因此直接返回 nums1[i + k - 1]；\n- 如果 k = 1，说明要找第一个数，因此只需要返回 nums1[i] 和 nums2[j] 中的最小值；\n- 否则，我们分别在两个数组中查找第 ⌊(k)/(2)⌋ 个数，设为 x 和 y。（注意，如果某个数组不存在第 ⌊(k)/(2)⌋ 个数，那么我们将第 ⌊(k)/(2)⌋ 个数视为 +∞。）比较 x 和 y 的大小：\n- 如果 x ≤ y，则说明数组 nums1 的第 ⌊(k)/(2)⌋ 个数不可能是第 k 小的数，因此我们可以排除数组 nums1 的区间 [i, i + ⌊(k)/(2)⌋)，递归调用 f(i + ⌊(k)/(2)⌋, j, k - ⌊(k)/(2)⌋)。\n- 如果 x y，则说明数组 nums2 的第 ⌊(k)/(2)⌋ 个数不可能是第 k 小的数，因此我们可以排除数组 nums2 的区间 [j, j + ⌊(k)/(2)⌋)，递归调用 f(i, j + ⌊(k)/(2)⌋, k - ⌊(k)/(2)⌋)。\n\n时间复杂度 O(log(m + n))，空间复杂度 O(log(m + n))。其中 m 和 n 分别是数组 nums1 和 nums2 的长度。",
+  "summaryText": "在较短数组上二分分割点 i，另一数组分割点 j 由左半总数量决定；比较分割线两侧边界。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过寻找两个正序数组的中位数掌握二分查找相关的可迁移解题模式。",
+  "prerequisites": [
+    "15",
+    "35",
+    "74"
+  ],
+  "recognition": "中位数可以看作把两个数组分成数量均衡的左右两部分，只需保证左边所有数不大于右边。",
+  "bruteForce": "直观做法是若将两个有序数组合并后再取中位数，时间复杂度为 O(m+n)。在 m,n ≤ 10³ 的范围内可以接受，但题目要求 O(log(m+n))，因此不能线性扫描。；当输入规模扩大时，需要避免重复扫描并利用题目中的二分查找约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "中位数可以看作把两个数组分成数量均衡的左右两部分，只需保证左边所有数不大于右边。"
+    },
+    {
+      "level": 2,
+      "text": "在较短数组上二分分割点 i，另一数组分割点 j 由左半总数量决定；比较分割线两侧边界。"
+    },
+    {
+      "level": 3,
+      "text": "令较短数组在前，左半总数取两数组长度和加一后除二向下取整。二分其分割点 i，另一分割点 j 随之确定，越界边界用正负无穷取代。若左一大于右二则左移 i，若左二大于右一则右移 i；合法时奇数取左侧最大，偶数取左右边界平均。"
+    },
+    {
+      "level": 4,
+      "text": "确保 a 是较短数组；leftCount ← 向下取整((m+n+1)/2)\nlow ← 0；high ← m\n当 low≤high：\n    i ← 向下取整((low+high)/2)；j ← leftCount−i\n    aLeft、aRight、bLeft、bRight ← 分割线边界，越界用正负无穷\n    若 aLeft>bRight：high ← i−1\n    否则若 bLeft>aRight：low ← i+1\n    否则：\n        若总长度为奇数：返回 max(aLeft,bLeft)\n        返回 (max(aLeft,bLeft)+min(aRight,bRight))/2.0",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "令较短数组在前，左半总数取两数组长度和加一后除二向下取整。",
+    "二分其分割点 i，另一分割点 j 随之确定，越界边界用正负无穷取代。",
+    "若左一大于右二则左移 i，若左二大于右一则右移 i；合法时奇数取左侧最大，偶数取左右边界平均。"
+  ],
+  "walkthrough": [
+    "公开示例：nums1 = [1,3], nums2 = [2] → 2.00000。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足寻找两个正序数组的中位数约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把寻找两个正序数组的中位数的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若将两个有序数组合并后再取中位数，时间复杂度为 O(m+n)。在 m,n ≤ 10³ 的范围内可以接受，但题目要求 O(log(m+n))，因此不能线性扫描。，额外空间为O(log(m + n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "findMedianSortedArrays",
+    "params": [
+      {
+        "name": "nums1",
+        "type": "int[]"
+      },
+      {
+        "name": "nums2",
+        "type": "int[]"
+      }
+    ],
+    "returns": "double",
+    "compare": "float-tolerance"
+  },
+  "cases": [
+    {
+      "id": "4-basic-1",
+      "input": {
+        "nums1": [
+          1,
+          3
+        ],
+        "nums2": [
+          2
+        ]
+      },
+      "expected": 2,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "4-boundary-1",
+      "input": {
+        "nums1": [
+          1,
+          2
+        ],
+        "nums2": [
+          3,
+          4
+        ]
+      },
+      "expected": 2.5,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用寻找两个正序数组的中位数的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "4-adversarial-1",
+      "input": {
+        "nums1": [
+          1,
+          2
+        ],
+        "nums2": [
+          3,
+          4
+        ]
+      },
+      "expected": 2.5,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查寻找两个正序数组的中位数的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums1 = [1,3], nums2 = [2]",
+    "output": "2.00000",
+    "examples": [
+      {
+        "input": "nums1 = [1,3], nums2 = [2]",
+        "output": "2.00000"
+      }
+    ]
+  }
+}

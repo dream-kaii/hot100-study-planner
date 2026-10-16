@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "projectId": "58f3df24-8cb3-4692-8ba8-2e3ac884c46f",
+  "targets": {
+    "problem-workspace": {
+      "targetKind": "existing-ui",
+      "activeDraftId": "265adc17-b242-4414-83c4-90648d0457a1",
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        "src/main.jsx",
+        "src/components/ProblemDetail.jsx",
+        "src/components/SolutionView.jsx",
+        "src/components/CodeEditor.jsx",
+        "src/components/Timer.jsx",
+        "src/styles.css"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "77d5598f2096c10c678d49892cb97fbee04952dec7228ee6b75af329e88d4b14",
+        "src/main.jsx": "5a39b1b2d8b194e3ed680b790f725282087c08c1eb524f4e4f31be0b7e041044",
+        "src/components/ProblemDetail.jsx": "85a312a0c4c07d638c4119f067261690287636cd0cb063efe73344483dfdd1a9",
+        "src/components/SolutionView.jsx": "994f7493899e80032e6a7d1e13630534905a8441bc8080a3e76331d04b27ddce",
+        "src/components/CodeEditor.jsx": "6cf280676381e0ebd79f01927113c84ece0410b7c877b2f947390d1886b6b1c1",
+        "src/components/Timer.jsx": "fe8f94ed28dd4d1d9bb3fb25d303f91fa8a9e0bf90741837a0f270741647f81b",
+        "src/styles.css": "13d09f4e75e52c2b1d4ce40cecd6cf152b6ae9fb7eb9e18073adac531cd53cde"
+      },
+      "updatedAt": "2026-10-14T00:00:00.000Z"
+    }
+  }
+}

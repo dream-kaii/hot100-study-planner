@@ -1,0 +1,189 @@
+{
+  "id": "206",
+  "description": "给你单链表的头节点 head ，请你反转链表，并返回反转后的链表。\n\n示例 1：\n\n输入：head = [1,2,3,4,5]\n输出：[5,4,3,2,1]\n\n示例 2：\n\n输入：head = [1,2]\n输出：[2,1]\n\n示例 3：\n\n输入：head = []\n输出：[]\n\n提示：\n\n链表中节点的数目范围是 [0, 5000]\n-5000\n\n进阶：链表可以选用迭代或递归方式完成反转。你能否用两种方法解决这道题？",
+  "summary": "从头节点开始，令 prev 为空。每次先保存 current.next，再把 current.next 改为 prev，随后将 prev 前移到 current，current 前移到保存的节点。这样 prev 始终指向已反转部分的头，current 指向尚未处理部分，遍历结束返回 prev。",
+  "explanation": "如果再定义一个新的链表，实现链表元素的反转，其实这是对内存空间的浪费。\n\n其实只需要改变链表的next指针的指向，直接将链表反转 ，而不用重新定义一个新的链表，如图所示:\n\n之前链表的头节点是元素1， 反转之后头结点就是元素5 ，这里并没有添加或者删除节点，仅仅是改变next指针的方向。\n\n那么接下来看一看是如何反转的呢？\n\n我们拿有示例中的链表来举例，如动画所示：（纠正：动画应该是先移动pre，在移动cur）\n\n首先定义一个cur指针，指向头结点，再定义一个pre指针，初始化为null。\n\n然后就要开始反转了，首先要把 cur-next 节点用tmp指针保存一下，也就是保存一下这个节点。\n\n为什么要保存一下这个节点呢，因为接下来要改变 cur-next 的指向了，将cur-next 指向pre ，此时已经反转了第一个节点了。\n\n接下来，就是循环走如下代码逻辑了，继续移动pre和cur指针。\n\n最后，cur 指针已经指向了null，循环结束，链表也反转完毕了。 此时我们return pre指针就可以了，pre指针就指向了新的头结点。\n\n双指针法\n\n时间复杂度: O(n)\n空间复杂度: O(1)\n\n递归法\n\n递归法相对抽象一些，但是其实和双指针法是一样的逻辑，同样是当cur为空的时候循环结束，不断将cur指向pre的过程。\n\n关键是初始化的地方，可能有的同学会不理解， 可以看到双指针法中初始化 cur = head，pre = NULL，在递归法中可以从如下代码看出初始化的逻辑也是一样的，只不过写法变了。\n\n具体可以看代码（已经详细注释），双指针法写出来之后，理解如下递归写法就不难了，代码逻辑都是一样的。\n\n时间复杂度: O(n), 要递归处理链表的每个节点\n空间复杂度: O(n), 递归调用了 n 层栈空间\n\n我们可以发现，上面的递归写法和双指针法实质上都是从前往后翻转指针指向，其实还有另外一种与双指针法不同思路的递归写法：从后往前翻转指针指向。\n\n具体代码如下（带详细注释）：\n\n时间复杂度: O(n)\n空间复杂度: O(n)\n\n总结",
+  "java": "// 双指针\nclass Solution {\n    public ListNode reverseList(ListNode head) {\n        ListNode prev = null;\n        ListNode cur = head;\n        ListNode temp = null;\n        while (cur != null) {\n            temp = cur.next;// 保存下一个节点\n            cur.next = prev;\n            prev = cur;\n            cur = temp;\n        }\n        return prev;\n    }\n}",
+  "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\nclass Solution:\n    def reverseList(self, head: ListNode) -> ListNode:\n        cur = head   \n        pre = None\n        while cur:\n            temp = cur.next # 保存一下 cur的下一个节点，因为接下来要改变cur->next\n            cur.next = pre #反转\n            #更新pre、cur指针\n            pre = cur\n            cur = temp\n        return pre",
+  "examples": [
+    {
+      "input": "head = [1,2,3,4,5]",
+      "output": "[5,4,3,2,1]"
+    },
+    {
+      "input": "head = [1,2]",
+      "output": "[2,1]"
+    },
+    {
+      "input": "head = []",
+      "output": "[]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.html",
+  "fallbackSource": "https://leetcode.cn/problems/reverse-linked-list/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "如果再定义一个新的链表，实现链表元素的反转，其实这是对内存空间的浪费。\n\n其实只需要改变链表的next指针的指向，直接将链表反转 ，而不用重新定义一个新的链表，如图所示:\n\n之前链表的头节点是元素1， 反转之后头结点就是元素5 ，这里并没有添加或者删除节点，仅仅是改变next指针的方向。\n\n那么接下来看一看是如何反转的呢？\n\n我们拿有示例中的链表来举例，如动画所示：（纠正：动画应该是先移动pre，在移动cur）\n\n首先定义一个cur指针，指向头结点，再定义一个pre指针，初始化为null。\n\n然后就要开始反转了，首先要把 cur-next 节点用tmp指针保存一下，也就是保存一下这个节点。\n\n为什么要保存一下这个节点呢，因为接下来要改变 cur-next 的指向了，将cur-next 指向pre ，此时已经反转了第一个节点了。\n\n接下来，就是循环走如下代码逻辑了，继续移动pre和cur指针。\n\n最后，cur 指针已经指向了null，循环结束，链表也反转完毕了。 此时我们return pre指针就可以了，pre指针就指向了新的头结点。\n\n双指针法\n\n时间复杂度: O(n)\n空间复杂度: O(1)\n\n递归法\n\n递归法相对抽象一些，但是其实和双指针法是一样的逻辑，同样是当cur为空的时候循环结束，不断将cur指向pre的过程。\n\n关键是初始化的地方，可能有的同学会不理解， 可以看到双指针法中初始化 cur = head，pre = NULL，在递归法中可以从如下代码看出初始化的逻辑也是一样的，只不过写法变了。\n\n具体可以看代码（已经详细注释），双指针法写出来之后，理解如下递归写法就不难了，代码逻辑都是一样的。\n\n时间复杂度: O(n), 要递归处理链表的每个节点\n空间复杂度: O(n), 递归调用了 n 层栈空间\n\n我们可以发现，上面的递归写法和双指针法实质上都是从前往后翻转指针指向，其实还有另外一种与双指针法不同思路的递归写法：从后往前翻转指针指向。\n\n具体代码如下（带详细注释）：\n\n时间复杂度: O(n)\n空间复杂度: O(n)",
+  "tables": [],
+  "images": [
+    {
+      "alt": "206_反转链表",
+      "url": "https://file1.kamacoder.com/i/algo/20210218090901207.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210218090901207.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.gif",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/206.%E7%BF%BB%E8%BD%AC%E9%93%BE%E8%A1%A8.gif",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "image-20230117195418626",
+      "url": "https://raw.githubusercontent.com/liyuxuan7762/MyImageOSS/master/md_images/image-20230117195418626.png",
+      "sourceUrl": "https://raw.githubusercontent.com/liyuxuan7762/MyImageOSS/master/md_images/image-20230117195418626.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "维护 prev 和 current；修改 current.next 前必须先保存 next 节点。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过反转链表掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "283"
+  ],
+  "recognition": "链表节点只有向后的指针。反转一个指针后，怎样才能继续找到原来的下一个节点？",
+  "bruteForce": "直观做法是把结点依次放入数组再反向重建可行，但只需改指针。头插可在一次遍历中完成反转：当前结点不断插到哑结点之后。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "链表节点只有向后的指针。反转一个指针后，怎样才能继续找到原来的下一个节点？"
+    },
+    {
+      "level": 2,
+      "text": "维护 prev 和 current；修改 current.next 前必须先保存 next 节点。"
+    },
+    {
+      "level": 3,
+      "text": "从头节点开始，令 prev 为空。每次先保存 current.next，再把 current.next 改为 prev，随后将 prev 前移到 current，current 前移到保存的节点。这样 prev 始终指向已反转部分的头，current 指向尚未处理部分，遍历结束返回 prev。"
+    },
+    {
+      "level": 4,
+      "text": "prev ← 空，current ← head\n当 current 不为空：\n    next ← current.next\n    current.next ← prev\n    prev ← current\n    current ← next\n返回 prev",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从头节点开始，令 prev 为空。",
+    "每次先保存 current.next，再把 current.next 改为 prev，随后将 prev 前移到 current，current 前移到保存的节点。",
+    "这样 prev 始终指向已反转部分的头，current 指向尚未处理部分，遍历结束返回 prev。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [1,2,3,4,5] → [5,4,3,2,1]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足反转链表约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把反转链表的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用把结点依次放入数组再反向重建可行，但只需改指针。头插可在一次遍历中完成反转：当前结点不断插到哑结点之后。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "reverseList",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "206-basic-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      "expected": [
+        5,
+        4,
+        3,
+        2,
+        1
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "206-boundary-1",
+      "input": {
+        "head": []
+      },
+      "expected": [],
+      "tags": [
+        "boundary"
+      ],
+      "note": "空链表。"
+    },
+    {
+      "id": "206-adversarial-1",
+      "input": {
+        "head": [
+          1,
+          1,
+          2
+        ]
+      },
+      "expected": [
+        2,
+        1,
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "重复值仍然对应不同节点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [1,2,3,4,5]",
+    "output": "[5,4,3,2,1]",
+    "examples": [
+      {
+        "input": "head = [1,2,3,4,5]",
+        "output": "[5,4,3,2,1]"
+      }
+    ]
+  }
+}

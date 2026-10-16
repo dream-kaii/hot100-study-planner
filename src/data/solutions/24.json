@@ -1,0 +1,194 @@
+{
+  "id": "24",
+  "description": "给你一个链表，两两交换其中相邻的节点，并返回交换后链表的头节点。你必须在不修改节点内部的值的情况下完成本题（即，只能进行节点交换）。\n\n示例 1：\n\n输入：head = [1,2,3,4]\n输出：[2,1,4,3]\n\n示例 2：\n\n输入：head = []\n输出：[]\n\n示例 3：\n\n输入：head = [1]\n输出：[1]\n\n提示：\n\n链表中节点的数目在范围 [0, 100] 内\n0 <= Node.val <= 100",
+  "summary": "在头部加哑节点，prev 指向待交换两节点之前。若后面至少有两个节点，保存 first 与 second，把 first 接到 second 原来的后继，把 second 接到 first，再让 prev 接到 second。将 prev 移到 first，处理下一对；剩一个节点时保持原样。",
+  "explanation": "这道题目正常模拟就可以了。\n\n建议使用虚拟头结点，这样会方便很多，要不然每次针对头结点（没有前一个指针指向头结点），还要单独处理。\n\n对虚拟头结点的操作，还不熟悉的话，可以看这篇链表：听说用虚拟头节点会方便很多？。\n\n接下来就是交换相邻两个元素了，此时一定要画图，不画图，操作多个指针很容易乱，而且要操作的先后顺序\n\n初始时，cur指向虚拟头结点，然后进行如下三步：\n\n操作之后，链表如下：\n\n看这个可能就更直观一些了：\n\n对应的\n\n时间复杂度：O(n)\n空间复杂度：O(1)\n\n拓展\n\n这里还是说一下，大家不必太在意力扣上执行用时，打败多少多少用户，这个统计不准确的。\n\n做题的时候自己能分析出来时间复杂度就可以了，至于力扣上执行用时，大概看一下就行。\n\n上面的代码我第一次提交执行用时8ms，打败6.5%的用户，差点吓到我了。\n\n心想应该没有更好的方法了吧，也就 O(n) 的时间复杂度，重复提交几次，这样了：\n\n力扣上的统计如果两份代码是 100ms 和 300ms的耗时，其实是需要注意的。\n\n如果一个是 4ms 一个是 12ms，看上去好像是一个打败了80%，一个打败了20%，其实是没有差别的。 只不过是力扣上统计的误差而已。\n\n总结",
+  "java": "// 递归版本\nclass Solution {\n    public ListNode swapPairs(ListNode head) {\n        // base case 退出提交\n        if(head == null || head.next == null) return head;\n        // 获取当前节点的下一个节点\n        ListNode next = head.next;\n        // 进行递归\n        ListNode newNode = swapPairs(next.next);\n        // 这里进行交换\n        next.next = head;\n        head.next = newNode;\n\n        return next;\n    }\n}",
+  "python": "# 递归版本\n# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\nclass Solution:\n    def swapPairs(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        if head is None or head.next is None:\n            return head\n\n        # 待翻转的两个node分别是pre和cur\n        pre = head\n        cur = head.next\n        next = head.next.next\n        \n        cur.next = pre  # 交换\n        pre.next = self.swapPairs(next) # 将以next为head的后续链表两两交换\n         \n        return cur",
+  "examples": [
+    {
+      "input": "head = [1,2,3,4]",
+      "output": "[2,1,4,3]"
+    },
+    {
+      "input": "head = []",
+      "output": "[]"
+    },
+    {
+      "input": "head = [1]",
+      "output": "[1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0024.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.html",
+  "fallbackSource": "https://leetcode.cn/problems/swap-nodes-in-pairs/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0024.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0024.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0024.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "这道题目正常模拟就可以了。\n\n建议使用虚拟头结点，这样会方便很多，要不然每次针对头结点（没有前一个指针指向头结点），还要单独处理。\n\n对虚拟头结点的操作，还不熟悉的话，可以看这篇链表：听说用虚拟头节点会方便很多？。\n\n接下来就是交换相邻两个元素了，此时一定要画图，不画图，操作多个指针很容易乱，而且要操作的先后顺序\n\n初始时，cur指向虚拟头结点，然后进行如下三步：\n\n操作之后，链表如下：\n\n看这个可能就更直观一些了：\n\n对应的\n\n时间复杂度：O(n)\n空间复杂度：O(1)\n\n拓展\n\n这里还是说一下，大家不必太在意力扣上执行用时，打败多少多少用户，这个统计不准确的。\n\n做题的时候自己能分析出来时间复杂度就可以了，至于力扣上执行用时，大概看一下就行。\n\n上面的代码我第一次提交执行用时8ms，打败6.5%的用户，差点吓到我了。\n\n心想应该没有更好的方法了吧，也就 O(n) 的时间复杂度，重复提交几次，这样了：\n\n力扣上的统计如果两份代码是 100ms 和 300ms的耗时，其实是需要注意的。\n\n如果一个是 4ms 一个是 12ms，看上去好像是一个打败了80%，一个打败了20%，其实是没有差别的。 只不过是力扣上统计的误差而已。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "24.两两交换链表中的节点1",
+      "url": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B91.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B91.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "24.两两交换链表中的节点2",
+      "url": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B92.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B92.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "24.两两交换链表中的节点3",
+      "url": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B93.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B93.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "24.两两交换链表中的节点",
+      "url": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/24.%E4%B8%A4%E4%B8%A4%E4%BA%A4%E6%8D%A2%E9%93%BE%E8%A1%A8%E4%B8%AD%E7%9A%84%E8%8A%82%E7%82%B9.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "用 prev 指向当前这一对之前的节点。先保存 first 和 second，再按三条连接完成交换。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过两两交换链表中的节点掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "21"
+  ],
+  "recognition": "交换一对相邻节点时，前一对的尾部、这一对的两个节点、后续链表各要怎样连接？",
+  "bruteForce": "直观做法是题目要求不能修改节点内部的值，必须实际交换指针。节点数不超过 100，任何正确的指针接法在时间上都可以接受。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "交换一对相邻节点时，前一对的尾部、这一对的两个节点、后续链表各要怎样连接？"
+    },
+    {
+      "level": 2,
+      "text": "用 prev 指向当前这一对之前的节点。先保存 first 和 second，再按三条连接完成交换。"
+    },
+    {
+      "level": 3,
+      "text": "在头部加哑节点，prev 指向待交换两节点之前。若后面至少有两个节点，保存 first 与 second，把 first 接到 second 原来的后继，把 second 接到 first，再让 prev 接到 second。将 prev 移到 first，处理下一对；剩一个节点时保持原样。"
+    },
+    {
+      "level": 4,
+      "text": "dummy.next ← head；prev ← dummy\n当 prev.next 和 prev.next.next 都非空：\n    first ← prev.next；second ← first.next\n    first.next ← second.next\n    second.next ← first\n    prev.next ← second\n    prev ← first\n返回 dummy.next",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "在头部加哑节点，prev 指向待交换两节点之前。",
+    "若后面至少有两个节点，保存 first 与 second，把 first 接到 second 原来的后继，把 second 接到 first，再让 prev 接到 second。",
+    "将 prev 移到 first，处理下一对；剩一个节点时保持原样。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [1,2,3,4] → [2,1,4,3]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足两两交换链表中的节点约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把两两交换链表中的节点的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用题目要求不能修改节点内部的值，必须实际交换指针。节点数不超过 100，任何正确的指针接法在时间上都可以接受。，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "swapPairs",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "24-basic-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "expected": [
+        2,
+        1,
+        4,
+        3
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "24-boundary-1",
+      "input": {
+        "head": [
+          1
+        ]
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用两两交换链表中的节点的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "24-adversarial-1",
+      "input": {
+        "head": [
+          1
+        ]
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查两两交换链表中的节点的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [1,2,3,4]",
+    "output": "[2,1,4,3]",
+    "examples": [
+      {
+        "input": "head = [1,2,3,4]",
+        "output": "[2,1,4,3]"
+      }
+    ]
+  }
+}

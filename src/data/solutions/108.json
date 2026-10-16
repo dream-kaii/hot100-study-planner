@@ -1,0 +1,190 @@
+{
+  "id": "108",
+  "description": "给你一个整数数组 nums ，其中元素已经按 升序 排列，请你将其转换为一棵 平衡 二叉搜索树。\n\n示例 1：\n\n输入：nums = [-10,-3,0,5,9]\n输出：[0,-3,9,-10,null,5]\n解释：[0,-10,5,null,-3,null,9] 也将被视为正确答案：\n\n示例 2：\n\n输入：nums = [1,3]\n输出：[3,1]\n解释：[1,null,3] 和 [3,1] 都是高度平衡二叉搜索树。\n\n提示：\n\n1 <= nums.length <= 104\n-104 <= nums[i] <= 104\nnums 按 严格递增 顺序排列",
+  "summary": "对数组的一段区间递归建树。空区间返回空节点，非空区间取中点为根，将它左边的元素建成左子树、右边的元素建成右子树。数组有序保证左边全小、右边全大，中点分割保证两边高度接近，因此得到一棵高度平衡的二叉搜索树。",
+  "explanation": "做这道题目之前大家可以了解一下这几道：\n\n106.从中序与后序遍历序列构造二叉树\n654.最大二叉树中其实已经讲过了，如果根据数组构造一棵二叉树。\n701.二叉搜索树中的插入操作\n450.删除二叉搜索树中的节点\n\n进入正题：\n\n题目中说要转换为一棵高度平衡二叉搜索树。为什么强调要平衡呢？\n\n因为只要给我们一个有序数组，如果不强调平衡，都可以以线性结构来构造二叉搜索树。\n\n例如 有序数组[-10，-3，0，5，9] 就可以构造成这样的二叉搜索树，如图。\n\n上图中，是符合二叉搜索树的特性吧，如果要这么做的话，是不是本题意义就不大了，所以才强调是平衡二叉搜索树。\n\n其实数组构造二叉树，构成平衡树是自然而然的事情，因为大家默认都是从数组中间位置取值作为节点元素，一般不会随机取。所以想构成不平衡的二叉树是自找麻烦。\n\n在二叉树：构造二叉树登场！和二叉树：构造一棵最大的二叉树中其实已经讲过了，如果根据数组构造一棵二叉树。\n\n本质就是寻找分割点，分割点作为当前节点，然后递归左区间和右区间。\n\n本题其实要比二叉树：构造二叉树登场！ 和 二叉树：构造一棵最大的二叉树简单一些，因为有序数组构造二叉搜索树，寻找分割点就比较容易了。\n\n分割点就是数组中间位置的节点。\n\n那么为问题来了，如果数组长度为偶数，中间节点有两个，取哪一个？\n\n取哪一个都可以，只不过构成了不同的平衡二叉搜索树。\n\n例如：输入：[-10,-3,0,5,9]\n\n如下两棵树，都是这个数组的平衡二叉搜索树：\n\n如果要分割的数组长度为偶数的时候，中间元素为两个，是取左边元素 就是树1，取右边元素就是树2。\n\n这也是题目中强调答案不是唯一的原因。 理解这一点，这道题目算是理解到位了。\n\n递归\n\n递归三部曲：\n\n确定递归函数返回值及其参数\n\n删除二叉树节点，增加二叉树节点，都是用递归函数的返回值来完成，这样是比较方便的。\n\n相信大家如果仔细看了二叉树：搜索树中的插入操作和二叉树：搜索树中的删除操作，一定会对递归函数返回值的作用深有感触。\n\n那么本题要构造二叉树，依然用递归函数的返回值来构造中节点的左右孩子。\n\n再来看参数，首先是传入数组，然后就是左下标left和右下标right，我们在二叉树：构造二叉树登场！中提过，在构造二叉树的时候尽量不要重新定义左右区间数组，而是用下标来操作原数组。\n\n所以代码如下：\n\n这里注意，我这里定义的是左闭右闭区间，在不断分割的过程中，也会坚持左闭右闭的区间，这又涉及到我们讲过的循环不变量。\n\n在二叉树：构造二叉树登场！，35.搜索插入位置 和59.螺旋矩阵II都详细讲过循环不变量。\n\n确定递归终止条件\n\n这里定义的是左闭右闭的区间，所以当区间 left right的时候，就是空节点了。\n\n代码如下：\n\n确定单层递归的逻辑\n\n首先取数组中间元素的位置，不难写出int mid = (left + right) / 2;，这么写其实有一个问题，就是数值越界，例如left和right都是最大int，这么操作就越界了，在二分法中尤其需要注意！\n\n所以可以这么写：int mid = left + ((right - left) / 2);\n\n但本题leetcode的测试数据并不会越界，所以怎么写都可以。但需要有这个意识！\n\n取了中间位置，就开始以中间位置的元素构造节点，代码：TreeNode root = new TreeNode(nums[mid]);。\n\n接着划分区间，root的左孩子接住下一层左区间的构造节点，右孩子接住下一层右区间构造的节点。\n\n最后返回root节点，单层递归整体代码如下：\n\n这里int mid = left + ((right - left) / 2);的写法相当于是如果数组长度为偶数，中间位置有两个元素，取靠左边的。\n\n递归整体代码如下：\n\n注意：在调用traversal的时候传入的left和right为什么是0和nums.size() - 1，因为定义的区间为左闭右闭。\n\n迭代法\n\n迭代法可以通过三个队列来模拟，一个队列放遍历的节点，一个队列放左区间下标，一个队列放右区间下标。\n\n模拟的就是不断分割的过程，代码如下：（我已经详细注释）\n\n总结\n在二叉树：构造二叉树登场！ 和 二叉树：构造一棵最大的二叉树之后，我们顺理成章的应该构造一下二叉搜索树了，一不小心还是一棵平衡二叉搜索树。\n\n其实思路也是一样的，不断中间分割，然后递归处理左区间，右区间，也可以说是分治。\n\n此时相信大家应该对通过递归函数的返回值来增删二叉树很熟悉了，这也是常规操作。\n\n在定义区间的过程中我们又一次强调了循环不变量的重要性。\n\n最后依然给出迭代的方法，其实就是模拟取中间元素，然后不断分割去构造二叉树的过程。",
+  "java": "class Solution {\n    public TreeNode sortedArrayToBST(int[] nums) {\n        return sortedArrayToBST(nums, 0, nums.length);\n    }\n    \n    public TreeNode sortedArrayToBST(int[] nums, int left, int right) {\n        if (left >= right) {\n            return null;\n        }\n        if (right - left == 1) {\n            return new TreeNode(nums[left]);\n        }\n        int mid = left + (right - left) / 2;\n        TreeNode root = new TreeNode(nums[mid]);\n        root.left = sortedArrayToBST(nums, left, mid);\n        root.right = sortedArrayToBST(nums, mid + 1, right);\n        return root;\n    }\n}",
+  "python": "class Solution:\n    def traversal(self, nums: List[int], left: int, right: int) -> TreeNode:\n        if left > right:\n            return None\n        \n        mid = left + (right - left) // 2\n        root = TreeNode(nums[mid])\n        root.left = self.traversal(nums, left, mid - 1)\n        root.right = self.traversal(nums, mid + 1, right)\n        return root\n    \n    def sortedArrayToBST(self, nums: List[int]) -> TreeNode:\n        root = self.traversal(nums, 0, len(nums) - 1)\n        return root",
+  "examples": [
+    {
+      "input": "nums = [-10,-3,0,5,9]",
+      "output": "[0,-3,9,-10,null,5]"
+    },
+    {
+      "input": "nums = [1,3]",
+      "output": "[3,1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(log n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0108.%E5%B0%86%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E8%BD%AC%E6%8D%A2%E4%B8%BA%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91.html",
+  "fallbackSource": "https://leetcode.cn/problems/convert-sorted-array-to-binary-search-tree/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0108.%E5%B0%86%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E8%BD%AC%E6%8D%A2%E4%B8%BA%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0108.%E5%B0%86%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E8%BD%AC%E6%8D%A2%E4%B8%BA%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0108.%E5%B0%86%E6%9C%89%E5%BA%8F%E6%95%B0%E7%BB%84%E8%BD%AC%E6%8D%A2%E4%B8%BA%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "做这道题目之前大家可以了解一下这几道：\n\n106.从中序与后序遍历序列构造二叉树\n654.最大二叉树中其实已经讲过了，如果根据数组构造一棵二叉树。\n701.二叉搜索树中的插入操作\n450.删除二叉搜索树中的节点\n\n进入正题：\n\n题目中说要转换为一棵高度平衡二叉搜索树。为什么强调要平衡呢？\n\n因为只要给我们一个有序数组，如果不强调平衡，都可以以线性结构来构造二叉搜索树。\n\n例如 有序数组[-10，-3，0，5，9] 就可以构造成这样的二叉搜索树，如图。\n\n上图中，是符合二叉搜索树的特性吧，如果要这么做的话，是不是本题意义就不大了，所以才强调是平衡二叉搜索树。\n\n其实数组构造二叉树，构成平衡树是自然而然的事情，因为大家默认都是从数组中间位置取值作为节点元素，一般不会随机取。所以想构成不平衡的二叉树是自找麻烦。\n\n在二叉树：构造二叉树登场！和二叉树：构造一棵最大的二叉树中其实已经讲过了，如果根据数组构造一棵二叉树。\n\n本质就是寻找分割点，分割点作为当前节点，然后递归左区间和右区间。\n\n本题其实要比二叉树：构造二叉树登场！ 和 二叉树：构造一棵最大的二叉树简单一些，因为有序数组构造二叉搜索树，寻找分割点就比较容易了。\n\n分割点就是数组中间位置的节点。\n\n那么为问题来了，如果数组长度为偶数，中间节点有两个，取哪一个？\n\n取哪一个都可以，只不过构成了不同的平衡二叉搜索树。\n\n例如：输入：[-10,-3,0,5,9]\n\n如下两棵树，都是这个数组的平衡二叉搜索树：\n\n如果要分割的数组长度为偶数的时候，中间元素为两个，是取左边元素 就是树1，取右边元素就是树2。\n\n这也是题目中强调答案不是唯一的原因。 理解这一点，这道题目算是理解到位了。\n\n递归\n\n递归三部曲：\n\n确定递归函数返回值及其参数\n\n删除二叉树节点，增加二叉树节点，都是用递归函数的返回值来完成，这样是比较方便的。\n\n相信大家如果仔细看了二叉树：搜索树中的插入操作和二叉树：搜索树中的删除操作，一定会对递归函数返回值的作用深有感触。\n\n那么本题要构造二叉树，依然用递归函数的返回值来构造中节点的左右孩子。\n\n再来看参数，首先是传入数组，然后就是左下标left和右下标right，我们在二叉树：构造二叉树登场！中提过，在构造二叉树的时候尽量不要重新定义左右区间数组，而是用下标来操作原数组。\n\n所以代码如下：\n\n这里注意，我这里定义的是左闭右闭区间，在不断分割的过程中，也会坚持左闭右闭的区间，这又涉及到我们讲过的循环不变量。\n\n在二叉树：构造二叉树登场！，35.搜索插入位置 和59.螺旋矩阵II都详细讲过循环不变量。\n\n确定递归终止条件\n\n这里定义的是左闭右闭的区间，所以当区间 left right的时候，就是空节点了。\n\n代码如下：\n\n确定单层递归的逻辑\n\n首先取数组中间元素的位置，不难写出int mid = (left + right) / 2;，这么写其实有一个问题，就是数值越界，例如left和right都是最大int，这么操作就越界了，在二分法中尤其需要注意！\n\n所以可以这么写：int mid = left + ((right - left) / 2);\n\n但本题leetcode的测试数据并不会越界，所以怎么写都可以。但需要有这个意识！\n\n取了中间位置，就开始以中间位置的元素构造节点，代码：TreeNode root = new TreeNode(nums[mid]);。\n\n接着划分区间，root的左孩子接住下一层左区间的构造节点，右孩子接住下一层右区间构造的节点。\n\n最后返回root节点，单层递归整体代码如下：\n\n这里int mid = left + ((right - left) / 2);的写法相当于是如果数组长度为偶数，中间位置有两个元素，取靠左边的。\n\n递归整体代码如下：\n\n注意：在调用traversal的时候传入的left和right为什么是0和nums.size() - 1，因为定义的区间为左闭右闭。\n\n迭代法\n\n迭代法可以通过三个队列来模拟，一个队列放遍历的节点，一个队列放左区间下标，一个队列放右区间下标。\n\n模拟的就是不断分割的过程，代码如下：（我已经详细注释）",
+  "summaryText": "每段取中点作为根，左半段递归建左子树，右半段递归建右子树。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "108.将有序数组转换为二叉搜索树",
+      "url": "https://file1.kamacoder.com/i/algo/20201022164420763.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20201022164420763.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20220930173553.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220930173553.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "108.将有序数组转换为二叉搜索树",
+      "url": "https://file1.kamacoder.com/i/algo/108.将有序数组转换为二叉搜索树.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/108.将有序数组转换为二叉搜索树.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过将有序数组转换为二叉搜索树掌握二叉树相关的可迁移解题模式。",
+  "prerequisites": [
+    "94"
+  ],
+  "recognition": "有序数组中选哪个元素作为根，能让左右两侧节点数量尽量接近？",
+  "bruteForce": "直观做法是方法一：二分 + 递归；当输入规模扩大时，需要避免重复扫描并利用题目中的二叉树约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "有序数组中选哪个元素作为根，能让左右两侧节点数量尽量接近？"
+    },
+    {
+      "level": 2,
+      "text": "每段取中点作为根，左半段递归建左子树，右半段递归建右子树。"
+    },
+    {
+      "level": 3,
+      "text": "对数组的一段区间递归建树。空区间返回空节点，非空区间取中点为根，将它左边的元素建成左子树、右边的元素建成右子树。数组有序保证左边全小、右边全大，中点分割保证两边高度接近，因此得到一棵高度平衡的二叉搜索树。"
+    },
+    {
+      "level": 4,
+      "text": "build(left,right)：\n    若 left > right：返回 空\n    mid ← 向下取整((left+right)/2)\n    node ← 值为 nums[mid] 的新节点\n    node.left ← build(left,mid−1)\n    node.right ← build(mid+1,right)\n    返回 node\n返回 build(0,n−1)",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "对数组的一段区间递归建树。",
+    "空区间返回空节点，非空区间取中点为根，将它左边的元素建成左子树、右边的元素建成右子树。",
+    "数组有序保证左边全小、右边全大，中点分割保证两边高度接近，因此得到一棵高度平衡的二叉搜索树。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [-10,-3,0,5,9] → [0,-3,9,-10,null,5]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足将有序数组转换为二叉搜索树约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把将有序数组转换为二叉搜索树的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：二分 + 递归，额外空间为O(log n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "sortedArrayToBST",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "TreeNode",
+    "compare": "any-valid"
+  },
+  "cases": [
+    {
+      "id": "108-basic-1",
+      "input": {
+        "nums": [
+          -10,
+          -3,
+          0,
+          5,
+          9
+        ]
+      },
+      "expected": [
+        0,
+        -3,
+        9,
+        -10,
+        null,
+        5
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "108-boundary-1",
+      "input": {
+        "nums": [
+          1,
+          3
+        ]
+      },
+      "expected": [
+        3,
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用将有序数组转换为二叉搜索树的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "108-adversarial-1",
+      "input": {
+        "nums": [
+          1,
+          3
+        ]
+      },
+      "expected": [
+        3,
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查将有序数组转换为二叉搜索树的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [-10,-3,0,5,9]",
+    "output": "[0,-3,9,-10,null,5]",
+    "examples": [
+      {
+        "input": "nums = [-10,-3,0,5,9]",
+        "output": "[0,-3,9,-10,null,5]"
+      }
+    ]
+  }
+}

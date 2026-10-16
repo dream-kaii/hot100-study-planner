@@ -1,0 +1,2 @@
+import React from "react";
+export default function ProgressPanel({ stats }) { return <section className="statsGrid">{[["总进度", `${stats.done}/${stats.total}`, "已完成"],["待复习", stats.due, "到期题目"],["错题", stats.wrong, "需要复盘"],["已掌握", stats.mastered, "稳定掌握"]].map(([label,value,detail]) => <div className="statCard" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</section>; }

@@ -1,0 +1,187 @@
+{
+  "id": "347",
+  "description": "给你一个整数数组 nums 和一个整数 k ，请你返回其中出现频率前 k 高的元素。你可以按 任意顺序 返回答案。\n\n示例 1：\n\n输入：nums = [1,1,1,2,2,3], k = 2\n\n输出：[1,2]\n\n示例 2：\n\n输入：nums = [1], k = 1\n\n输出：[1]\n\n示例 3：\n\n输入：nums = [1,2,1,2,1,2,3,1,3,2], k = 2\n\n提示：\n\n1 <= nums.length <= 105\n-104 <= nums[i] <= 104\nk 的取值范围是 [1, 数组中不相同的元素的个数]\n题目数据保证答案唯一，换句话说，数组中前 k 个高频元素的集合是唯一的\n\n进阶：你所设计算法的时间复杂度 必须 优于 O(n log n) ，其中 n 是数组大小。",
+  "summary": "先统计每个不同元素的出现次数。建立下标表示频次的桶数组，把每个元素放入它的频次桶。然后从最高频次往下遍历桶，将桶内元素追加到结果，达到 k 个即结束。桶下标范围不超过原数组长度，不必对全部不同元素进行比较排序。",
+  "explanation": "这道题目主要涉及到如下三块内容：\n1. 要统计元素出现频率\n2. 对频率排序\n3. 找出前K个高频元素\n\n首先统计元素出现的频率，这一类的问题可以使用map来进行统计。\n\n然后是对频率进行排序，这里我们可以使用一种 容器适配器就是优先级队列。\n\n什么是优先级队列呢？\n\n其实就是一个披着队列外衣的堆，因为优先级队列对外接口只是从队头取元素，从队尾添加元素，再无其他取元素的方式，看起来就是一个队列。\n\n而且优先级队列内部元素是自动依照元素的权值排列。那么它是如何有序排列的呢？\n\n缺省情况下priorityqueue利用max-heap（大顶堆）完成对元素的排序，这个大顶堆是以vector为表现形式的complete binary tree（完全二叉树）。\n\n什么是堆呢？\n\n堆是一棵完全二叉树，树中每个结点的值都不小于（或不大于）其左右孩子的值。 如果父亲结点是大于等于左右孩子就是大顶堆，小于等于左右孩子就是小顶堆。\n\n所以大家经常说的大顶堆（堆头是最大元素），小顶堆（堆头是最小元素），如果懒得自己实现的话，就直接用priorityqueue（优先级队列）就可以了，底层实现都是一样的，从小到大排就是小顶堆，从大到小排就是大顶堆。\n\n本题我们就要使用优先级队列来对部分频率进行排序。\n\n为什么不用快排呢， 使用快排要将map转换为vector的结构，然后对整个数组进行排序， 而这种场景下，我们其实只需要维护k个有序的序列就可以了，所以使用优先级队列是最优的。\n\n此时要思考一下，是使用小顶堆呢，还是大顶堆？\n\n有的同学一想，题目要求前 K 个高频元素，那么果断用大顶堆啊。\n\n那么问题来了，定义一个大小为k的大顶堆，在每次移动更新大顶堆的时候，每次弹出都把最大的元素弹出去了，那么怎么保留下来前K个高频元素呢。\n\n而且使用大顶堆就要把所有元素都进行排序，那能不能只排序k个元素呢？\n\n所以我们要用小顶堆，因为要统计最大前k个元素，只有小顶堆每次将最小的元素弹出，最后小顶堆里积累的才是前k个最大元素。\n\n寻找前k个最大元素流程如图所示：（图中的频率只有三个，所以正好构成一个大小为3的小顶堆，如果频率更多一些，则用这个小顶堆进行扫描）\n\n我们来看一下\n\n时间复杂度: O(nlogk)\n空间复杂度: O(n)\n\n拓展\n大家对这个比较运算在建堆时是如何应用的，为什么左大于右就会建立小顶堆，反而建立大顶堆比较困惑。\n\n确实 例如我们在写快排的cmp函数的时候，return leftright 就是从大到小，return left<right 就是从小到大。\n\n优先级队列的定义正好反过来了，可能和优先级队列的源码实现有关（我没有仔细研究），我估计是底层实现上优先队列队首指向后面，队尾指向最前面的缘故！\n\n总结",
+  "java": "/*Comparator接口说明:\n * 返回负数，形参中第一个参数排在前面；返回正数，形参中第二个参数排在前面\n * 对于队列：排在前面意味着往队头靠\n * 对于堆（使用PriorityQueue实现）：从队头到队尾按从小到大排就是最小堆（小顶堆），\n *                                从队头到队尾按从大到小排就是最大堆（大顶堆）--->队头元素相当于堆的根节点\n * */\nclass Solution {\n    //解法1：基于大顶堆实现\n    public int[] topKFrequent(int[] nums, int k) {\n        Map<Integer,Integer> map = new HashMap<>(); //key为数组元素值,val为对应出现次数\n        for (int num : nums) {\n            map.put(num, map.getOrDefault(num,0) + 1);\n        }\n        //在优先队列中存储二元组(num, cnt),cnt表示元素值num在数组中的出现次数\n        //出现次数按从队头到队尾的顺序是从大到小排,出现次数最多的在队头(相当于大顶堆)\n        PriorityQueue<int[]> pq = new PriorityQueue<>((pair1, pair2) -> pair2[1] - pair1[1]);\n        for (Map.Entry<Integer, Integer> entry : map.entrySet()) {//大顶堆需要对所有元素进行排序\n            pq.add(new int[]{entry.getKey(), entry.getValue()});\n        }\n        int[] ans = new int[k];\n        for (int i = 0; i < k; i++) { //依次从队头弹出k个,就是出现频率前k高的元素\n            ans[i] = pq.poll()[0];\n        }\n        return ans;\n    }\n    //解法2：基于小顶堆实现\n    public int[] topKFrequent2(int[] nums, int k) {\n        Map<Integer,Integer> map = new HashMap<>(); //key为数组元素值,val为对应出现次数\n        for (int num : nums) {\n            map.put(num, map.getOrDefault(num, 0) + 1);\n        }\n        //在优先队列中存储二元组(num, cnt),cnt表示元素值num在数组中的出现次数\n        //出现次数按从队头到队尾的顺序是从小到大排,出现次数最低的在队头(相当于小顶堆)\n        PriorityQueue<int[]> pq = new PriorityQueue<>((pair1, pair2) -> pair1[1] - pair2[1]);\n        for (Map.Entry<Integer, Integer> entry : map.entrySet()) { //小顶堆只需要维持k个元素有序\n            if (pq.size() < k) { //小顶堆元素个数小于k个时直接加\n                pq.add(new int[]{entry.getKey(), entry.getValue()});\n            } else {\n                if (entry.getValue() > pq.peek()[1]) { //当前元素出现次数大于小顶堆的根结点(这k个元素中出现次数最少的那个)\n                    pq.poll(); //弹出队头(小顶堆的根结点),即把堆里出现次数最少的那个删除,留下的就是出现次数多的了\n                    pq.add(new int[]{entry.getKey(), entry.getValue()});\n                }\n            }\n        }\n        int[] ans = new int[k];\n        for (int i = k - 1; i >= 0; i--) { //依次弹出小顶堆,先弹出的是堆的根,出现次数少,后面弹出的出现次数多\n            ans[i] = pq.poll()[0];\n        }\n        return ans;\n    }\n}",
+  "python": "#时间复杂度：O(nlogk)\n#空间复杂度：O(n)\nimport heapq\nclass Solution:\n    def topKFrequent(self, nums: List[int], k: int) -> List[int]:\n        #要统计元素出现频率\n        map_ = {} #nums[i]:对应出现的次数\n        for i in range(len(nums)):\n            map_[nums[i]] = map_.get(nums[i], 0) + 1\n        \n        #对频率排序\n        #定义一个小顶堆，大小为k\n        pri_que = [] #小顶堆\n        \n        #用固定大小为k的小顶堆，扫描所有频率的数值\n        for key, freq in map_.items():\n            heapq.heappush(pri_que, (freq, key))\n            if len(pri_que) > k: #如果堆的大小大于了K，则队列弹出，保证堆的大小一直为k\n                heapq.heappop(pri_que)\n        \n        #找出前K个高频元素，因为小顶堆先弹出的是最小的，所以倒序来输出到数组\n        result = [0] * k\n        for i in range(k-1, -1, -1):\n            result[i] = heapq.heappop(pri_que)[1]\n        return result",
+  "examples": [
+    {
+      "input": "nums = [1,1,1,2,2,3], k = 2",
+      "output": "[1,2]"
+    },
+    {
+      "input": "nums = [1], k = 1",
+      "output": "[1]"
+    },
+    {
+      "input": "nums = [1,2,1,2,1,2,3,1,3,2], k = 2",
+      "output": "[1,2]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n log k)",
+    "space": "O(k)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0347.%E5%89%8DK%E4%B8%AA%E9%AB%98%E9%A2%91%E5%85%83%E7%B4%A0.html",
+  "fallbackSource": "https://leetcode.cn/problems/top-k-frequent-elements/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0347.%E5%89%8DK%E4%B8%AA%E9%AB%98%E9%A2%91%E5%85%83%E7%B4%A0.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0347.%E5%89%8DK%E4%B8%AA%E9%AB%98%E9%A2%91%E5%85%83%E7%B4%A0.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0347.%E5%89%8DK%E4%B8%AA%E9%AB%98%E9%A2%91%E5%85%83%E7%B4%A0.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "这道题目主要涉及到如下三块内容：\n1. 要统计元素出现频率\n2. 对频率排序\n3. 找出前K个高频元素\n\n首先统计元素出现的频率，这一类的问题可以使用map来进行统计。\n\n然后是对频率进行排序，这里我们可以使用一种 容器适配器就是优先级队列。\n\n什么是优先级队列呢？\n\n其实就是一个披着队列外衣的堆，因为优先级队列对外接口只是从队头取元素，从队尾添加元素，再无其他取元素的方式，看起来就是一个队列。\n\n而且优先级队列内部元素是自动依照元素的权值排列。那么它是如何有序排列的呢？\n\n缺省情况下priorityqueue利用max-heap（大顶堆）完成对元素的排序，这个大顶堆是以vector为表现形式的complete binary tree（完全二叉树）。\n\n什么是堆呢？\n\n堆是一棵完全二叉树，树中每个结点的值都不小于（或不大于）其左右孩子的值。 如果父亲结点是大于等于左右孩子就是大顶堆，小于等于左右孩子就是小顶堆。\n\n所以大家经常说的大顶堆（堆头是最大元素），小顶堆（堆头是最小元素），如果懒得自己实现的话，就直接用priorityqueue（优先级队列）就可以了，底层实现都是一样的，从小到大排就是小顶堆，从大到小排就是大顶堆。\n\n本题我们就要使用优先级队列来对部分频率进行排序。\n\n为什么不用快排呢， 使用快排要将map转换为vector的结构，然后对整个数组进行排序， 而这种场景下，我们其实只需要维护k个有序的序列就可以了，所以使用优先级队列是最优的。\n\n此时要思考一下，是使用小顶堆呢，还是大顶堆？\n\n有的同学一想，题目要求前 K 个高频元素，那么果断用大顶堆啊。\n\n那么问题来了，定义一个大小为k的大顶堆，在每次移动更新大顶堆的时候，每次弹出都把最大的元素弹出去了，那么怎么保留下来前K个高频元素呢。\n\n而且使用大顶堆就要把所有元素都进行排序，那能不能只排序k个元素呢？\n\n所以我们要用小顶堆，因为要统计最大前k个元素，只有小顶堆每次将最小的元素弹出，最后小顶堆里积累的才是前k个最大元素。\n\n寻找前k个最大元素流程如图所示：（图中的频率只有三个，所以正好构成一个大小为3的小顶堆，如果频率更多一些，则用这个小顶堆进行扫描）\n\n我们来看一下\n\n时间复杂度: O(nlogk)\n空间复杂度: O(n)\n\n拓展\n大家对这个比较运算在建堆时是如何应用的，为什么左大于右就会建立小顶堆，反而建立大顶堆比较困惑。\n\n确实 例如我们在写快排的cmp函数的时候，return leftright 就是从大到小，return left<right 就是从小到大。\n\n优先级队列的定义正好反过来了，可能和优先级队列的源码实现有关（我没有仔细研究），我估计是底层实现上优先队列队首指向后面，队尾指向最前面的缘故！",
+  "tables": [],
+  "images": [
+    {
+      "alt": "347.前K个高频元素",
+      "url": "https://file1.kamacoder.com/i/algo/347.前K个高频元素.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/347.前K个高频元素.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "先用映射统计频次，再按频次放入 n+1 个桶，从高频桶向低频桶收集 k 个数。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过前 K 个高频元素掌握堆相关的可迁移解题模式。",
+  "prerequisites": [
+    "215"
+  ],
+  "recognition": "要按出现次数选前 k 个元素，先需要知道什么？统计之后最多可能出现多少种频次？",
+  "bruteForce": "直观做法是方法一：哈希表 + 优先队列（小根堆）；当输入规模扩大时，需要避免重复扫描并利用题目中的堆约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "要按出现次数选前 k 个元素，先需要知道什么？统计之后最多可能出现多少种频次？"
+    },
+    {
+      "level": 2,
+      "text": "先用映射统计频次，再按频次放入 n+1 个桶，从高频桶向低频桶收集 k 个数。"
+    },
+    {
+      "level": 3,
+      "text": "先统计每个不同元素的出现次数。建立下标表示频次的桶数组，把每个元素放入它的频次桶。然后从最高频次往下遍历桶，将桶内元素追加到结果，达到 k 个即结束。桶下标范围不超过原数组长度，不必对全部不同元素进行比较排序。"
+    },
+    {
+      "level": 4,
+      "text": "freq ← 每个元素的出现次数\nbuckets ← n+1 个空列表\n对每个 (value,count)：\n    buckets[count] 追加 value\nanswer ← 空列表\n对 count 从 n 到 1：\n    对 buckets[count] 中每个 value：\n        answer 追加 value\n        若 answer长度=k：返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "先统计每个不同元素的出现次数。",
+    "建立下标表示频次的桶数组，把每个元素放入它的频次桶。",
+    "然后从最高频次往下遍历桶，将桶内元素追加到结果，达到 k 个即结束。",
+    "桶下标范围不超过原数组长度，不必对全部不同元素进行比较排序。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,1,1,2,2,3], k = 2 → [1,2]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足前 K 个高频元素约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把前 K 个高频元素的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 优先队列（小根堆），额外空间为O(k)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "topKFrequent",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      }
+    ],
+    "returns": "int[]",
+    "compare": "unordered-array"
+  },
+  "cases": [
+    {
+      "id": "347-basic-1",
+      "input": {
+        "nums": [
+          1,
+          1,
+          1,
+          2,
+          2,
+          3
+        ],
+        "k": 2
+      },
+      "expected": [
+        1,
+        2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "347-boundary-1",
+      "input": {
+        "nums": [
+          -1
+        ],
+        "k": 1
+      },
+      "expected": [
+        -1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有一个不同元素。"
+    },
+    {
+      "id": "347-adversarial-1",
+      "input": {
+        "nums": [
+          -1,
+          -1,
+          -1,
+          2,
+          2,
+          3
+        ],
+        "k": 2
+      },
+      "expected": [
+        -1,
+        2
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "负数和频次必须分开统计。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,1,1,2,2,3], k = 2",
+    "output": "[1,2]",
+    "examples": [
+      {
+        "input": "nums = [1,1,1,2,2,3], k = 2",
+        "output": "[1,2]"
+      }
+    ]
+  }
+}

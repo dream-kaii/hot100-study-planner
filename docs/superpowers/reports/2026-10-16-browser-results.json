@@ -1,0 +1,261 @@
+{
+  "passed": 25,
+  "total": 25,
+  "checks": [
+    {
+      "name": "桌面七阶段四项横向对齐",
+      "passed": true,
+      "detail": [
+        {
+          "x": 538.25,
+          "y": 839.25
+        },
+        {
+          "x": 698.4375,
+          "y": 839.25
+        },
+        {
+          "x": 858.625,
+          "y": 839.25
+        },
+        {
+          "x": 1018.8125,
+          "y": 839.25
+        }
+      ]
+    },
+    {
+      "name": "新用户开始今日练习进入283且显示阶段和顺序",
+      "passed": true
+    },
+    {
+      "name": "第一题题面不生成空白段落",
+      "passed": true
+    },
+    {
+      "name": "四级提示有具体思路和保留缩进的伪代码",
+      "passed": true
+    },
+    {
+      "name": "下一题按studyOrder推进为1",
+      "passed": true
+    },
+    {
+      "name": "复制283 Java页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "283-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "283-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "283-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制283 Python页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "283-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "283-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "283-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制1 Java页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "1-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "1-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "1-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制1 Python页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "1-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "1-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "1-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制206 Java页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "206-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "206-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "206-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制206 Python页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "206-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "206-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "206-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制146 Java页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "146-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "146-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "146-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "复制146 Python页面参考代码到函数模式通过",
+      "passed": true,
+      "detail": [
+        {
+          "id": "146-basic-1",
+          "status": "passed"
+        },
+        {
+          "id": "146-boundary-1",
+          "status": "passed"
+        },
+        {
+          "id": "146-adversarial-1",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "编译错误保留javac具体诊断",
+      "passed": true
+    },
+    {
+      "name": "结果不匹配单独显示",
+      "passed": true
+    },
+    {
+      "name": "运行错误单独显示",
+      "passed": true
+    },
+    {
+      "name": "超时单独显示且下次仍可运行",
+      "passed": true
+    },
+    {
+      "name": "Java/Python函数与ACM四份草稿刷新后独立恢复",
+      "passed": true,
+      "detail": [
+        "java/function",
+        "python/function",
+        "java/acm",
+        "python/acm"
+      ]
+    },
+    {
+      "name": "ACM使用标准输入样例且两语言均可运行",
+      "passed": true
+    },
+    {
+      "name": "长代码内部滚动到底后页面继续滚动，向上亦可退出",
+      "passed": true,
+      "detail": {
+        "before": 480,
+        "after": 430,
+        "bottomBefore": 533,
+        "bottomAfter": 991,
+        "topBefore": 773,
+        "topAfter": 273
+      }
+    },
+    {
+      "name": "题面和题解由整页滚动，无额外嵌套滚动",
+      "passed": true
+    },
+    {
+      "name": "到期复习不抢占主线；完成第一阶段才进入第二阶段",
+      "passed": true
+    },
+    {
+      "name": "阶段跳转和题库顺序练习可用",
+      "passed": true
+    },
+    {
+      "name": "移动端题面、题解、编辑器无横向溢出",
+      "passed": true
+    },
+    {
+      "name": "生产静态页面正常阅读，明确提示本地运行且按钮禁用",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "knownMonacoCancellations": {
+    "count": 7,
+    "example": [
+      "Uncaught (in promise) Canceled: Canceled",
+      "    at cancel (https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/editor.api-CalNCsUg.js:6:10340)",
+      "    at dispose (https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/editor.api-CalNCsUg.js:6:10452)",
+      "    at ht (https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/editor.api-CalNCsUg.js:4:24681)",
+      "    at clear (https://cdn.jsdelivr.net/npm/monaco-editor@0.55.1/min/vs/editor.api-CalNCsUg.js:4:25418)"
+    ]
+  }
+}

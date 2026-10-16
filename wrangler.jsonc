@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hot100-study-planner",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-06-29",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    {
+      "pattern": "hot100.mayuanyuan.top",
+      "custom_domain": true
+    }
+  ]
+}

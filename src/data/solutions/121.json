@@ -1,0 +1,166 @@
+{
+  "id": "121",
+  "description": "给定一个数组 prices ，它的第 i 个元素 prices[i] 表示一支给定股票第 i 天的价格。\n\n你只能选择 某一天 买入这只股票，并选择在 未来的某一个不同的日子 卖出该股票。设计一个算法来计算你所能获取的最大利润。\n\n返回你可以从这笔交易中获取的最大利润。如果你不能获取任何利润，返回 0 。\n\n示例 1：\n\n输入：[7,1,5,3,6,4]\n输出：5\n解释：在第 2 天（股票价格 = 1）的时候买入，在第 5 天（股票价格 = 6）的时候卖出，最大利润 = 6-1 = 5 。\n注意利润不能是 7-1 = 6, 因为卖出价格需要大于买入价格；同时，你不能在买入前卖出股票。\n\n示例 2：\n\n输入：prices = [7,6,4,3,1]\n输出：0\n解释：在这种情况下, 没有交易完成, 所以最大利润为 0。\n\n提示：\n\n1 5\n0 4",
+  "summary": "按日期扫描价格，用 minPrice 保存目前遇到的最低价格，用当前价格减去它得到今天卖出的最大利润，并更新全局最大值。随后继续维护最低价格。利润初始为零，因此价格一直下降时选择不交易，而不是返回负收益。",
+  "explanation": "暴力\n\n这道题目最直观的想法，就是暴力，找最优间距了。\n\n时间复杂度：O(n²)\n空间复杂度：O(1)\n\n当然该方法超时了。\n\n贪心\n\n因为股票就买卖一次，那么贪心的想法很自然就是取最左最小值，取最右最大值，那么得到的差值就是最大利润。\n\n总结",
+  "java": "class Solution {\n    public int maxProfit(int[] prices) {\n        // 找到一个最小的购入点\n        int low = Integer.MAX_VALUE;\n        // res不断更新，直到数组循环完毕\n        int res = 0;\n        for(int i = 0; i < prices.length; i++){\n            low = Math.min(prices[i], low);\n            res = Math.max(prices[i] - low, res);\n        }\n        return res;\n    }\n}",
+  "python": "class Solution:\n    def maxProfit(self, prices: List[int]) -> int:\n        low = float(\"inf\")\n        result = 0\n        for i in range(len(prices)):\n            low = min(low, prices[i]) #取最左最小价格\n            result = max(result, prices[i] - low) #直接取最大区间利润\n        return result",
+  "examples": [
+    {
+      "input": "[7,1,5,3,6,4]",
+      "output": "5"
+    },
+    {
+      "input": "prices = [7,6,4,3,1]",
+      "output": "0"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0121.%E4%B9%B0%E5%8D%96%E8%82%A1%E7%A5%A8%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E6%9C%BA.html",
+  "fallbackSource": "https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0121.%E4%B9%B0%E5%8D%96%E8%82%A1%E7%A5%A8%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E6%9C%BA.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0121.%E4%B9%B0%E5%8D%96%E8%82%A1%E7%A5%A8%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E6%9C%BA.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0121.%E4%B9%B0%E5%8D%96%E8%82%A1%E7%A5%A8%E7%9A%84%E6%9C%80%E4%BD%B3%E6%97%B6%E6%9C%BA.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "暴力\n\n这道题目最直观的想法，就是暴力，找最优间距了。\n\n时间复杂度：O(n²)\n空间复杂度：O(1)\n\n当然该方法超时了。\n\n贪心\n\n因为股票就买卖一次，那么贪心的想法很自然就是取最左最小值，取最右最大值，那么得到的差值就是最大利润。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "121.买卖股票的最佳时机",
+      "url": "https://file1.kamacoder.com/i/algo/20210224225642465.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210224225642465.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "维护今天之前的最低价格，以及目前能获得的最大利润；不需要枚举买卖日期组合。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过买卖股票的最佳时机掌握贪心算法相关的可迁移解题模式。",
+  "prerequisites": [
+    "169"
+  ],
+  "recognition": "卖出股票前必须先买入。固定某一天卖出时，最好的买入价格是哪一天的价格？",
+  "bruteForce": "直观做法是方法一：枚举 + 维护前缀最小值；当输入规模扩大时，需要避免重复扫描并利用题目中的贪心算法约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "卖出股票前必须先买入。固定某一天卖出时，最好的买入价格是哪一天的价格？"
+    },
+    {
+      "level": 2,
+      "text": "维护今天之前的最低价格，以及目前能获得的最大利润；不需要枚举买卖日期组合。"
+    },
+    {
+      "level": 3,
+      "text": "按日期扫描价格，用 minPrice 保存目前遇到的最低价格，用当前价格减去它得到今天卖出的最大利润，并更新全局最大值。随后继续维护最低价格。利润初始为零，因此价格一直下降时选择不交易，而不是返回负收益。"
+    },
+    {
+      "level": 4,
+      "text": "minPrice ← 正无穷，profit ← 0\n对每一天的价格 price：\n    todayProfit ← price−minPrice\n    profit ← max(profit, todayProfit)\n    minPrice ← min(minPrice, price)\n返回 profit",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "按日期扫描价格，用 minPrice 保存目前遇到的最低价格，用当前价格减去它得到今天卖出的最大利润，并更新全局最大值。",
+    "随后继续维护最低价格。",
+    "利润初始为零，因此价格一直下降时选择不交易，而不是返回负收益。"
+  ],
+  "walkthrough": [
+    "公开示例：[7,1,5,3,6,4] → 5。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足买卖股票的最佳时机约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把买卖股票的最佳时机的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：枚举 + 维护前缀最小值，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "maxProfit",
+    "params": [
+      {
+        "name": "prices",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "121-basic-1",
+      "input": {
+        "prices": [
+          7,
+          1,
+          5,
+          3,
+          6,
+          4
+        ]
+      },
+      "expected": 5,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "121-boundary-1",
+      "input": {
+        "prices": [
+          1
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有一天，不能完成一次买入再卖出。"
+    },
+    {
+      "id": "121-adversarial-1",
+      "input": {
+        "prices": [
+          7,
+          6,
+          4,
+          3,
+          1
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "全程下降，不能把负利润当答案。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\n[7,1,5,3,6,4]",
+    "output": "5",
+    "examples": [
+      {
+        "input": "[7,1,5,3,6,4]",
+        "output": "5"
+      }
+    ]
+  }
+}

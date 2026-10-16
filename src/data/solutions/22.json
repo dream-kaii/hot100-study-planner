@@ -1,0 +1,155 @@
+{
+  "id": "22",
+  "description": "数字 n 代表生成括号的对数，请你设计一个函数，用于能够生成所有可能的并且 有效的 括号组合。\n\n示例 1：\n\n输入：n = 3\n输出：[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]\n\n示例 2：\n\n输入：n = 1\n输出：[\"()\"]\n\n提示：\n\n1 <= n <= 8",
+  "summary": "从空字符串开始递归，同时记录已放入的左、右括号个数。左括号小于 n 时可以追加左括号，右括号小于左括号时才允许追加右括号。两者都达到 n 时记录结果。每次扩展都保证前缀合法，因此既不会生成无效序列，也不会漏掉任何合法组合。",
+  "explanation": "方法一：DFS + 剪枝\n\n思考\n\n合法括号串的长度固定为 2n。若先枚举所有由左、右括号组成的串再筛出合法者，方案数为 2²ⁿ。 n ≤ 8 时可以接受，但绝大多数前缀已经不可能构成合法序列。\n\n一旦某前缀中右括号多于左括号，或某一侧的个数超过 n，则无论后续如何补全都无法得到合法串。因此只需维护已放入的左、右括号个数 l、 r，并始终保证 l ≥ r 且二者均不超过 n；当 l = r = n 时收入答案。\n\n为此我们用 DFS 依次尝试追加左括号或右括号，以上述不等式剪枝。搜索空间远小于全枚举，额外空间仅为当前串的 O(n)。\n\n题目中 n 的范围为 [1, 8]，因此我们直接通过“暴力搜索 + 剪枝”的方式通过本题。\n\n我们设计一个函数 dfs(l, r, t)，其中 l 和 r 分别表示左括号和右括号的数量，而 t 表示当前的括号序列。那么我们可以得到如下的递归结构：\n\n- 如果 l > n 或者 r > n 或者 l < r，那么当前括号组合 t 不合法，直接返回；\n- 如果 l = n 且 r = n，那么当前括号组合 t 合法，将其加入答案数组 ans 中，直接返回；\n- 我们可以选择添加一个左括号，递归执行 dfs(l + 1, r, t + \"(\")；\n- 我们也可以选择添加一个右括号，递归执行 dfs(l, r + 1, t + \")\")。\n\n时间复杂度 O(2^(n×2)×n)，空间复杂度 O(n)。\n\n总结",
+  "java": "class Solution {\n    private List<String> ans = new ArrayList<>();\n    private int n;\n\n    public List<String> generateParenthesis(int n) {\n        this.n = n;\n        dfs(0, 0, \"\");\n        return ans;\n    }\n\n    private void dfs(int l, int r, String t) {\n        if (l > n || r > n || l < r) {\n            return;\n        }\n        if (l == n && r == n) {\n            ans.add(t);\n            return;\n        }\n        dfs(l + 1, r, t + \"(\");\n        dfs(l, r + 1, t + \")\");\n    }\n}",
+  "python": "class Solution:\n    def generateParenthesis(self, n: int) -> List[str]:\n        def dfs(l: int, r: int, t: str):\n            if l > n or r > n or l < r:\n                return\n            if l == n and r == n:\n                ans.append(t)\n                return\n            dfs(l + 1, r, t + \"(\")\n            dfs(l, r + 1, t + \")\")\n\n        ans = []\n        dfs(0, 0, \"\")\n        return ans",
+  "examples": [
+    {
+      "input": "n = 3",
+      "output": "[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]"
+    },
+    {
+      "input": "n = 1",
+      "output": "[\"()\"]"
+    }
+  ],
+  "complexity": {
+    "time": "O(4ⁿ / sqrt(n))",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/generate-parentheses/",
+  "fallbackSource": "https://leetcode.cn/problems/generate-parentheses/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/generate-parentheses/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0022.Generate%20Parentheses/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0000-0099/0022.Generate%20Parentheses/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：DFS + 剪枝\n\n思考\n\n合法括号串的长度固定为 2n。若先枚举所有由左、右括号组成的串再筛出合法者，方案数为 2²ⁿ。 n ≤ 8 时可以接受，但绝大多数前缀已经不可能构成合法序列。\n\n一旦某前缀中右括号多于左括号，或某一侧的个数超过 n，则无论后续如何补全都无法得到合法串。因此只需维护已放入的左、右括号个数 l、 r，并始终保证 l ≥ r 且二者均不超过 n；当 l = r = n 时收入答案。\n\n为此我们用 DFS 依次尝试追加左括号或右括号，以上述不等式剪枝。搜索空间远小于全枚举，额外空间仅为当前串的 O(n)。\n\n题目中 n 的范围为 [1, 8]，因此我们直接通过“暴力搜索 + 剪枝”的方式通过本题。\n\n我们设计一个函数 dfs(l, r, t)，其中 l 和 r 分别表示左括号和右括号的数量，而 t 表示当前的括号序列。那么我们可以得到如下的递归结构：\n\n- 如果 l > n 或者 r > n 或者 l < r，那么当前括号组合 t 不合法，直接返回；\n- 如果 l = n 且 r = n，那么当前括号组合 t 合法，将其加入答案数组 ans 中，直接返回；\n- 我们可以选择添加一个左括号，递归执行 dfs(l + 1, r, t + \"(\")；\n- 我们也可以选择添加一个右括号，递归执行 dfs(l, r + 1, t + \")\")。\n\n时间复杂度 O(2^(n×2)×n)，空间复杂度 O(n)。",
+  "summaryText": "递归记录已用左右括号数量；左括号不足 n 可加，右括号少于左括号才可加。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过括号生成掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "17"
+  ],
+  "recognition": "合法括号序列的任意前缀中，右括号数量不能超过左括号；总共各需要 n 个。",
+  "bruteForce": "直观做法是方法一：DFS + 剪枝；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "合法括号序列的任意前缀中，右括号数量不能超过左括号；总共各需要 n 个。"
+    },
+    {
+      "level": 2,
+      "text": "递归记录已用左右括号数量；左括号不足 n 可加，右括号少于左括号才可加。"
+    },
+    {
+      "level": 3,
+      "text": "从空字符串开始递归，同时记录已放入的左、右括号个数。左括号小于 n 时可以追加左括号，右括号小于左括号时才允许追加右括号。两者都达到 n 时记录结果。每次扩展都保证前缀合法，因此既不会生成无效序列，也不会漏掉任何合法组合。"
+    },
+    {
+      "level": 4,
+      "text": "answer ← 空列表\nsearch(left,right,text)：\n    若 left=n 且 right=n：记录 text；返回\n    若 left < n：\n        search(left+1,right,text+'(')\n    若 right < left：\n        search(left,right+1,text+')')\nsearch(0,0,空串)；返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从空字符串开始递归，同时记录已放入的左、右括号个数。",
+    "左括号小于 n 时可以追加左括号，右括号小于左括号时才允许追加右括号。",
+    "两者都达到 n 时记录结果。",
+    "每次扩展都保证前缀合法，因此既不会生成无效序列，也不会漏掉任何合法组合。"
+  ],
+  "walkthrough": [
+    "公开示例：n = 3 → [\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足括号生成约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把括号生成的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：DFS + 剪枝，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "generateParenthesis",
+    "params": [
+      {
+        "name": "n",
+        "type": "int"
+      }
+    ],
+    "returns": "List<String>",
+    "compare": "unordered-array"
+  },
+  "cases": [
+    {
+      "id": "22-basic-1",
+      "input": {
+        "n": 3
+      },
+      "expected": [
+        "((()))",
+        "(()())",
+        "(())()",
+        "()(())",
+        "()()()"
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "22-boundary-1",
+      "input": {
+        "n": 1
+      },
+      "expected": [
+        "()"
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "只有一对括号。"
+    },
+    {
+      "id": "22-adversarial-1",
+      "input": {
+        "n": 2
+      },
+      "expected": [
+        "(())",
+        "()()"
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "同时覆盖嵌套与并列。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nn = 3",
+    "output": "[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]",
+    "examples": [
+      {
+        "input": "n = 3",
+        "output": "[\"((()))\",\"(()())\",\"(())()\",\"()(())\",\"()()()\"]"
+      }
+    ]
+  }
+}

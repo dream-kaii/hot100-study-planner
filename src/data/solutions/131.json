@@ -1,0 +1,181 @@
+{
+  "id": "131",
+  "description": "给你一个字符串 s，请你将 s 分割成一些 子串，使每个子串都是 回文串 。返回 s 所有可能的分割方案。\n\n示例 1：\n\n输入：s = \"aab\"\n输出：[[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]\n\n示例 2：\n\n输入：s = \"a\"\n输出：[[\"a\"]]\n\n提示：\n\n1 <= s.length <= 16\ns 仅由小写英文字母组成",
+  "summary": "用动态规划预处理任意区间是否回文：两端字符相同且内部回文，长度不足三时只需两端相同。然后从起点递归枚举结束位置，仅把回文段加入路径并递归处理后缀，返回后撤销。起点到字符串末尾时复制路径，得到所有合法分割。",
+  "explanation": "本题这涉及到两个关键问题：\n\n1. 切割问题，有不同的切割方式\n2. 判断回文\n\n相信这里不同的切割方式可以搞懵很多同学了。\n\n这种题目，想用for循环暴力解法，可能都不那么容易写出来，所以要换一种暴力的方式，就是回溯。\n\n一些同学可能想不清楚 回溯究竟是如何切割字符串呢？\n\n我们来分析一下切割，其实切割问题类似组合问题。\n\n例如对于字符串abcdef：\n\n组合问题：选取一个a之后，在bcdef中再去选取第二个，选取b之后在cdef中再选取第三个.....。\n切割问题：切割一个a之后，在bcdef中再去切割第二段，切割b之后在cdef中再切割第三段.....。\n\n感受出来了不？\n\n所以切割问题，也可以抽象为一棵树形结构，如图：\n\n递归用来纵向遍历，for循环用来横向遍历，切割线（就是图中的红线）切割到字符串的结尾位置，说明找到了一个切割方法。\n\n此时可以发现，切割问题的回溯搜索的过程和组合问题的回溯搜索的过程是差不多的。\n\n回溯三部曲\n\n递归函数参数\n\n全局变量数组path存放切割后回文的子串，二维数组result存放结果集。 （这两个参数可以放到函数参数里）\n\n本题递归函数参数还需要startIndex，因为切割过的地方，不能重复切割，和组合问题也是保持一致的。\n\n在回溯算法：求组合总和（二）中我们深入探讨了组合问题什么时候需要startIndex，什么时候不需要startIndex。\n\n代码如下：\n\n递归函数终止条件\n\n从树形结构的图中可以看出：切割线切到了字符串最后面，说明找到了一种切割方法，此时就是本层递归的终止条件。\n\n那么在代码里什么是切割线呢？\n\n在处理组合问题的时候，递归参数需要传入startIndex，表示下一轮递归遍历的起始位置，这个startIndex就是切割线。\n\n所以终止条件代码如下：\n\n单层搜索的逻辑\n\n来看看在递归循环中如何截取子串呢？\n\n在for (int i = startIndex; i path中，path用来记录切割过的回文子串。\n\n注意切割过的位置，不能重复切割，所以，backtracking(s, i + 1); 传入下一层的起始位置为i + 1。\n\n判断回文子串\n\n最后我们看一下回文子串要如何判断了，判断一个字符串是否是回文。\n\n可以使用双指针法，一个指针从前向后，一个指针从后向前，如果前后指针所指向的元素是相等的，就是回文字符串了。\n\n那么判断回文的\n\n时间复杂度: O(n 2ⁿ)\n空间复杂度: O(n²)\n\n优化\n\n上面的代码还存在一定的优化空间, 在于如何更高效的计算一个子字符串是否是回文字串。上述代码函数运用双指针的方法来判定对于一个字符串, 给定起始下标和终止下标, 截取出的子字符串是否是回文字串。但是其中有一定的重复计算存在:\n\n例如给定字符串, 在已知不是回文字串时, 不再需要去双指针操作而可以直接判定它一定不是回文字串。\n\n具体来说, 给定一个字符串s, 长度为, 它成为回文字串的充分必要条件是且是回文字串。\n\n大家如果熟悉动态规划这种算法的话, 我们可以高效地事先一次性计算出, 针对一个字符串, 它的任何子串是否是回文字串, 然后在我们的回溯函数中直接查询即可, 省去了双指针移动判定这一步骤.\n\n具体参考代码如下:\n\n总结\n这道题目在leetcode上是中等，但可以说是hard的题目了，但是代码其实就是按照模板的样子来的。\n\n那么难究竟难在什么地方呢？\n\n我列出如下几个难点：\n\n切割问题可以抽象为组合问题\n如何模拟那些切割线\n切割问题中递归如何终止\n在递归循环中如何截取子串\n如何判断回文\n\n我们平时在做难题的时候，总结出来难究竟难在哪里也是一种需要锻炼的能力。\n\n一些同学可能遇到题目比较难，但是不知道题目难在哪里，反正就是很难。其实这样还是思维不够清晰，这种总结的能力需要多接触多锻炼。\n\n本题我相信很多同学主要卡在了第一个难点上：就是不知道如何切割，甚至知道要用回溯法，也不知道如何用。也就是没有体会到按照求组合问题的套路就可以解决切割。\n\n如果意识到这一点，算是重大突破了。接下来就可以对着模板照葫芦画瓢。\n\n但接下来如何模拟切割线，如何终止，如何截取子串，其实都不好想，最后判断回文算是最简单的了。\n\n关于模拟切割线，其实就是index是上一层已经确定了的分割线，i是这一层试图寻找的新分割线\n\n除了这些难点，本题还有细节，例如：切割过的地方不能重复切割所以递归函数需要传入i + 1。\n\n所以本题应该是一道hard题目了。\n\n可能刷过这道题目的录友都没感受到自己原来克服了这么多难点，就把这道题目AC了，这应该叫做无招胜有招，人码合一。",
+  "java": "class Solution {\n    //保持前几题一贯的格式， initialization\n    List<List<String>> res = new ArrayList<>();\n    List<String> cur = new ArrayList<>();\n    public List<List<String>> partition(String s) {\n        backtracking(s, 0, new StringBuilder());\n        return res;\n    }\n    private void backtracking(String s, int start, StringBuilder sb){\n        //因为是起始位置一个一个加的，所以结束时start一定等于s.length,因为进入backtracking时一定末尾也是回文，所以cur是满足条件的\n        if (start == s.length()){\n            //注意创建一个新的copy\n            res.add(new ArrayList<>(cur));\n            return;\n        }\n        //像前两题一样从前往后搜索，如果发现回文，进入backtracking,起始位置后移一位，循环结束照例移除cur的末位\n        for (int i = start; i < s.length(); i++){\n            sb.append(s.charAt(i));\n            if (check(sb)){\n                cur.add(sb.toString());\n                backtracking(s, i + 1, new StringBuilder());\n                cur.remove(cur.size() -1 );\n            }\n        }\n    }\n\n    //helper method, 检查是否是回文\n    private boolean check(StringBuilder sb){\n        for (int i = 0; i < sb.length()/ 2; i++){\n            if (sb.charAt(i) != sb.charAt(sb.length() - 1 - i)){return false;}\n        }\n        return true;\n    }\n}",
+  "python": "class Solution:\n\n    def partition(self, s: str) -> List[List[str]]:\n        '''\n        递归用于纵向遍历\n        for循环用于横向遍历\n        当切割线迭代至字符串末尾，说明找到一种方法\n        类似组合问题，为了不重复切割同一位置，需要start_index来做标记下一轮递归的起始位置(切割线)\n        '''\n        result = []\n        self.backtracking(s, 0, [], result)\n        return result\n\n    def backtracking(self, s, start_index, path, result ):\n        # Base Case\n        if start_index == len(s):\n            result.append(path[:])\n            return\n        \n        # 单层递归逻辑\n        for i in range(start_index, len(s)):\n            # 此次比其他组合题目多了一步判断：\n            # 判断被截取的这一段子串([start_index, i])是否为回文串\n            if self.is_palindrome(s, start_index, i):\n                path.append(s[start_index:i+1])\n                self.backtracking(s, i+1, path, result)   # 递归纵向遍历：从下一处进行切割，判断其余是否仍为回文串\n                path.pop()             # 回溯\n\n\n    def is_palindrome(self, s: str, start: int, end: int) -> bool:\n        i: int = start        \n        j: int = end\n        while i < j:\n            if s[i] != s[j]:\n                return False\n            i += 1\n            j -= 1\n        return True",
+  "examples": [
+    {
+      "input": "s = \"aab\"",
+      "output": "[[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]"
+    },
+    {
+      "input": "s = \"a\"",
+      "output": "[[\"a\"]]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n * 2ⁿ)",
+    "space": "O(n²)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.html",
+  "fallbackSource": "https://leetcode.cn/problems/palindrome-partitioning/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "本题这涉及到两个关键问题：\n\n1. 切割问题，有不同的切割方式\n2. 判断回文\n\n相信这里不同的切割方式可以搞懵很多同学了。\n\n这种题目，想用for循环暴力解法，可能都不那么容易写出来，所以要换一种暴力的方式，就是回溯。\n\n一些同学可能想不清楚 回溯究竟是如何切割字符串呢？\n\n我们来分析一下切割，其实切割问题类似组合问题。\n\n例如对于字符串abcdef：\n\n组合问题：选取一个a之后，在bcdef中再去选取第二个，选取b之后在cdef中再选取第三个.....。\n切割问题：切割一个a之后，在bcdef中再去切割第二段，切割b之后在cdef中再切割第三段.....。\n\n感受出来了不？\n\n所以切割问题，也可以抽象为一棵树形结构，如图：\n\n递归用来纵向遍历，for循环用来横向遍历，切割线（就是图中的红线）切割到字符串的结尾位置，说明找到了一个切割方法。\n\n此时可以发现，切割问题的回溯搜索的过程和组合问题的回溯搜索的过程是差不多的。\n\n回溯三部曲\n\n递归函数参数\n\n全局变量数组path存放切割后回文的子串，二维数组result存放结果集。 （这两个参数可以放到函数参数里）\n\n本题递归函数参数还需要startIndex，因为切割过的地方，不能重复切割，和组合问题也是保持一致的。\n\n在回溯算法：求组合总和（二）中我们深入探讨了组合问题什么时候需要startIndex，什么时候不需要startIndex。\n\n代码如下：\n\n递归函数终止条件\n\n从树形结构的图中可以看出：切割线切到了字符串最后面，说明找到了一种切割方法，此时就是本层递归的终止条件。\n\n那么在代码里什么是切割线呢？\n\n在处理组合问题的时候，递归参数需要传入startIndex，表示下一轮递归遍历的起始位置，这个startIndex就是切割线。\n\n所以终止条件代码如下：\n\n单层搜索的逻辑\n\n来看看在递归循环中如何截取子串呢？\n\n在for (int i = startIndex; i path中，path用来记录切割过的回文子串。\n\n注意切割过的位置，不能重复切割，所以，backtracking(s, i + 1); 传入下一层的起始位置为i + 1。\n\n判断回文子串\n\n最后我们看一下回文子串要如何判断了，判断一个字符串是否是回文。\n\n可以使用双指针法，一个指针从前向后，一个指针从后向前，如果前后指针所指向的元素是相等的，就是回文字符串了。\n\n那么判断回文的\n\n时间复杂度: O(n 2ⁿ)\n空间复杂度: O(n²)\n\n优化\n\n上面的代码还存在一定的优化空间, 在于如何更高效的计算一个子字符串是否是回文字串。上述代码函数运用双指针的方法来判定对于一个字符串, 给定起始下标和终止下标, 截取出的子字符串是否是回文字串。但是其中有一定的重复计算存在:\n\n例如给定字符串, 在已知不是回文字串时, 不再需要去双指针操作而可以直接判定它一定不是回文字串。\n\n具体来说, 给定一个字符串s, 长度为, 它成为回文字串的充分必要条件是且是回文字串。\n\n大家如果熟悉动态规划这种算法的话, 我们可以高效地事先一次性计算出, 针对一个字符串, 它的任何子串是否是回文字串, 然后在我们的回溯函数中直接查询即可, 省去了双指针移动判定这一步骤.\n\n具体参考代码如下:",
+  "summaryText": "先判断子串是否回文，只在合法段后继续切剩余字符串；路径保存已切出的段。",
+  "tables": [],
+  "images": [
+    {
+      "alt": "131.分割回文串",
+      "url": "https://file1.kamacoder.com/i/algo/131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "131.分割回文串",
+      "url": "https://file1.kamacoder.com/i/algo/131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.jpg",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/131.%E5%88%86%E5%89%B2%E5%9B%9E%E6%96%87%E4%B8%B2.jpg",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过分割回文串掌握回溯相关的可迁移解题模式。",
+  "prerequisites": [
+    "79"
+  ],
+  "recognition": "每次可以切出不同长度的前缀，但切出的每一段都必须是回文。哪些结束位置值得继续递归？",
+  "bruteForce": "直观做法是方法一：预处理 + DFS(回溯)；当输入规模扩大时，需要避免重复扫描并利用题目中的回溯约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "每次可以切出不同长度的前缀，但切出的每一段都必须是回文。哪些结束位置值得继续递归？"
+    },
+    {
+      "level": 2,
+      "text": "先判断子串是否回文，只在合法段后继续切剩余字符串；路径保存已切出的段。"
+    },
+    {
+      "level": 3,
+      "text": "用动态规划预处理任意区间是否回文：两端字符相同且内部回文，长度不足三时只需两端相同。然后从起点递归枚举结束位置，仅把回文段加入路径并递归处理后缀，返回后撤销。起点到字符串末尾时复制路径，得到所有合法分割。"
+    },
+    {
+      "level": 4,
+      "text": "按区间长度从短到长计算 pal[l][r]\nanswer ← 空列表；path ← 空列表\ncut(start)：\n    若 start=s长度：复制 path 加入 answer；返回\n    对 end 从 start 到 s长度−1：\n        若 pal[start][end]：\n            path 追加 s[start..end]\n            cut(end+1)\n            弹出 path 最后一段\ncut(0)；返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "用动态规划预处理任意区间是否回文：两端字符相同且内部回文，长度不足三时只需两端相同。",
+    "然后从起点递归枚举结束位置，仅把回文段加入路径并递归处理后缀，返回后撤销。",
+    "起点到字符串末尾时复制路径，得到所有合法分割。"
+  ],
+  "walkthrough": [
+    "公开示例：s = \"aab\" → [[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足分割回文串约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把分割回文串的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：预处理 + DFS(回溯)，额外空间为O(n²)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "partition",
+    "params": [
+      {
+        "name": "s",
+        "type": "String"
+      }
+    ],
+    "returns": "List<List<String>>",
+    "compare": "unordered-array"
+  },
+  "cases": [
+    {
+      "id": "131-basic-1",
+      "input": {
+        "s": "aab"
+      },
+      "expected": [
+        [
+          "a",
+          "a",
+          "b"
+        ],
+        [
+          "aa",
+          "b"
+        ]
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "131-boundary-1",
+      "input": {
+        "s": "a"
+      },
+      "expected": [
+        [
+          "a"
+        ]
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "单字符。"
+    },
+    {
+      "id": "131-adversarial-1",
+      "input": {
+        "s": "aba"
+      },
+      "expected": [
+        [
+          "a",
+          "b",
+          "a"
+        ],
+        [
+          "aba"
+        ]
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "整串回文与逐字切分都要保留。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ns = \"aab\"",
+    "output": "[[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]",
+    "examples": [
+      {
+        "input": "s = \"aab\"",
+        "output": "[[\"a\",\"a\",\"b\"],[\"aa\",\"b\"]]"
+      }
+    ]
+  }
+}

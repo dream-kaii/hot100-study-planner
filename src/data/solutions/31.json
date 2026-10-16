@@ -1,0 +1,172 @@
+{
+  "id": "31",
+  "description": "整数数组的一个 排列 就是将其所有成员以序列或线性顺序排列。\n\n例如，arr = [1,2,3] ，以下这些都可以视作 arr 的排列：[1,2,3]、[1,3,2]、[3,1,2]、[2,3,1] 。\n\n整数数组的 下一个排列 是指其整数的下一个字典序更大的排列。更正式地，如果数组的所有排列根据其字典顺序从小到大排列在一个容器中，那么数组的 下一个排列 就是在这个有序容器中排在它后面的那个排列。如果不存在下一个更大的排列，那么这个数组必须重排为字典序最小的排列（即，其元素按升序排列）。\n\n例如，arr = [1,2,3] 的下一个排列是 [1,3,2] 。\n类似地，arr = [2,3,1] 的下一个排列是 [3,1,2] 。\n而 arr = [3,2,1] 的下一个排列是 [1,2,3] ，因为 [3,2,1] 不存在一个字典序更大的排列。\n\n给你一个整数数组 nums ，找出 nums 的下一个排列。\n\n必须 原地 修改，只允许使用额外常数空间。\n\n示例 1：\n\n输入：nums = [1,2,3]\n输出：[1,3,2]\n\n示例 2：\n\n输入：nums = [3,2,1]\n输出：[1,2,3]\n\n示例 3：\n\n输入：nums = [1,1,5]\n输出：[1,5,1]\n\n提示：\n\n1 <= nums.length <= 100\n0 <= nums[i] <= 100",
+  "summary": "从右向左找到第一个上升位置 i，它右边已经非递增。若找不到，整个排列最大，直接反转成最小。否则从最右边寻找第一个大于 nums[i] 的数并交换，再把 i 后的非递增后缀反转成递增。这样前缀改变尽可能靠右且增幅最小，后缀也取最小值。",
+  "explanation": "一些同学可能手动写排列的顺序，都没有写对，那么写程序的话思路一定是有问题的了，我这里以1234为例子，把全排列都列出来。可以参考一下规律所在：\n\n如图：\n\n以求1243为例，流程如图：\n\n对应的代码如下：\n\n总结",
+  "java": "class Solution {\n    public void nextPermutation(int[] nums) {\n        for (int i = nums.length - 1; i >= 0; i--) {\n            for (int j = nums.length - 1; j > i; j--) {\n                if (nums[j] > nums[i]) {\n                    // 交换\n                    int temp = nums[i];\n                    nums[i] = nums[j];\n                    nums[j] = temp;\n                    // [i + 1, nums.length) 内元素升序排序\n                    Arrays.sort(nums, i + 1, nums.length);\n                    return;\n                }\n            }\n        }\n        Arrays.sort(nums); // 不存在下一个更大的排列，则将数字重新排列成最小的排列（即升序排列）。\n    }\n}",
+  "python": "class Solution:\n    def nextPermutation(self, nums: List[int]) -> None:\n        \"\"\"\n        Do not return anything, modify nums in-place instead.\n        \"\"\"\n        length = len(nums)\n        for i in range(length - 2, -1, -1): # 从倒数第二个开始\n            if nums[i]>=nums[i+1]: continue # 剪枝去重\n            for j in range(length - 1, i, -1):\n                if nums[j] > nums[i]:\n                    nums[j], nums[i] = nums[i], nums[j]\n                    self.reverse(nums, i + 1, length - 1)\n                    return  \n        self.reverse(nums, 0, length - 1)\n    \n    def reverse(self, nums: List[int], left: int, right: int) -> None:\n        while left < right:\n            nums[left], nums[right] = nums[right], nums[left]\n            left += 1\n            right -= 1\n            \n\"\"\"\n265 / 265 个通过测试用例\n状态：通过\n执行用时: 36 ms\n内存消耗: 14.9 MB\n\"\"\"",
+  "examples": [
+    {
+      "input": "nums = [1,2,3]",
+      "output": "[1,3,2]"
+    },
+    {
+      "input": "nums = [3,2,1]",
+      "output": "[1,2,3]"
+    },
+    {
+      "input": "nums = [1,1,5]",
+      "output": "[1,5,1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0031.%E4%B8%8B%E4%B8%80%E4%B8%AA%E6%8E%92%E5%88%97.html",
+  "fallbackSource": "https://leetcode.cn/problems/next-permutation/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0031.%E4%B8%8B%E4%B8%80%E4%B8%AA%E6%8E%92%E5%88%97.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0031.%E4%B8%8B%E4%B8%80%E4%B8%AA%E6%8E%92%E5%88%97.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0031.%E4%B8%8B%E4%B8%80%E4%B8%AA%E6%8E%92%E5%88%97.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "一些同学可能手动写排列的顺序，都没有写对，那么写程序的话思路一定是有问题的了，我这里以1234为例子，把全排列都列出来。可以参考一下规律所在：\n\n如图：\n\n以求1243为例，流程如图：\n\n对应的代码如下：",
+  "tables": [],
+  "images": [],
+  "summaryText": "找最右侧 nums[i]<nums[i+1] 的位置，再与右边最小的更大元素交换，并反转后缀。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过下一个排列掌握技巧相关的可迁移解题模式。",
+  "prerequisites": [
+    "189"
+  ],
+  "recognition": "要得到刚好更大的排列，应尽量保持左边不变。从右往左看，哪一位还能稍微增大？",
+  "bruteForce": "直观做法是若生成全部排列再取当前序列的后继，时间复杂度为 O(n!)。 n ≤ 100，无法通过，且题目要求原地修改、仅使用常数额外空间。；当输入规模扩大时，需要避免重复扫描并利用题目中的技巧约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "要得到刚好更大的排列，应尽量保持左边不变。从右往左看，哪一位还能稍微增大？"
+    },
+    {
+      "level": 2,
+      "text": "找最右侧 nums[i]<nums[i+1] 的位置，再与右边最小的更大元素交换，并反转后缀。"
+    },
+    {
+      "level": 3,
+      "text": "从右向左找到第一个上升位置 i，它右边已经非递增。若找不到，整个排列最大，直接反转成最小。否则从最右边寻找第一个大于 nums[i] 的数并交换，再把 i 后的非递增后缀反转成递增。这样前缀改变尽可能靠右且增幅最小，后缀也取最小值。"
+    },
+    {
+      "level": 4,
+      "text": "i ← n−2\n当 i≥0 且 nums[i]≥nums[i+1]：i 减一\n若 i≥0：\n    j ← n−1\n    当 nums[j]≤nums[i]：j 减一\n    交换 nums[i],nums[j]\n反转 nums[i+1..n−1]\n// i 为 −1 时等价于反转整个数组",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "从右向左找到第一个上升位置 i，它右边已经非递增。",
+    "若找不到，整个排列最大，直接反转成最小。",
+    "否则从最右边寻找第一个大于 nums[i] 的数并交换，再把 i 后的非递增后缀反转成递增。",
+    "这样前缀改变尽可能靠右且增幅最小，后缀也取最小值。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,2,3] → [1,3,2]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足下一个排列约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把下一个排列的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若生成全部排列再取当前序列的后继，时间复杂度为 O(n!)。 n ≤ 100，无法通过，且题目要求原地修改、仅使用常数额外空间。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "nextPermutation",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "void",
+    "compare": "in-place-mutate"
+  },
+  "cases": [
+    {
+      "id": "31-basic-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3
+        ]
+      },
+      "expected": [
+        1,
+        3,
+        2
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "31-boundary-1",
+      "input": {
+        "nums": [
+          1,
+          1,
+          5
+        ]
+      },
+      "expected": [
+        1,
+        5,
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用下一个排列的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "31-adversarial-1",
+      "input": {
+        "nums": [
+          1,
+          1,
+          5
+        ]
+      },
+      "expected": [
+        1,
+        5,
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查下一个排列的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,2,3]",
+    "output": "[1,3,2]",
+    "examples": [
+      {
+        "input": "nums = [1,2,3]",
+        "output": "[1,3,2]"
+      }
+    ]
+  }
+}

@@ -1,0 +1,214 @@
+{
+  "id": "200",
+  "description": "给你一个由 '1'（陆地）和 '0'（水）组成的的二维网格，请你计算网格中岛屿的数量。\n\n岛屿总是被水包围，并且每座岛屿只能由水平方向和/或竖直方向上相邻的陆地连接形成。\n\n此外，你可以假设该网格的四条边均被水包围。\n\n示例 1：\n\n输入：grid = [\n['1','1','1','1','0'],\n['1','1','0','1','0'],\n['1','1','0','0','0'],\n['0','0','0','0','0']\n]\n输出：1\n\n示例 2：\n\n输入：grid = [\n['1','1','0','0','0'],\n['1','1','0','0','0'],\n['0','0','1','0','0'],\n['0','0','0','1','1']\n]\n输出：3\n\n提示：\n\nm == grid.length\nn == grid[i].length\n1 <= m, n <= 300\ngrid[i][j] 的值为 '0' 或 '1'",
+  "summary": "逐格扫描网格，遇到未访问的陆地就发现一座新岛，计数加一，并立即从这里搜索所有上下左右连通的陆地。进入陆地时先标记再搜索邻居，避免互相递归。水域、越界或已访问位置直接返回，扫描结束后每个连通块恰好贡献一次。",
+  "explanation": "注意题目中每座岛屿只能由水平方向和/或竖直方向上相邻的陆地连接形成。\n\n也就是说斜角度链接是不算了， 例如示例二，是三个岛屿，如图：\n\n这道题题目是 DFS，BFS，并查集，基础题目。\n\n本题思路，是用遇到一个没有遍历过的节点陆地，计数器就加一，然后把该节点陆地所能遍历到的陆地都标记上。\n\n在遇到标记过的陆地节点和海洋节点的时候直接跳过。 这样计数器就是最终岛屿的数量。\n\n那么如果把节点陆地所能遍历到的陆地都标记上呢，就可以使用 DFS，BFS或者并查集。\n\n广度优先搜索\n\n不少同学用广搜做这道题目的时候，超时了。 这里有一个广搜中很重要的细节：\n\n根本原因是只要 加入队列就代表 走过，就需要标记，而不是从队列拿出来的时候再去标记走过。\n\n很多同学可能感觉这有区别吗？\n\n如果从队列拿出节点，再去标记这个节点走过，就会发生下图所示的结果，会导致很多节点重复加入队列。\n\n超时写法 （从队列中取出节点再标记）\n\n加入队列 就代表走过，立刻标记，正确写法：\n\n以上两个版本其实，其实只有细微区别，就是 visited[x][y] = true; 放在的地方，着去取决于我们对 代码中队列的定义，队列中的节点就表示已经走过的节点。 所以只要加入队列，立即标记该节点走过。\n\n本题完整广搜代码：\n\n总结",
+  "java": "class Solution {\n\n    boolean[][] visited;\n    int[][] move = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};\n\n    public int numIslands(char[][] grid) {\n        int res = 0;\n        visited = new boolean[grid.length][grid[0].length];\n        for(int i = 0; i < grid.length; i++) {\n            for(int j = 0; j < grid[0].length; j++) {\n                if(!visited[i][j] && grid[i][j] == '1') {\n                    bfs(grid, i, j);\n                    res++;\n                }\n            }\n        }\n        return res;\n    }\n\n    //将这片岛屿上的所有陆地都访问到\n    public void bfs(char[][] grid, int y, int x) {\n        Deque<int[]> queue = new ArrayDeque<>();\n        queue.offer(new int[]{y, x});\n        visited[y][x] = true;\n        while(!queue.isEmpty()) {\n            int[] cur = queue.poll();\n            int m = cur[0];\n            int n = cur[1];\n            for(int i = 0; i < 4; i++) {\n                int nexty = m + move[i][0];\n                int nextx = n + move[i][1];\n                if(nextx < 0 || nexty == grid.length || nexty < 0 || nextx == grid[0].length) continue;\n                if(!visited[nexty][nextx] && grid[nexty][nextx] == '1') {\n                    queue.offer(new int[]{nexty, nextx}); \n                    visited[nexty][nextx] = true; //只要加入队列就标记为访问\n                }\n            }\n        }\n    }\n}",
+  "python": "class Solution:\n    def __init__(self):\n        self.dirs = [[0, 1], [1, 0], [-1, 0], [0, -1]] \n        \n    def numIslands(self, grid: List[List[str]]) -> int:\n        m = len(grid)\n        n = len(grid[0])\n        visited = [[False]*n for _ in range(m)]\n        res = 0\n        for i in range(m):\n            for j in range(n):\n                if visited[i][j] == False and grid[i][j] == '1':\n                    res += 1\n                    self.bfs(grid, i, j, visited)  # Call bfs within this condition\n        return res\n\n    def bfs(self, grid, i, j, visited):\n        q = deque()\n        q.append((i,j))\n        visited[i][j] = True\n        while q:\n            x, y = q.popleft()\n            for k in range(4):\n                next_i = x + self.dirs[k][0]\n                next_j = y + self.dirs[k][1]\n\n                if next_i < 0 or next_i >= len(grid):\n                    continue \n                if next_j < 0 or next_j >= len(grid[0]):\n                    continue\n                if visited[next_i][next_j]:\n                    continue\n                if grid[next_i][next_j] == '0':\n                    continue\n                q.append((next_i, next_j))\n                visited[next_i][next_j] = True",
+  "examples": [
+    {
+      "input": "grid = [\n  ['1','1','1','1','0'],\n  ['1','1','0','1','0'],\n  ['1','1','0','0','0'],\n  ['0','0','0','0','0']\n]",
+      "output": "1"
+    },
+    {
+      "input": "grid = [\n  ['1','1','0','0','0'],\n  ['1','1','0','0','0'],\n  ['0','0','1','0','0'],\n  ['0','0','0','1','1']\n]",
+      "output": "3"
+    }
+  ],
+  "complexity": {
+    "time": "O(m×n)",
+    "space": "O(m×n)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0200.%E5%B2%9B%E5%B1%BF%E6%95%B0%E9%87%8F.%E5%B9%BF%E6%90%9C%E7%89%88.html",
+  "fallbackSource": "https://leetcode.cn/problems/number-of-islands/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0200.%E5%B2%9B%E5%B1%BF%E6%95%B0%E9%87%8F.%E5%B9%BF%E6%90%9C%E7%89%88.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0200.%E5%B2%9B%E5%B1%BF%E6%95%B0%E9%87%8F.%E5%B9%BF%E6%90%9C%E7%89%88.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0200.%E5%B2%9B%E5%B1%BF%E6%95%B0%E9%87%8F.%E5%B9%BF%E6%90%9C%E7%89%88.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "注意题目中每座岛屿只能由水平方向和/或竖直方向上相邻的陆地连接形成。\n\n也就是说斜角度链接是不算了， 例如示例二，是三个岛屿，如图：\n\n这道题题目是 DFS，BFS，并查集，基础题目。\n\n本题思路，是用遇到一个没有遍历过的节点陆地，计数器就加一，然后把该节点陆地所能遍历到的陆地都标记上。\n\n在遇到标记过的陆地节点和海洋节点的时候直接跳过。 这样计数器就是最终岛屿的数量。\n\n那么如果把节点陆地所能遍历到的陆地都标记上呢，就可以使用 DFS，BFS或者并查集。\n\n广度优先搜索\n\n不少同学用广搜做这道题目的时候，超时了。 这里有一个广搜中很重要的细节：\n\n根本原因是只要 加入队列就代表 走过，就需要标记，而不是从队列拿出来的时候再去标记走过。\n\n很多同学可能感觉这有区别吗？\n\n如果从队列拿出节点，再去标记这个节点走过，就会发生下图所示的结果，会导致很多节点重复加入队列。\n\n超时写法 （从队列中取出节点再标记）\n\n加入队列 就代表走过，立刻标记，正确写法：\n\n以上两个版本其实，其实只有细微区别，就是 visited[x][y] = true; 放在的地方，着去取决于我们对 代码中队列的定义，队列中的节点就表示已经走过的节点。 所以只要加入队列，立即标记该节点走过。\n\n本题完整广搜代码：",
+  "tables": [],
+  "images": [
+    {
+      "alt": "题解图片",
+      "url": "https://file1.kamacoder.com/i/algo/20220726093256.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220726093256.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "图一",
+      "url": "https://file1.kamacoder.com/i/algo/20220726094200.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220726094200.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    },
+    {
+      "alt": "图二",
+      "url": "https://file1.kamacoder.com/i/algo/20220727100846.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20220727100846.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "每发现一个未访问的陆地就将答案加一，并用搜索把整块连通陆地标记为已访问。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过岛屿数量掌握图论相关的可迁移解题模式。",
+  "prerequisites": [
+    "79"
+  ],
+  "recognition": "同一座岛的陆地通过上下左右相连。发现一块新陆地后，怎样确保整座岛只被计数一次？",
+  "bruteForce": "直观做法是若将网格中每个值为 1 的格子单独计为一座岛，则四连通的陆地会被重复计数。 m,n ≤ 300，整图遍历可行，但须在同一次搜索中把同一连通块全部消掉。；当输入规模扩大时，需要避免重复扫描并利用题目中的图论约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "同一座岛的陆地通过上下左右相连。发现一块新陆地后，怎样确保整座岛只被计数一次？"
+    },
+    {
+      "level": 2,
+      "text": "每发现一个未访问的陆地就将答案加一，并用搜索把整块连通陆地标记为已访问。"
+    },
+    {
+      "level": 3,
+      "text": "逐格扫描网格，遇到未访问的陆地就发现一座新岛，计数加一，并立即从这里搜索所有上下左右连通的陆地。进入陆地时先标记再搜索邻居，避免互相递归。水域、越界或已访问位置直接返回，扫描结束后每个连通块恰好贡献一次。"
+    },
+    {
+      "level": 4,
+      "text": "count ← 0\nflood(row,col)：\n    若越界或不是未访问陆地：返回\n    标记当前陆地已访问\n    对四个邻格：flood(邻格)\n对每个格子 (row,col)：\n    若为未访问陆地：\n        count ← count+1；flood(row,col)\n返回 count",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "逐格扫描网格，遇到未访问的陆地就发现一座新岛，计数加一，并立即从这里搜索所有上下左右连通的陆地。",
+    "进入陆地时先标记再搜索邻居，避免互相递归。",
+    "水域、越界或已访问位置直接返回，扫描结束后每个连通块恰好贡献一次。"
+  ],
+  "walkthrough": [
+    "公开示例：grid = [\n['1','1','1','1','0'],\n['1','1','0','1','0'],\n['1','1','0','0','0'],\n['0','0','0','0','0']\n] → 1。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足岛屿数量约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把岛屿数量的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用若将网格中每个值为 1 的格子单独计为一座岛，则四连通的陆地会被重复计数。 m,n ≤ 300，整图遍历可行，但须在同一次搜索中把同一连通块全部消掉。，额外空间为O(m×n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "numIslands",
+    "params": [
+      {
+        "name": "grid",
+        "type": "char[][]"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "200-basic-1",
+      "input": {
+        "grid": [
+          [
+            "1",
+            "1",
+            "1",
+            "1",
+            "0"
+          ],
+          [
+            "1",
+            "1",
+            "0",
+            "1",
+            "0"
+          ],
+          [
+            "1",
+            "1",
+            "0",
+            "0",
+            "0"
+          ],
+          [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ]
+        ]
+      },
+      "expected": 1,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "200-boundary-1",
+      "input": {
+        "grid": [
+          [
+            "0"
+          ]
+        ]
+      },
+      "expected": 0,
+      "tags": [
+        "boundary"
+      ],
+      "note": "单格水域。"
+    },
+    {
+      "id": "200-adversarial-1",
+      "input": {
+        "grid": [
+          [
+            "1",
+            "0",
+            "1"
+          ],
+          [
+            "0",
+            "1",
+            "0"
+          ],
+          [
+            "1",
+            "0",
+            "1"
+          ]
+        ]
+      },
+      "expected": 5,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "对角线相邻不算连通。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\ngrid = [\n  ['1','1','1','1','0'],\n  ['1','1','0','1','0'],\n  ['1','1','0','0','0'],\n  ['0','0','0','0','0']\n]",
+    "output": "1",
+    "examples": [
+      {
+        "input": "grid = [\n  ['1','1','1','1','0'],\n  ['1','1','0','1','0'],\n  ['1','1','0','0','0'],\n  ['0','0','0','0','0']\n]",
+        "output": "1"
+      }
+    ]
+  }
+}

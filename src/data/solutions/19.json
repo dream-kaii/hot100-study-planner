@@ -1,0 +1,184 @@
+{
+  "id": "19",
+  "description": "给你一个链表，删除链表的倒数第 n 个结点，并且返回链表的头结点。\n\n示例 1：\n\n输入：head = [1,2,3,4,5], n = 2\n输出：[1,2,3,5]\n\n示例 2：\n\n输入：head = [1], n = 1\n输出：[]\n\n示例 3：\n\n输入：head = [1,2], n = 1\n输出：[1]\n\n提示：\n\n链表中结点的数目为 sz\n1 <= sz <= 30\n0 <= Node.val <= 100\n1 <= n <= sz\n\n进阶：你能尝试使用一趟扫描实现吗？",
+  "summary": "创建指向头节点的哑节点，快慢指针都从哑节点出发。快指针先前进 n 步，随后二者同步前进，直到快指针停在最后一个节点。此时慢指针位于倒数第 n 个节点之前，修改它的 next 跳过目标即可。哑节点让删除头节点和其他位置用同一套操作。",
+  "explanation": "双指针的经典应用，如果要删除倒数第n个节点，让fast移动n步，然后让fast和slow同时移动，直到fast指向链表末尾。删掉slow所指向的节点就可以了。\n\n思路是这样的，但要注意一些细节。\n\n分为如下几步：\n\n首先这里我推荐大家使用虚拟头结点，这样方便处理删除实际头结点的逻辑，如果虚拟头结点不清楚，可以看这篇： 链表：听说用虚拟头节点会方便很多？\n\n定义fast指针和slow指针，初始值为虚拟头结点，如图：\n\nfast首先走n + 1步 ，为什么是n+1呢，因为只有这样同时移动的时候slow才能指向删除节点的上一个节点（方便做删除操作），如图：\n\nfast和slow同时移动，直到fast指向末尾，如题：\n\n//图片中有错别词：应该将“只到”改为“直到”\n删除slow指向的下一个节点，如图：\n\n此时不难写出如下\n\n时间复杂度: O(n)\n空间复杂度: O(1)\n\n总结",
+  "java": "class Solution {\n    public ListNode removeNthFromEnd(ListNode head, int n) {\n        //新建一个虚拟头节点指向head\n        ListNode dummyNode = new ListNode(0);\n        dummyNode.next = head;\n        //快慢指针指向虚拟头节点\n        ListNode fastIndex = dummyNode;\n        ListNode slowIndex = dummyNode;\n\n        // 只要快慢指针相差 n 个结点即可\n        for (int i = 0; i <= n; i++) {\n            fastIndex = fastIndex.next;\n        }\n        while (fastIndex != null) {\n            fastIndex = fastIndex.next;\n            slowIndex = slowIndex.next;\n        }\n\n        // 此时 slowIndex 的位置就是待删除元素的前一个位置。\n        // 具体情况可自己画一个链表长度为 3 的图来模拟代码来理解\n        // 检查 slowIndex.next 是否为 null，以避免空指针异常\n        if (slowIndex.next != null) {\n            slowIndex.next = slowIndex.next.next;\n        }\n        return dummyNode.next;\n    }\n}",
+  "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, val=0, next=None):\n#         self.val = val\n#         self.next = next\n\nclass Solution:\n    def removeNthFromEnd(self, head: ListNode, n: int) -> ListNode:\n        # 创建一个虚拟节点，并将其下一个指针设置为链表的头部\n        dummy_head = ListNode(0, head)\n        \n        # 创建两个指针，慢指针和快指针，并将它们初始化为虚拟节点\n        slow = fast = dummy_head\n        \n        # 快指针比慢指针快 n+1 步\n        for i in range(n+1):\n            fast = fast.next\n        \n        # 移动两个指针，直到快速指针到达链表的末尾\n        while fast:\n            slow = slow.next\n            fast = fast.next\n        \n        # 通过更新第 (n-1) 个节点的 next 指针删除第 n 个节点\n        slow.next = slow.next.next\n        \n        return dummy_head.next",
+  "examples": [
+    {
+      "input": "head = [1,2,3,4,5], n = 2",
+      "output": "[1,2,3,5]"
+    },
+    {
+      "input": "head = [1], n = 1",
+      "output": "[]"
+    },
+    {
+      "input": "head = [1,2], n = 1",
+      "output": "[1]"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "solutionSource": "https://www.programmercarl.com/0019.%E5%88%A0%E9%99%A4%E9%93%BE%E8%A1%A8%E7%9A%84%E5%80%92%E6%95%B0%E7%AC%ACN%E4%B8%AA%E8%8A%82%E7%82%B9.html",
+  "fallbackSource": "https://leetcode.cn/problems/remove-nth-node-from-end-of-list/",
+  "sources": [
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录",
+      "url": "https://www.programmercarl.com/0019.%E5%88%A0%E9%99%A4%E9%93%BE%E8%A1%A8%E7%9A%84%E5%80%92%E6%95%B0%E7%AC%ACN%E4%B8%AA%E8%8A%82%E7%82%B9.html",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Java 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0019.%E5%88%A0%E9%99%A4%E9%93%BE%E8%A1%A8%E7%9A%84%E5%80%92%E6%95%B0%E7%AC%ACN%E4%B8%AA%E8%8A%82%E7%82%B9.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "codesuixianglu",
+      "label": "代码随想录 Python 代码",
+      "url": "https://github.com/youngyangyang04/leetcode-master/blob/master/problems/0019.%E5%88%A0%E9%99%A4%E9%93%BE%E8%A1%A8%E7%9A%84%E5%80%92%E6%95%B0%E7%AC%ACN%E4%B8%AA%E8%8A%82%E7%82%B9.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "双指针的经典应用，如果要删除倒数第n个节点，让fast移动n步，然后让fast和slow同时移动，直到fast指向链表末尾。删掉slow所指向的节点就可以了。\n\n思路是这样的，但要注意一些细节。\n\n分为如下几步：\n\n首先这里我推荐大家使用虚拟头结点，这样方便处理删除实际头结点的逻辑，如果虚拟头结点不清楚，可以看这篇： 链表：听说用虚拟头节点会方便很多？\n\n定义fast指针和slow指针，初始值为虚拟头结点，如图：\n\nfast首先走n + 1步 ，为什么是n+1呢，因为只有这样同时移动的时候slow才能指向删除节点的上一个节点（方便做删除操作），如图：\n\nfast和slow同时移动，直到fast指向末尾，如题：\n\n//图片中有错别词：应该将“只到”改为“直到”\n删除slow指向的下一个节点，如图：\n\n此时不难写出如下\n\n时间复杂度: O(n)\n空间复杂度: O(1)",
+  "tables": [],
+  "images": [
+    {
+      "alt": "19.删除链表的倒数第N个节点",
+      "url": "https://file1.kamacoder.com/i/algo/20210510085957392.png",
+      "sourceUrl": "https://file1.kamacoder.com/i/algo/20210510085957392.png",
+      "author": "原页面未标注",
+      "license": "以 sourceUrl 页面声明为准"
+    }
+  ],
+  "summaryText": "加入哑节点，快指针先走 n 步，再让快慢指针同步走到 fast.next 为空。",
+  "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+  "learningGoal": "通过删除链表的倒数第 N 个结点掌握链表相关的可迁移解题模式。",
+  "prerequisites": [
+    "141"
+  ],
+  "recognition": "删除节点需要找到它前一个节点。如何让一个指针到末尾时，另一个正好停在目标前面？",
+  "bruteForce": "直观做法是先遍历一遍得到长度 L，再走 L - n 步删除结点，时间复杂度为 O(n)。在 sz ≤ 30 的范围内可以接受，但题目进阶要求一趟扫描。；当输入规模扩大时，需要避免重复扫描并利用题目中的链表约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "删除节点需要找到它前一个节点。如何让一个指针到末尾时，另一个正好停在目标前面？"
+    },
+    {
+      "level": 2,
+      "text": "加入哑节点，快指针先走 n 步，再让快慢指针同步走到 fast.next 为空。"
+    },
+    {
+      "level": 3,
+      "text": "创建指向头节点的哑节点，快慢指针都从哑节点出发。快指针先前进 n 步，随后二者同步前进，直到快指针停在最后一个节点。此时慢指针位于倒数第 n 个节点之前，修改它的 next 跳过目标即可。哑节点让删除头节点和其他位置用同一套操作。"
+    },
+    {
+      "level": 4,
+      "text": "dummy.next ← head；fast ← dummy；slow ← dummy\n重复 n 次：\n    fast ← fast.next\n当 fast.next 不为空：\n    fast ← fast.next\n    slow ← slow.next\nslow.next ← slow.next.next\n返回 dummy.next",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "创建指向头节点的哑节点，快慢指针都从哑节点出发。",
+    "快指针先前进 n 步，随后二者同步前进，直到快指针停在最后一个节点。",
+    "此时慢指针位于倒数第 n 个节点之前，修改它的 next 跳过目标即可。",
+    "哑节点让删除头节点和其他位置用同一套操作。"
+  ],
+  "walkthrough": [
+    "公开示例：head = [1,2,3,4,5], n = 2 → [1,2,3,5]。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足删除链表的倒数第 N 个结点约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把删除链表的倒数第 N 个结点的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用先遍历一遍得到长度 L，再走 L - n 步删除结点，时间复杂度为 O(n)。在 sz ≤ 30 的范围内可以接受，但题目进阶要求一趟扫描。，额外空间为O(1)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "removeNthFromEnd",
+    "params": [
+      {
+        "name": "head",
+        "type": "ListNode"
+      },
+      {
+        "name": "n",
+        "type": "int"
+      }
+    ],
+    "returns": "ListNode",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "19-basic-1",
+      "input": {
+        "head": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "n": 2
+      },
+      "expected": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "19-boundary-1",
+      "input": {
+        "head": [
+          1,
+          2
+        ],
+        "n": 1
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用删除链表的倒数第 N 个结点的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "19-adversarial-1",
+      "input": {
+        "head": [
+          1,
+          2
+        ],
+        "n": 1
+      },
+      "expected": [
+        1
+      ],
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查删除链表的倒数第 N 个结点的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nhead = [1,2,3,4,5], n = 2",
+    "output": "[1,2,3,5]",
+    "examples": [
+      {
+        "input": "head = [1,2,3,4,5], n = 2",
+        "output": "[1,2,3,5]"
+      }
+    ]
+  }
+}

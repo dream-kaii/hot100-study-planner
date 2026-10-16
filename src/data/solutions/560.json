@@ -1,0 +1,162 @@
+{
+  "id": "560",
+  "description": "给你一个整数数组 nums 和一个整数 k ，请你统计并返回 该数组中和为 k 的子数组的个数 。\n\n子数组是数组中元素的连续非空序列。\n\n示例 1：\n\n输入：nums = [1,1,1], k = 2\n输出：2\n\n示例 2：\n\n输入：nums = [1,2,3], k = 3\n输出：2\n\n提示：\n\n1 <= nums.length <= 2 104\n-1000 <= nums[i] <= 1000\n-107 <= k <= 107",
+  "summary": "令空前缀和零出现一次。扫描数组并累加 prefix，每一步先将历史中 prefix−k 的出现次数加入答案，再增加 prefix 的次数。前缀和之差正好是某段连续子数组的和，次数能处理多个相同前缀；数组含负数也不影响这个关系。",
+  "explanation": "方法一：哈希表 + 前缀和\n\n思考\n\n统计和为 k 的子数组个数。枚举两端是 O(n²)，在 n ≤ 2×10⁴ 时偏紧。\n\n若前缀和为 s，则需要此前有多少个前缀等于 s-k。哈希表统计已出现的前缀和次数，初值 cnt[0]=1 表示空前缀。边走边查再更新，避免用到当前下标自己。\n\n我们定义一个哈希表 cnt，用于存储数组 nums 的前缀和出现的次数。初始时，我们将 cnt[0] 的值设为 1，表示前缀和 0 出现了一次。\n\n我们遍历数组 nums，计算前缀和 s，然后将 cnt[s - k] 的值累加到答案中，并将 cnt[s] 的值增加 1。\n\n遍历结束后，我们返回答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为数组 nums 的长度。\n\n总结",
+  "java": "class Solution {\n    public int subarraySum(int[] nums, int k) {\n        Map<Integer, Integer> cnt = new HashMap<>();\n        cnt.put(0, 1);\n        int ans = 0, s = 0;\n        for (int x : nums) {\n            s += x;\n            ans += cnt.getOrDefault(s - k, 0);\n            cnt.merge(s, 1, Integer::sum);\n        }\n        return ans;\n    }\n}",
+  "python": "class Solution:\n    def subarraySum(self, nums: List[int], k: int) -> int:\n        cnt = Counter({0: 1})\n        ans = s = 0\n        for x in nums:\n            s += x\n            ans += cnt[s - k]\n            cnt[s] += 1\n        return ans",
+  "examples": [
+    {
+      "input": "nums = [1,1,1], k = 2",
+      "output": "2"
+    },
+    {
+      "input": "nums = [1,2,3], k = 3",
+      "output": "2"
+    }
+  ],
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "solutionSource": "https://leetcode.cn/problems/subarray-sum-equals-k/",
+  "fallbackSource": "https://leetcode.cn/problems/subarray-sum-equals-k/",
+  "sources": [
+    {
+      "type": "official",
+      "label": "力扣题解",
+      "url": "https://leetcode.cn/problems/subarray-sum-equals-k/",
+      "purpose": "思路参考"
+    },
+    {
+      "type": "community",
+      "label": "Java 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0500-0599/0560.Subarray%20Sum%20Equals%20K/README.md",
+      "purpose": "java 代码参考"
+    },
+    {
+      "type": "community",
+      "label": "Python 代码来源",
+      "url": "https://github.com/doocs/leetcode/blob/main/solution/0500-0599/0560.Subarray%20Sum%20Equals%20K/README.md",
+      "purpose": "python 代码参考"
+    }
+  ],
+  "thinking": "方法一：哈希表 + 前缀和\n\n思考\n\n统计和为 k 的子数组个数。枚举两端是 O(n²)，在 n ≤ 2×10⁴ 时偏紧。\n\n若前缀和为 s，则需要此前有多少个前缀等于 s-k。哈希表统计已出现的前缀和次数，初值 cnt[0]=1 表示空前缀。边走边查再更新，避免用到当前下标自己。\n\n我们定义一个哈希表 cnt，用于存储数组 nums 的前缀和出现的次数。初始时，我们将 cnt[0] 的值设为 1，表示前缀和 0 出现了一次。\n\n我们遍历数组 nums，计算前缀和 s，然后将 cnt[s - k] 的值累加到答案中，并将 cnt[s] 的值增加 1。\n\n遍历结束后，我们返回答案。\n\n时间复杂度 O(n)，空间复杂度 O(n)。其中 n 为数组 nums 的长度。",
+  "summaryText": "统计每个前缀和出现的次数，当前贡献是 prefix−k 的历史次数；先查询再加入当前前缀。",
+  "tables": [],
+  "images": [],
+  "sourceNote": "代码随想录仓库未收录此题，已使用力扣题解作为备用来源。",
+  "learningGoal": "通过和为 K 的子数组掌握子串相关的可迁移解题模式。",
+  "prerequisites": [
+    "438"
+  ],
+  "recognition": "若前缀和为 prefix，那么以当前位置结尾、和为 k 的子数组需要哪一个更早的前缀和？",
+  "bruteForce": "直观做法是方法一：哈希表 + 前缀和；当输入规模扩大时，需要避免重复扫描并利用题目中的子串约束。",
+  "hints": [
+    {
+      "level": 1,
+      "text": "若前缀和为 prefix，那么以当前位置结尾、和为 k 的子数组需要哪一个更早的前缀和？"
+    },
+    {
+      "level": 2,
+      "text": "统计每个前缀和出现的次数，当前贡献是 prefix−k 的历史次数；先查询再加入当前前缀。"
+    },
+    {
+      "level": 3,
+      "text": "令空前缀和零出现一次。扫描数组并累加 prefix，每一步先将历史中 prefix−k 的出现次数加入答案，再增加 prefix 的次数。前缀和之差正好是某段连续子数组的和，次数能处理多个相同前缀；数组含负数也不影响这个关系。"
+    },
+    {
+      "level": 4,
+      "text": "count ← {0:1}，prefix ← 0，answer ← 0\n对每个数 x：\n    prefix ← prefix+x\n    wanted ← prefix−k\n    answer ← answer+count 中 wanted 的次数\n    count[prefix] 的次数加一\n返回 answer",
+      "kind": "pseudocode"
+    }
+  ],
+  "steps": [
+    "令空前缀和零出现一次。",
+    "扫描数组并累加 prefix，每一步先将历史中 prefix−k 的出现次数加入答案，再增加 prefix 的次数。",
+    "前缀和之差正好是某段连续子数组的和，次数能处理多个相同前缀；数组含负数也不影响这个关系。"
+  ],
+  "walkthrough": [
+    "公开示例：nums = [1,1,1], k = 2 → 2。"
+  ],
+  "correctness": "循环过程中始终维护“当前已处理部分满足和为 K 的子数组约束”的不变量；每次更新只改变与新元素相关的状态，结束时所有输入都已覆盖，因此返回值符合题目定义。",
+  "pitfalls": [
+    "不要把和为 K 的子数组的公开示例通过当成完整正确性证明，还要检查空输入、最小规模和重复值。",
+    "复杂度按实际代码计算：当前实现使用方法一：哈希表 + 前缀和，额外空间为O(n)。"
+  ],
+  "func": {
+    "className": "Solution",
+    "methodName": "subarraySum",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      }
+    ],
+    "returns": "int",
+    "compare": "exact"
+  },
+  "cases": [
+    {
+      "id": "560-basic-1",
+      "input": {
+        "nums": [
+          1,
+          1,
+          1
+        ],
+        "k": 2
+      },
+      "expected": 2,
+      "tags": [
+        "basic"
+      ]
+    },
+    {
+      "id": "560-boundary-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3
+        ],
+        "k": 3
+      },
+      "expected": 2,
+      "tags": [
+        "boundary"
+      ],
+      "note": "使用和为 K 的子数组的最小规模或空输入检查边界。"
+    },
+    {
+      "id": "560-adversarial-1",
+      "input": {
+        "nums": [
+          1,
+          2,
+          3
+        ],
+        "k": 3
+      },
+      "expected": 2,
+      "tags": [
+        "adversarial"
+      ],
+      "note": "使用重复、极值或特殊顺序检查和为 K 的子数组的脆弱点。"
+    }
+  ],
+  "acm": {
+    "input": "本站定义的输入协议（不是力扣原始协议）：\nnums = [1,1,1], k = 2",
+    "output": "2",
+    "examples": [
+      {
+        "input": "nums = [1,1,1], k = 2",
+        "output": "2"
+      }
+    ]
+  }
+}
