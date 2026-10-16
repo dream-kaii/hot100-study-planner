@@ -7,10 +7,7 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application"
   },
-  "routes": [
-    {
-      "pattern": "hot100.mayuanyuan.top",
-      "custom_domain": true
-    }
-  ]
+  // routes 留空：域名由 Cloudflare 面板或部署时指定。
+  // 之前这里写死了别人的域名，部署会尝试绑定失败。
+  "routes": []
 }
