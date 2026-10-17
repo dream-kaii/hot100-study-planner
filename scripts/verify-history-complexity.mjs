@@ -32,7 +32,7 @@ try {
   assert.match(await page.locator(".complexityPanel").innerText(), /静态启发式估计/);
 
   const saved = await state(); assert.ok(["completed", "reviewing"].includes(saved.progress?.["283"]?.status));
-  const historyPanel = page.locator(".questionHistory"); assert.ok(await historyPanel.count()); assert.equal(await historyPanel.getAttribute("open"), null); await historyPanel.locator("summary").click(); assert.notEqual(await historyPanel.getAttribute("open"), null); await historyPanel.locator("summary").click(); assert.equal(await historyPanel.getAttribute("open"), null);
+  const historyPanel = page.locator(".questionHistory"); assert.ok(await historyPanel.count()); assert.equal(await historyPanel.getAttribute("open"), null); const collapsedHeight = await historyPanel.boundingBox(); assert.ok(collapsedHeight.height < 80, JSON.stringify(collapsedHeight)); assert.equal(await historyPanel.locator(".questionHistoryBody").evaluate((element) => getComputedStyle(element).display), "none"); await historyPanel.locator("summary").click(); assert.notEqual(await historyPanel.getAttribute("open"), null); const expandedHeight = await historyPanel.boundingBox(); assert.ok(expandedHeight.height > collapsedHeight.height); await historyPanel.locator("summary").click(); assert.equal(await historyPanel.getAttribute("open"), null);
   await page.getByRole("tab", { name: "题解", exact: true }).click(); assert.ok(await page.locator(".questionHistory").count());
   console.log(JSON.stringify({ desktopTimeline: visible, mobileTimeline, bad: bad.status, good: good.status, historyRows: await page.locator(".questionHistoryRow").count() }, null, 2));
 } finally { await browser.close(); }
