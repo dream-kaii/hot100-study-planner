@@ -26,12 +26,13 @@ try {
 
   await page.setViewportSize({ width: 1440, height: 900 }); await page.goto(`${base}/?question=283`, { waitUntil: "networkidle" }); await page.locator(".monaco-editor").waitFor();
   const quadratic = `class Solution:\n    def moveZeroes(self, nums):\n        for i in nums:\n            for j in nums:\n                pass\n        nums[:] = nums\n`;
-  await page.getByRole("tab", { name: "Python", exact: true }).click(); await paste(quadratic); const bad = await run(); assert.ok(["passed", "failed"].includes(bad.status)); assert.match(await page.locator(".complexityPanel").innerText(), /O\(n²\)|可能不满足/);
+  await page.getByRole("tab", { name: "Python", exact: true }).click(); await paste(quadratic); const bad = await run(); assert.ok(["passed", "failed"].includes(bad.status)); const badPanel = await page.locator(".complexityPanel").innerText(); assert.match(badPanel, /O\(n²\)/); assert.match(badPanel, /题目未明确规定复杂度|参考解复杂度：O\(n\)/);
   const linear = `class Solution:\n    def moveZeroes(self, nums):\n        write = 0\n        for value in nums:\n            if value != 0:\n                nums[write] = value\n                write += 1\n        while write < len(nums):\n            nums[write] = 0\n            write += 1\n`;
-  await paste(linear); const good = await run(); assert.equal(good.status, "passed"); assert.match(await page.locator(".complexityPanel").innerText(), /O\(n\)|可能满足/);
+  await paste(linear); const good = await run(); assert.equal(good.status, "passed"); const goodPanel = await page.locator(".complexityPanel").innerText(); assert.match(goodPanel, /O\(n\)/); assert.match(goodPanel, /可能满足|与参考解复杂度相当/);
   assert.match(await page.locator(".complexityPanel").innerText(), /静态启发式估计/);
 
   const saved = await state(); assert.ok(["completed", "reviewing"].includes(saved.progress?.["283"]?.status));
+  const historyPanel = page.locator(".questionHistory"); assert.ok(await historyPanel.count()); assert.equal(await historyPanel.getAttribute("open"), null); await historyPanel.locator("summary").click(); assert.notEqual(await historyPanel.getAttribute("open"), null); await historyPanel.locator("summary").click(); assert.equal(await historyPanel.getAttribute("open"), null);
   await page.getByRole("tab", { name: "题解", exact: true }).click(); assert.ok(await page.locator(".questionHistory").count());
   console.log(JSON.stringify({ desktopTimeline: visible, mobileTimeline, bad: bad.status, good: good.status, historyRows: await page.locator(".questionHistoryRow").count() }, null, 2));
 } finally { await browser.close(); }

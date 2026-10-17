@@ -100,7 +100,7 @@ export default function CodeEditor({
   };
 
   const resultTitle = getRunResultTitle(result);
-  const complexityResult = compareComplexity({ expected: complexity?.time, ...estimateComplexity({ language, code, func }) });
+  const complexityResult = compareComplexity({ requirement: complexity?.requirement, reference: complexity?.referenceTime || complexity?.time, ...estimateComplexity({ language, code, func }) });
 
   return <div className="codeEditor">
     <div className="editorMeta">
