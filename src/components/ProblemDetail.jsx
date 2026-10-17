@@ -41,7 +41,8 @@ export default function ProblemDetail({
   onPrevious,
   onNext,
   previousQuestion,
-  nextQuestion
+  nextQuestion,
+  practiceHistory = []
 }) {
   const [language, setLanguage] = useState(defaultLanguage === "python" ? "python" : "java");
   const [mode, setMode] = useState("function");
@@ -167,8 +168,12 @@ export default function ProblemDetail({
               </button>
             </div>
           )}
-          <CodeEditor key={getDraftKey(question.id, language, mode)} language={language} code={code} mode={mode} questionId={question.id} func={solution.func} cases={cases} draftRecord={draftRecord} draftStatus={hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"} onDraftChange={saveDraft} example={selectedExample} onRun={runnerAvailable ? execute : undefined} readOnly={practiceMode === "interview" && false} />
+          <CodeEditor key={getDraftKey(question.id, language, mode)} language={language} code={code} mode={mode} questionId={question.id} func={solution.func} complexity={solution.complexity} cases={cases} draftRecord={draftRecord} draftStatus={hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"} onDraftChange={saveDraft} example={selectedExample} onRun={runnerAvailable ? execute : undefined} readOnly={practiceMode === "interview" && false} />
         </div>
+        <details className="questionHistory">
+          <summary>本题练习历史（{practiceHistory.length} 次有效记录）</summary>
+          <div className="questionHistoryBody">{practiceHistory.length ? practiceHistory.map((event, index) => <div className="questionHistoryRow" key={event.id || `${event.createdAt}-${index}`}><strong>第 {index + 1} 次 · {event.outcome === "failed" ? "运行失败" : event.outcome === "independent" ? "独立通过" : event.outcome === "needed-hint" ? "提示后通过" : event.outcome === "needed-solution" ? "看题解后通过" : "运行完成"}</strong><small>{event.language} · {event.mode} · {event.createdAt?.slice(0, 19).replace("T", " ")} · 提示 {event.hintsUsed || 0} 级 · {event.viewedSolutionCode ? "看过题解" : "未看题解"} · {Math.round((event.durationMs || 0) / 1000)} 秒</small></div>) : <p>本题还没有有效运行记录。</p>}</div>
+        </details>
       </section>
     </div>
   </section>;

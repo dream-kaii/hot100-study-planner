@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { appendHistory, findRepeatedFailure, getQuestionHistory, summarizeQuestionHistory } from "../src/services/history.js";
+import { appendHistory, findRepeatedFailure, getEffectivePracticeEvents, getQuestionHistory, getQuestionHistorySummary, getRecentHistory, summarizeQuestionHistory } from "../src/services/history.js";
 import { createDefaultState, mergeState } from "../src/services/storage.js";
 
 function event(id, questionId = "1", index = 0, extra = {}) {
@@ -108,4 +108,28 @@ test("preserves attempt metadata on both failed and independent events", () => {
     ["failed", "a1", 0, false],
     ["independent", "a2", 0, false]
   ]);
+});
+
+test("recent history excludes started events, sorts newest first, and limits the dashboard list", () => {
+  let state = createDefaultState();
+  for (let index = 0; index < 100; index += 1) {
+    state = appendHistory(state, { questionId: String(index + 1), outcome: "started", createdAt: `2026-10-01T00:${String(index % 60).padStart(2, "0")}:00.000Z` });
+    state = appendHistory(state, { questionId: String(index + 1), outcome: index % 2 ? "failed" : "independent", createdAt: `2026-10-02T00:${String(index % 60).padStart(2, "0")}:00.000Z` });
+  }
+  const recent = getRecentHistory(state, { limit: 8 });
+  assert.equal(recent.length, 8);
+  assert.ok(recent.every((event) => event.outcome !== "started"));
+  assert.ok(new Date(recent[0].createdAt) >= new Date(recent.at(-1).createdAt));
+  assert.equal(getEffectivePracticeEvents(state, "1").length, 1);
+});
+
+test("question history summary keeps failed and successful attempts and ignores started", () => {
+  const state = { ...createDefaultState(), history: [
+    { id: "open", questionId: "283", language: "java", mode: "function", outcome: "started", createdAt: "2026-10-01T00:00:00.000Z" },
+    { id: "fail", questionId: "283", language: "java", mode: "function", outcome: "failed", createdAt: "2026-10-01T00:01:00.000Z" },
+    { id: "pass", questionId: "283", language: "java", mode: "function", outcome: "independent", createdAt: "2026-10-01T00:02:00.000Z" }
+  ] };
+  const summary = getQuestionHistorySummary(state, "283");
+  assert.deepEqual(summary, { attempts: 2, failures: 1, passes: 1, independent: 1, lastOutcome: "independent", lastCreatedAt: "2026-10-01T00:02:00.000Z" });
+  assert.equal(getQuestionHistory(state, "283").length, 3);
 });

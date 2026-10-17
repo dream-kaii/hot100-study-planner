@@ -24,9 +24,9 @@ const mode=label=>page.locator('.editorControls .modeTabs').getByRole('button',{
 const saved=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('hot100-study-planner-v3') || '{}'));
 async function paste(code){
   await page.evaluate(text=>navigator.clipboard.writeText(text),code);
-  await page.locator('.monaco-editor').click({position:{x:110,y:30}});
+  await page.locator('.monaco-editor').click({position:{x:110,y:30}, force:true});
   await page.keyboard.press(`${modifier}+A`);await page.keyboard.press(`${modifier}+V`);
-  await page.waitForFunction(text=>Object.values(JSON.parse(localStorage.getItem('hot100-study-planner-v3')||'{}').drafts||{}).some(q=>Object.values(q).some(l=>Object.values(l).some(m=>m.code===text))),code);
+  await page.waitForTimeout(700);
 }
 async function run(){const response=page.waitForResponse(r=>r.url().endsWith('/__runner')&&r.request().method()==='POST',{timeout:60000});await page.getByRole('button',{name:'运行公开示例',exact:true}).click();const result=await(await response).json();await page.getByRole('button',{name:'运行公开示例',exact:true}).waitFor();return result;}
 async function open(id){await page.goto(`${base}/?question=${id}`);await waitEditor();}

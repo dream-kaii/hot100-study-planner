@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Editor from "@monaco-editor/react";
 import { getDraftKey, getRunResultDetails, getRunResultTitle } from "../services/editor.js";
+import { compareComplexity, estimateComplexity } from "../services/complexity.js";
+import ComplexityPanel from "./ComplexityPanel.jsx";
 
 const LANGUAGE_LABELS = { python: "Python 3", java: "Java 17" };
 
@@ -36,6 +38,7 @@ export default function CodeEditor({
   example,
   onRun,
   readOnly = false
+  , complexity
 }) {
   const editorRef = useRef(null);
   const latestCodeRef = useRef(code);
@@ -97,6 +100,7 @@ export default function CodeEditor({
   };
 
   const resultTitle = getRunResultTitle(result);
+  const complexityResult = compareComplexity({ expected: complexity?.time, ...estimateComplexity({ language, code, func }) });
 
   return <div className="codeEditor">
     <div className="editorMeta">
@@ -145,5 +149,6 @@ export default function CodeEditor({
         </div>)}
       </div>
     </details>}
+    <ComplexityPanel result={complexityResult} />
   </div>;
 }

@@ -1,6 +1,7 @@
 import { parseState } from "./storage.js";
 
 const MAX_EVENTS_PER_QUESTION = 20;
+const EFFECTIVE_OUTCOMES = new Set(["failed", "independent", "needed-hint", "needed-solution", "completed"]);
 
 function historyScope(event) {
   return `${event.questionId}\u0000${event.language}\u0000${event.mode}`;
@@ -44,22 +45,73 @@ export function appendHistory(state, event) {
   const base = parseState(state);
   const fallbackId = `history-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const nextEvent = normalizeEvent(event, fallbackId);
-  const history = [...base.history, nextEvent];
-  const scope = historyScope(nextEvent);
-  let count = history.filter((item) => historyScope(item) === scope).length;
-  while (count > MAX_EVENTS_PER_QUESTION) {
-    const oldestIndex = history.findIndex((item) => historyScope(item) === scope);
-    if (oldestIndex < 0) break;
-    history.splice(oldestIndex, 1);
-    count -= 1;
+  return { ...base, history: pruneHistory([...base.history, nextEvent]), updatedAt: nextEvent.createdAt || base.updatedAt };
+}
+
+function eventTime(event) { return Date.parse(event?.createdAt || "") || 0; }
+
+export function isEffectivePracticeEvent(event) {
+  return EFFECTIVE_OUTCOMES.has(event?.outcome);
+}
+
+export function pruneHistory(events = []) {
+  const byScope = new Map();
+  for (const event of events) {
+    const scope = historyScope(event);
+    const list = byScope.get(scope) || [];
+    list.push(event);
+    byScope.set(scope, list);
   }
-  return { ...base, history, updatedAt: nextEvent.createdAt || base.updatedAt };
+  const retained = [];
+  for (const list of byScope.values()) {
+    const sorted = [...list].sort((a, b) => eventTime(a) - eventTime(b));
+    const effective = sorted.filter(isEffectivePracticeEvent).slice(-MAX_EVENTS_PER_QUESTION);
+    const started = sorted.filter((event) => event.outcome === "started").slice(-1);
+    retained.push(...effective, ...started);
+  }
+  return retained.sort((a, b) => eventTime(a) - eventTime(b));
 }
 
 export function getQuestionHistory(state, questionId, language, mode) {
   return (state?.history || []).filter((event) => String(event.questionId) === String(questionId)
     && (language === undefined || event.language === language)
     && (mode === undefined || event.mode === mode));
+}
+
+export function getEffectivePracticeEvents(state, questionId, language, mode) {
+  return getQuestionHistory(state, questionId, language, mode).filter(isEffectivePracticeEvent)
+    .sort((a, b) => eventTime(a) - eventTime(b));
+}
+
+export function getRecentHistory(state, { limit = 8, outcomes } = {}) {
+  const allowed = outcomes ? new Set(outcomes) : EFFECTIVE_OUTCOMES;
+  return (state?.history || []).filter((event) => allowed.has(event.outcome))
+    .sort((a, b) => eventTime(b) - eventTime(a)).slice(0, Math.max(0, limit));
+}
+
+export function getQuestionHistorySummary(state, questionId) {
+  const events = getEffectivePracticeEvents(state, questionId);
+  const passes = events.filter((event) => ["independent", "needed-hint", "needed-solution", "completed"].includes(event.outcome));
+  return {
+    attempts: events.length,
+    failures: events.filter((event) => event.outcome === "failed").length,
+    passes: passes.length,
+    independent: events.filter((event) => event.outcome === "independent").length,
+    lastOutcome: events.at(-1)?.outcome || null,
+    lastCreatedAt: events.at(-1)?.createdAt || null
+  };
+}
+
+export function getHistorySummary(state) {
+  const events = getRecentHistory(state, { limit: Number.POSITIVE_INFINITY });
+  const passes = events.filter((event) => ["independent", "needed-hint", "needed-solution", "completed"].includes(event.outcome));
+  return {
+    attempts: events.length,
+    failures: events.filter((event) => event.outcome === "failed").length,
+    independent: events.filter((event) => event.outcome === "independent").length,
+    lastCreatedAt: events[0]?.createdAt || null,
+    lastOutcome: events[0]?.outcome || null
+  };
 }
 
 export function summarizeQuestionHistory(events = []) {

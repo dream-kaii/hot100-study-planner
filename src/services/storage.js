@@ -175,7 +175,10 @@ function mergeHistory(current, incoming) {
   for (const event of events) {
     retained.push(event);
     const scopedEvents = retained.filter((item) => scope(item) === scope(event));
-    if (scopedEvents.length > 20) retained.splice(retained.indexOf(scopedEvents[0]), 1);
+    const effective = scopedEvents.filter((item) => !["started", "unknown"].includes(item.outcome));
+    if (effective.length > 20) retained.splice(retained.indexOf(effective[0]), 1);
+    const started = scopedEvents.filter((item) => item.outcome === "started");
+    if (started.length > 1) retained.splice(retained.indexOf(started[0]), 1);
   }
   return retained;
 }
