@@ -10,8 +10,10 @@ import { classifyAttemptOutcome } from "../services/status.js";
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
 // 「无本地运行接口」提示的关闭状态存储键（见组件内 runnerNoticeDismissed）
 const RUNNER_NOTICE_KEY = "hot100:runnerNoticeDismissed";
+const QUESTION_HISTORY_KEY_PREFIX = "hot100:questionHistoryOpen:";
 const statusLabels = { new: "未开始", "in-progress": "思考中", completed: "已完成", reviewing: "待复习", mastered: "已掌握", 未开始: "未开始", 思考中: "思考中", 已完成: "已完成", 错题: "错题", 待复习: "待复习", 已掌握: "已掌握" };
 const statusValues = ["思考中", "已完成", "错题", "待复习", "已掌握"];
+const outcomeLabels = { failed: "运行失败", independent: "独立通过", "needed-hint": "提示后通过", "needed-solution": "看题解后通过", completed: "运行完成" };
 
 function canonicalStatus(status) {
   return { 未开始: "new", 思考中: "in-progress", 已完成: "completed", 错题: "reviewing", 待复习: "reviewing", 已掌握: "mastered", new: "new", "in-progress": "in-progress", completed: "completed", reviewing: "reviewing", mastered: "mastered" }[status] || status || "new";
@@ -19,6 +21,15 @@ function canonicalStatus(status) {
 
 function hasDraft(drafts, questionId, language, mode) {
   return Boolean(drafts?.[questionId]?.[language]?.[mode] && typeof drafts[questionId][language][mode] === "object");
+}
+
+function readQuestionHistoryOpen(questionId) {
+  try {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(`${QUESTION_HISTORY_KEY_PREFIX}${questionId}`) === "1";
+  } catch {
+    return false;
+  }
 }
 
 export default function ProblemDetail({
@@ -48,6 +59,7 @@ export default function ProblemDetail({
   const [mode, setMode] = useState("function");
   const [practiceMode, setPracticeMode] = useState("learning");
   const [leftTab, setLeftTab] = useState("problem");
+  const [questionHistoryOpen, setQuestionHistoryOpen] = useState(() => readQuestionHistoryOpen(question?.id));
   const [timerMinutes, setTimerMinutes] = useState(25);
   const [activeExample, setActiveExample] = useState(0);
   // 运行器不可用提示：可关闭，并记住选择。
@@ -79,6 +91,7 @@ export default function ProblemDetail({
     setMode("function");
     setPracticeMode("learning");
     setLeftTab("problem");
+    setQuestionHistoryOpen(readQuestionHistoryOpen(question.id));
     setTimerMinutes(25);
     setActiveExample(0);
     onRecordHistory?.({ questionId: question.id, language: defaultLanguage === "python" ? "python" : "java", mode: "function", outcome: "started", createdAt: new Date().toISOString() });
@@ -101,6 +114,8 @@ export default function ProblemDetail({
   const selectedExample = examples[activeExample] || examples[0];
   const cases = getExecutionCases(solution, mode);
   const currentStatus = canonicalStatus(progressItem?.status);
+  const latestPractice = practiceHistory.at(-1);
+  const latestPracticeLabel = latestPractice ? (outcomeLabels[latestPractice.outcome] || "运行完成") : "暂无记录";
   const nextHint = (level) => {
     if (attemptRef.current) attemptRef.current.hintsUsed += 1;
     onHint?.(question.id, level, language, mode);
@@ -111,10 +126,22 @@ export default function ProblemDetail({
     onSolutionView?.(question.id, viewedLanguage, mode);
   };
 
-  const execute = async (payload) => {
+  const handleQuestionHistoryToggle = (event) => {
+    const open = event.currentTarget.open;
+    setQuestionHistoryOpen(open);
+    try {
+      window.localStorage.setItem(`${QUESTION_HISTORY_KEY_PREFIX}${question.id}`, open ? "1" : "0");
+    } catch {
+      // localStorage 不可用时仍保持本次页面内的折叠状态。
+    }
+  };
+
+  // pairHandler 是 CodeEditor 传下来的配对码回调（线上首次运行时才会有）。
+  // 这一层只做统计与本机记录，必须把参数原样透传，否则用户看不到配对码。
+  const execute = async (payload, signal, pairHandler) => {
     const session = sessionRef.current;
     const attempt = attemptRef.current || { attemptId: `${question.id}-legacy`, hintsUsed: 0, viewedSolutionCode: false };
-    const result = await onRun?.(payload);
+    const result = await onRun?.(payload, signal, pairHandler);
     if (!result || result.status === "unavailable") return result;
     if (sessionRef.current !== session || sessionRef.current?.questionId !== String(question.id)
       || sessionRef.current?.language !== payload.language || sessionRef.current?.mode !== payload.mode) return result;
@@ -158,10 +185,9 @@ export default function ProblemDetail({
           {practiceMode === "interview" && <p className="interviewNotice">面试模拟会隐藏提示和题解，已有草稿会继续保留；需要清空时请手动删除代码。</p>}
           {!runnerAvailable && !runnerNoticeDismissed && (
             <div className="runnerNotice" role="status">
-              <p>当前页面没有本地运行接口，请在本地开发环境运行 Java/Python。</p>
+              <p>这道题暂时无法运行：缺少函数签名，或本机没有可用的 Java / Python。</p>
               <p className="runnerNoticeHint">
-                运行功能需要本机的 JDK / Python，且只在 <code>npm run dev</code> 时可用 ——
-                这是刻意设计，避免把任意代码执行开放到公网。
+                运行需要本机装有 JDK 或 Python。代码只在你自己的电脑上执行，不会上传。
               </p>
               <button type="button" className="runnerNoticeClose" onClick={dismissRunnerNotice} aria-label="不再显示这条提示">
                 知道了，不再提示
@@ -170,8 +196,8 @@ export default function ProblemDetail({
           )}
           <CodeEditor key={getDraftKey(question.id, language, mode)} language={language} code={code} mode={mode} questionId={question.id} func={solution.func} complexity={solution.complexity} cases={cases} draftRecord={draftRecord} draftStatus={hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"} onDraftChange={saveDraft} example={selectedExample} onRun={runnerAvailable ? execute : undefined} readOnly={practiceMode === "interview" && false} />
         </div>
-        <details className="questionHistory">
-          <summary>本题练习历史（{practiceHistory.length} 次有效记录）</summary>
+        <details className="questionHistory" open={questionHistoryOpen} onToggle={handleQuestionHistoryToggle}>
+          <summary>本题练习历史 · {practiceHistory.length} 次 · 最近一次{latestPracticeLabel}</summary>
           <div className="questionHistoryBody">{practiceHistory.length ? practiceHistory.map((event, index) => <div className="questionHistoryRow" key={event.id || `${event.createdAt}-${index}`}><strong>第 {index + 1} 次 · {event.outcome === "failed" ? "运行失败" : event.outcome === "independent" ? "独立通过" : event.outcome === "needed-hint" ? "提示后通过" : event.outcome === "needed-solution" ? "看题解后通过" : "运行完成"}</strong><small>{event.language} · {event.mode} · {event.createdAt?.slice(0, 19).replace("T", " ")} · 提示 {event.hintsUsed || 0} 级 · {event.viewedSolutionCode ? "看过题解" : "未看题解"} · {Math.round((event.durationMs || 0) / 1000)} 秒</small></div>) : <p>本题还没有有效运行记录。</p>}</div>
         </details>
       </section>

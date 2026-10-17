@@ -63,7 +63,7 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
   .problemWorkspace .workspaceGrid{flex:1;grid-template-rows:minmax(0,1fr);min-height:0;min-width:0;overflow:hidden;align-items:stretch}
   .problemWorkspace .statementPane{min-height:0;max-height:none;overflow:auto;overscroll-behavior:contain}
   .problemWorkspace .workspaceTabs{position:sticky;top:-22px;background:var(--surface);z-index:1}
-  .problemWorkspace .editorPane{min-height:0;min-width:0;display:flex;overflow:hidden}
+  .problemWorkspace .editorPane{min-height:0;min-width:0;display:flex;flex-direction:column;overflow:hidden}
   .problemWorkspace .editorCard{flex:1;min-height:0;min-width:0;padding:12px;display:flex;flex-direction:column;overflow:hidden}
   .problemWorkspace .editorHeader{flex:none;gap:8px;align-items:center;padding-bottom:8px}
   .problemWorkspace .editorHeader h2{font-size:17px}
@@ -83,6 +83,8 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
   .problemWorkspace .runPanel{flex:none}
   .problemWorkspace .runPanelBody{max-height:clamp(32px,calc(33dvh - 215px),112px)}
   .problemWorkspace .editorActions .draftStatus{margin:0;min-width:0;font-size:11px}
+  .problemWorkspace .questionHistory{width:100%;max-height:min(260px,32dvh);margin-top:8px}
+  .problemWorkspace .questionHistoryBody{max-height:min(220px,27dvh)}
 }
 @media(max-width:800px){
   .problemWorkspace .monacoHost{height:340px}
@@ -98,8 +100,29 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 @media(min-width:801px){.questionNav{grid-column:1/-1;grid-row:3;justify-content:center}.questionNav .nextQuestionButton{padding:6px 10px}}
 @media(max-width:800px){.questionNav{grid-column:1/3;justify-content:space-between}.questionNav>span{font-size:11px}}
 .timelineSummary{display:flex;gap:14px;flex-wrap:wrap;color:var(--muted);font-size:12px;margin:-10px 0 12px}.timelineFilters{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}.timelineFilters button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 9px;color:var(--muted);font-size:12px}.timelineFilters button.active{background:var(--primary-soft);border-color:#d49a83;color:var(--primary);font-weight:700}.timelineMore{display:block;margin:12px auto 0;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;color:var(--primary)}
-.questionHistory{margin-top:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;flex:0 0 auto;max-height:240px;overflow:hidden}.questionHistory summary{cursor:pointer;font-weight:700}.questionHistory:not([open]){height:46px;max-height:46px}.questionHistory:not([open]) .questionHistoryBody{display:none}.questionHistoryBody{max-height:200px;overflow:auto;margin-top:8px}.questionHistoryRow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;border-top:1px solid var(--line);padding:8px 0;font-size:12px}.questionHistoryRow small{color:var(--muted)}
+.questionHistory{margin-top:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;flex:0 0 auto;max-height:240px;overflow:hidden}.questionHistory summary{cursor:pointer;font-weight:700}.questionHistory:not([open]){min-height:46px;max-height:64px}.questionHistory:not([open]) .questionHistoryBody{display:none}.questionHistoryBody{max-height:200px;overflow:auto;margin-top:8px}.questionHistoryRow{display:grid;grid-template-columns:1fr auto;gap:4px 12px;border-top:1px solid var(--line);padding:8px 0;font-size:12px}.questionHistoryRow small{color:var(--muted)}
 @media(max-width:800px){.timelineSummary{gap:8px}.timelineFilters{overflow-x:auto;flex-wrap:nowrap}.timelineFilters button{white-space:nowrap}.questionHistoryRow{grid-template-columns:1fr}}
 .complexityPanel{flex:none;border:1px solid var(--line);border-radius:7px;background:#faf8f4;padding:8px 10px;margin-top:8px;font-size:12px}.complexityPanel.too-slow{border-color:#e8aeb5;background:#fff0f1}.complexityPanel.meets{border-color:#9edbc2;background:#e8f7f0}.complexityPanel.uncertain{border-color:#e6cb88;background:#fff4d8}.complexityHeader,.complexityValues{display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap}.complexityHeader span{font-weight:700}.complexityValues{color:var(--muted);margin-top:4px}.complexityPanel p{margin:5px 0}.complexityPanel small{color:var(--muted)}
 @media(min-width:801px){.problemWorkspace .complexityPanel{max-height:76px;overflow:auto}.problemWorkspace .complexityPanel p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 @media(max-width:800px){.complexityPanel{margin-bottom:8px}.complexityValues{justify-content:flex-start}}
+
+/* 在线运行：配对引导面板。刻意用窄卡片，避免遮挡编辑器。 */
+.runnerPairPanel{margin:10px 0 0;border:1px solid #d8c8bb;border-radius:8px;background:#FFFDF8;padding:12px 14px;font-size:13px;max-width:560px}
+.runnerPairHead{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.runnerPairHead strong{font-size:14px}
+.runnerPairClose{border:none;background:none;font-size:18px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.runnerPairLead{margin:6px 0 10px;color:var(--muted);font-size:12px;line-height:1.6}
+.runnerPairSteps{margin:0;padding-left:18px;display:grid;gap:10px}
+.runnerPairSteps li>span{display:block;font-weight:700;margin-bottom:3px}
+.runnerPairSteps li>small{display:block;color:var(--muted);font-size:11px;line-height:1.6;margin-top:4px}
+.runnerPairSteps code{background:#F3EFE7;border-radius:3px;padding:1px 4px;font-size:11px}
+.runnerPairCommand{display:flex;align-items:center;gap:6px;background:#2A2723;border-radius:5px;padding:6px 8px}
+.runnerPairCommand code{background:none;color:#F1C9B8;flex:1;font-size:12px;padding:0}
+.runnerPairCommand button{border:1px solid #6a6358;background:none;color:#E8E2D6;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer}
+.runnerPairCode{display:flex;gap:6px;margin-top:6px}
+.runnerPairCode span{display:inline-flex;align-items:center;justify-content:center;width:30px;height:36px;background:#FFFEFB;border:1px solid #d8c8bb;border-radius:5px;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--primary)}
+.runnerPairCode em{color:var(--muted);font-size:12px;font-style:normal}
+.runnerPairWait{margin:10px 0 0;color:var(--primary);font-size:12px}
+.runnerPairError{margin:10px 0 0;color:#B03B4B;font-size:12px}
+.runnerPairActions{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
+.runnerPairActions span{color:var(--muted);font-size:11px}
