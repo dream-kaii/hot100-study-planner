@@ -28,6 +28,8 @@ const PAIR_ATTEMPT_LIMIT = 5;
 
 const KEY_STATE = "state";
 const KEY_TOKEN = "token";
+/** 刚配对、还没交给 runner 的 token。等 runner 发 hello 再回传，避免在请求生命周期外发送。 */
+const KEY_PENDING_TOKEN = "pendingToken";
 const KEY_PAIR_CODE = "pairCode";
 const KEY_PAIR_EXPIRE = "pairExpire";
 const KEY_PAIR_ATTEMPTS = "pairAttempts";
@@ -127,19 +129,13 @@ export class Session {
     // 角色只记在 tag 上（Hibernation 休眠后恢复得到），不放实例字段。
     this.state.acceptWebSocket(server, [role]);
 
-    // 配对换到的 token 走两条路回传：
-    //   a) 握手响应头 x-hot100-token / x-hot100-sid —— 部分 WebSocket 实现能读到
-    //   b) 连接建立后立刻推一帧 hello —— 浏览器实现读不到响应头，靠这条兜底
+    // 配对换到的 token 不在这里发：Hibernation 下 fetch 一返回就切休眠模式，
+    // 之后再 send() 属于非法操作，连接会被踢掉（实测表现为连上 5 秒后 1006）。
+    // 改为等 runner 发来 hello，在 webSocketMessage 里回。
     const headers = new Headers();
     if (newToken) {
       headers.set("x-hot100-token", newToken.token);
       headers.set("x-hot100-sid", newToken.sid);
-      // hello 帧要在 return 之后才发得出去，所以挂到 microtask。
-      queueMicrotask(() => {
-        try {
-          server.send(encodeFrame({ t: FRAME.HELLO, payload: { role: "worker", token: newToken.token, sid: newToken.sid } }));
-        } catch { /* 对端已断 */ }
-      });
     }
     void request;
     return new Response(null, { status: 101, webSocket: client, headers });
@@ -176,7 +172,11 @@ export class Session {
 
     const token = generateToken();
     // 码用掉即焚：即使别人看到了同一串数字也换不到 token。
-    await this.state.storage.put({ [KEY_TOKEN]: token, [KEY_STATE]: SESSION_STATE.ONLINE });
+    await this.state.storage.put({
+      [KEY_TOKEN]: token,
+      [KEY_PENDING_TOKEN]: token,
+      [KEY_STATE]: SESSION_STATE.ONLINE
+    });
     await this.state.storage.delete([KEY_PAIR_CODE, KEY_PAIR_EXPIRE, KEY_PAIR_ATTEMPTS]);
     await this.state.storage.setAlarm(Date.now() + IDLE_TIMEOUT_MS);
     const sid = (await this.state.storage.get(KEY_SID)) || "";
@@ -200,6 +200,19 @@ export class Session {
     }
     if (frame.t === FRAME.PONG) return;
 
+    // runner 连上后发 hello：把刚配对拿到的 token 回给它。
+    // 只在这里发（合法的消息处理上下文），不能在 fetch 返回之后再发。
+    const senderTags = this.state.getTags(ws) || [];
+    if (frame.t === FRAME.HELLO && senderTags.includes("runner")) {
+      const pending = await this.state.storage.get(KEY_PENDING_TOKEN);
+      if (pending) {
+        const sid = (await this.state.storage.get(KEY_SID)) || "";
+        safeSend(ws, { t: FRAME.HELLO, payload: { role: "worker", token: pending, sid } });
+        await this.state.storage.delete(KEY_PENDING_TOKEN);
+      }
+      return; // 配对握手不转发给网页
+    }
+
     // Worker 不解析用例、不执行代码，只做转发。
     const target = this.peerOf(ws);
     if (!target) {
@@ -214,11 +227,10 @@ export class Session {
   }
 
   async webSocketClose(ws, code, reason) {
-    // close 回调触发时 ws 已从 getWebSockets 里移除，所以先通知对端再判断。
-    const peer = this.peerOf(ws);
-    if (peer) {
-      try { peer.send(encodeFrame({ t: FRAME.PRESENCE, payload: { peer: "offline" } })); } catch { /* 已断 */ }
-    }
+    // 注意：这里刻意不给对端发 PRESENCE。
+    // 在 webSocketClose 回调里往另一条 hibernatable socket 发帧，实测会把对方连接一起关掉
+    // （runner 会在浏览器关闭后立刻 1006 并重连）。网页侧本来就靠自己轮询状态，
+    // 不需要这条通知。
     if (this.socketsOf("runner").length === 0) {
       // runner 走了，会话退回"待配对"，让页面能重新生成配对码。
       await this.state.storage.put({ [KEY_STATE]: SESSION_STATE.PAIRED });

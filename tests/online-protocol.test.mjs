@@ -121,7 +121,7 @@ test("runner 离线时不应把 run 帧发出去", async () => {
   // 立刻中止：这次测试只关心"离线 → 重新配对"这一步，不需要真的等满 120 秒。
   const controller = new AbortController();
   try {
-    await requestRun({ code: "x" }, { onPairCode: (code) => { pairCode = code; controller.abort(); }, signal: controller.signal });
+    await requestRun({ code: "x" }, { onPairCode: (code) => { pairCode = code; controller.abort(); }, signal: controller.signal, resumeWindowMs: 100 });
   } catch {
     // 后续建 WS 失败是预期的：这里只关心流程有没有走"重新配对"
   } finally {
@@ -129,6 +129,9 @@ test("runner 离线时不应把 run 帧发出去", async () => {
     globalThis.WebSocket = originalWS;
     delete globalThis.localStorage;
   }
-  assert.deepEqual(calls, ["GET /api/status/old-sid", "POST /api/pair", ...calls.slice(2)]);
+  // 新行为：先给 runner 一小段回连窗口（多次轮询状态），确认不在线才重新配对。
+  assert.ok(calls.filter((c) => c === "GET /api/status/old-sid").length >= 1, "应先查询旧会话状态");
+  assert.ok(calls.includes("POST /api/pair"), "确认离线后应重新申请配对码");
+  assert.equal(calls[calls.length - 1], "POST /api/pair", "最后一次应是 /api/pair");
   assert.equal(pairCode, "654321", "runner 离线时必须重新配对并给出新码");
 });

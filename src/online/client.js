@@ -9,8 +9,12 @@
 const PAIR_KEY = "hot100:onlineRunner";
 /** 单次判题的客户端超时。服务端 runExample 自身有 3s/10s 超时，这里留 2 倍余量。 */
 const RUN_TIMEOUT_MS = 60 * 1000;
-/** 等 runner 连上隧道的上限。用户点完运行助手后通常 2~5 秒内连上。 */
-const PAIR_WAIT_MS = 120 * 1000;
+/**
+ * 等 runner 连上隧道的上限。
+ * 用户从看到配对码到真的把 runner 跑起来，中间要下载文件、配代理、输码，
+ * 2 分钟经常不够（实测就踩过）。放长到 10 分钟，超时后仍可用面板上的按钮重试。
+ */
+const PAIR_WAIT_MS = 10 * 60 * 1000;
 
 function readSaved() {
   try {
@@ -63,14 +67,16 @@ function openSocket(sid) {
  *
  * onPairCode(code) 会在需要用户动手时被调用，参数是 6 位码。
  */
-export async function requestRun(payload, { onPairCode, signal } = {}) {
+export async function requestRun(payload, { onPairCode, signal, resumeWindowMs } = {}) {
   let saved = readSaved();
   if (saved?.sid) {
     try {
-      // 先确认 runner 还在线。不在线就直接走重新配对，
-      // 不要先发 run 帧等一个注定失败的 PEER_OFFLINE。
-      const online = await isRunnerOnline(saved.sid);
-      if (online) return await runOverSocket(saved.sid, payload, { signal });
+      // 先确认 runner 还在线。不在线时不要立刻重新配对：
+      // runner 可能正因为网络抖动/DO 切换在重连（约 0.5~2 秒），
+      // 这段时间内重新配对会让用户看到一个新配对码，白折腾一次。
+      if (await waitForExistingRunner(saved.sid, { signal, windowMs: resumeWindowMs })) {
+        return await runOverSocket(saved.sid, payload, { signal });
+      }
       saved = null;
     } catch (error) {
       // 会话不存在/已回收 → 重新配对；网络抖动原样抛出。
@@ -84,6 +90,21 @@ export async function requestRun(payload, { onPairCode, signal } = {}) {
   onPairCode?.(code);
   await waitForRunner(sid, { signal });
   return runOverSocket(sid, payload, { signal });
+}
+
+/**
+ * 已有 sid 时，给 runner 一小段回连窗口。
+ * 直接判定"不在线就重新配对"会把正常的重连误判成需要重新配对。
+ */
+async function waitForExistingRunner(sid, { signal, windowMs = 6000 } = {}) {
+  if (!Number.isFinite(windowMs) || windowMs < 0) windowMs = 6000;
+  const deadline = Date.now() + windowMs;
+  do {
+    if (await isRunnerOnline(sid)) return true;
+    if (signal?.aborted) return false;
+    await new Promise((resolve) => setTimeout(resolve, 800));
+  } while (Date.now() < deadline);
+  return false;
 }
 
 /** 查一次会话状态，确认 runner 隧道是否还挂着。 */
@@ -111,7 +132,7 @@ async function waitForRunner(sid, { signal } = {}) {
     }
     await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  throw new Error("等待本机运行助手超时。请确认窗口还开着，然后重新点运行。");
+  throw new Error("等了很久仍没连上。如果运行助手已经显示「已连上隧道」，点下面的「我连上了，重新运行」；否则确认窗口还开着。");
 }
 
 function runOverSocket(sid, payload, { signal } = {}) {

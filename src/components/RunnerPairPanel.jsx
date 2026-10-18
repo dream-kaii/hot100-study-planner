@@ -75,7 +75,7 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
     </div>
 
-    {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…</p>}
+    {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…连上后会自动继续运行</p>}
     {error && <p className="runnerPairError" role="alert">{error}</p>}
 
     <div className="runnerPairActions">

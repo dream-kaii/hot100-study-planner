@@ -109,6 +109,10 @@ export default function CodeEditor({
         setResult(null);
         return;
       }
+      // 拿到真实结果（哪怕判题不通过）说明隧道已通，收起配对面板，
+      // 否则用户会同时看到"请连接运行助手"和结果，很迷惑。
+      setPairCode("");
+      pairCallbackRef.current = null;
       setResult(outcome);
     } catch (error) {
       setResult({ status: "runtime_error", error: error.message || "运行请求失败，请重试。" });

@@ -163,3 +163,30 @@ test("状态查询用真实连接判断在线，不依赖内存字段", async ()
     restore();
   }
 });
+
+test("runner 发 hello 后拿到刚配对的 token（必须在消息处理内回传）", async () => {
+  const restore = installGlobals();
+  try {
+    const state = makeState();
+    const { runnerClient } = await pairAndConnect(state);
+    const runner = state.getWebSockets("runner")[0];
+    // pairAndConnect 已清掉接受连接时的旧帧
+    runnerClient._recv.length = 0;
+
+    // runner 主动发 hello（真实 runner 连上后就会发）
+    await new Session(state, {}).webSocketMessage(runner, JSON.stringify({ v: 1, t: "hello", payload: { role: "runner" } }));
+
+    assert.equal(runnerClient._recv.length, 1, "应收到一帧 hello");
+    const reply = JSON.parse(runnerClient._recv[0]);
+    assert.equal(reply.t, "hello");
+    assert.equal(typeof reply.payload.token, "string");
+    assert.equal(reply.payload.token.length, 64, "token 应为 64 位 hex");
+    assert.equal(reply.payload.sid, "d".repeat(32));
+
+    // token 只发一次，重复 hello 不再回传（避免泄露给后续连接）
+    await new Session(state, {}).webSocketMessage(runner, JSON.stringify({ v: 1, t: "hello", payload: {} }));
+    assert.equal(runnerClient._recv.length, 1, "第二次 hello 不应再回 token");
+  } finally {
+    restore();
+  }
+});
