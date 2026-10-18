@@ -45,6 +45,8 @@ function parseArgs(argv) {
   const args = {
     doctor: false,
     endpoint: process.env.HOT100_ENDPOINT || DEFAULT_ENDPOINT,
+    /** 命令行/环境变量是否显式给了地址。显式给的一律优先于本地保存的旧地址。 */
+    endpointExplicit: Boolean(process.env.HOT100_ENDPOINT),
     unpair: false,
     code: "",
     help: false,
@@ -64,8 +66,8 @@ function parseArgs(argv) {
     else if (item === "--help" || item === "-h") args.help = true;
     else if (item === "--code") args.code = String(argv[++i] || "");
     else if (item.startsWith("--code=")) args.code = item.slice("--code=".length);
-    else if (item === "--endpoint") args.endpoint = argv[++i] || args.endpoint;
-    else if (item.startsWith("--endpoint=")) args.endpoint = item.slice("--endpoint=".length);
+    else if (item === "--endpoint") { args.endpoint = argv[++i] || args.endpoint; args.endpointExplicit = true; }
+    else if (item.startsWith("--endpoint=")) { args.endpoint = item.slice("--endpoint=".length); args.endpointExplicit = true; }
   }
   return args;
 }
@@ -291,7 +293,9 @@ async function main() {
     log("info", `已记录配对码 ${code}，正在与云端换取凭据…`);
   }
 
-  const endpoint = session.endpoint || args.endpoint;
+  // 显式传入的地址优先。否则换域名后，本地保存的旧地址会把新域名顶掉，
+  // 表现为"我明明传了新域名，却还连着老地址"。
+  const endpoint = args.endpointExplicit ? args.endpoint : session.endpoint || args.endpoint;
 
   // 用本地保存的 token 连上、但网页一直没接入 —— 说明连的是旧会话。
   // 这是真实踩过的坑：用户网页上看到一个新配对码，runner 却在等上一个会话。
@@ -307,7 +311,7 @@ async function main() {
   说明 runner 连的是上一次的旧会话。二选一：
 
   1) 用网页上的新码重跑：
-     node --use-env-proxy ${path.basename(process.argv[1] || "hot100-runner.mjs")} --code <6位码> --endpoint ${session.endpoint || args.endpoint}
+     node --use-env-proxy ${path.basename(process.argv[1] || "hot100-runner.mjs")} --code <6位码> --endpoint ${endpoint}
 
   2) 清掉旧凭据后重跑（启动时会问你要码）：
      node ${path.basename(process.argv[1] || "hot100-runner.mjs")} --unpair
