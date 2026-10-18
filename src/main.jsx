@@ -14,6 +14,9 @@ import ProblemDetail from "./components/ProblemDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ProblemBank from "./pages/ProblemBank.jsx";
 import Mistakes from "./pages/Mistakes.jsx";
+import BrandIcon from "./components/BrandIcon.jsx";
+import SiteFooter from "./components/SiteFooter.jsx";
+import { BRAND, BLOG } from "./brand.js";
 import "./styles.css";
 import { createOnRun, canRunOnline } from "./online/runner-bridge.js";
 
@@ -138,6 +141,14 @@ function App() {
   const dueReviews = useMemo(() => studyQuestions.filter(q => isReviewDue(progress[q.id])), [progress, studyQuestions]);
   const selected = hot100.questions.find((question) => question.id === selectedId);
 
+  // 浏览器标签标题跟随当前视图。
+  // 作用不只是好看：这个站会被开成很多个标签（每题一个），标题里带上题号
+  // 才能在标签栏里区分「我在看哪道题」。index.html 里的静态标题作为首帧兜底。
+  useEffect(() => {
+    const label = selected ? `#${selected.id} ${selected.title}` : view === "bank" ? "题库" : view === "mistakes" ? "错题复习" : "总览";
+    document.title = `${label} · ${BRAND.name}｜${BRAND.owner}`;
+  }, [selected, view]);
+
   useEffect(() => {
     if (!selectedId) return undefined;
     let active = true;
@@ -186,9 +197,18 @@ function App() {
 
   return <div className="appShell">
     <header className="topbar">
-      <button className="brandButton" onClick={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("dashboard"); }}><span className="brandMark">H</span><span><strong>Hot 100</strong><small>学习工作台</small></span></button>
+      {/* 品牌块：图标与 public/favicon.svg 同源（BrandIcon 里是同一份路径数据）。
+          第二行从「学习工作台」改成子域名，让访客一进来就知道这是 kaii.homes 的子站。 */}
+      <button className="brandButton" onClick={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("dashboard"); }} aria-label={`${BRAND.name} ${BRAND.tagline}，回到总览`}><BrandIcon /><span><strong>{BRAND.name}</strong><small>{BRAND.host}</small></span></button>
       <nav aria-label="主导航">{[["dashboard", "总览"], ["bank", "题库"], ["mistakes", "错题复习"]].map(([id, label]) => <button className={view === id ? "active" : ""} key={id} onClick={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); if (id === "bank") setFilters(current => ({ ...current, phase: undefined })); setView(id); }}>{label}</button>)}</nav>
-      <span className="topProgress">{stats.done}/{stats.total} 已完成</span>
+      <div className="topbarRight">
+        <span className="topProgress">{stats.done}/{stats.total} 已完成</span>
+        {/* 回主站。rel="noreferrer" 是因为这是跨站跳转，且本站不需要知道来源。
+            落点是博客的「学习路线」页而不是首页 —— 读者是从那条路线过来的。 */}
+        <a className="topBackLink" href={BLOG.pathUrl} target="_blank" rel="noopener noreferrer">
+          <span aria-hidden="true">←</span> 回 {BLOG.name}
+        </a>
+      </div>
     </header>
     <main>
       {view === "dashboard" && <Dashboard stats={stats} studyEntry={studyEntry} dueReviews={dueReviews} questions={dashboardQuestions} state={state} onOpen={open} onOpenStage={(phase) => { setFilters({ query: "", category: "全部", difficulty: "全部", status: "全部", phase }); setView("bank"); }} />}
@@ -197,6 +217,7 @@ function App() {
       {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail question={selected} solution={selectedSolution} practiceHistory={getEffectivePracticeEvents(state, selected.id)} progressItem={progress[selected.id]} drafts={state.drafts} note={state.notes[selected.id]} defaultLanguage={state.profile?.defaultLanguage || "java"} runnerAvailable={Boolean(runnerAvailable && selectedSolution?.func)} onProgressChange={setStatus} onHint={recordHintUsage} onSolutionView={recordSolutionCodeView} onDraftChange={setDraft} onNoteChange={setNote} onRun={onRun} onPracticeOutcome={recordPracticeOutcome} onRecordHistory={recordHistory} onBack={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("bank"); }} onPrevious={previousInOrder ? () => open(previousInOrder.id) : undefined} previousQuestion={previousInOrder} onNext={nextInOrder ? nextQuestion : undefined} nextQuestion={nextInOrder} /> : <div className="contentCard loadingCard">正在加载这道题的题面和题解…</div>)}
       {view === "detail" && !selected && <div className="contentCard emptyState">未找到这道题，请从上方题库重新选择。</div>}
     </main>
+    <SiteFooter />
     <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} onConfigured={() => setBackupAvailable(true)} onImport={(incoming) => setState(parseState(incoming))} />
   </div>;
 }

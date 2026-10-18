@@ -1,6 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Hot 100">
-  <!-- 和顶部品牌方块一致：主色圆角底 + 白色 H -->
-  <rect width="32" height="32" rx="7" fill="#4f46e5"/>
-  <path d="M10.5 9v14M21.5 9v14M10.5 16h11"
-        stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Hot 100 练习平台">
+  <!-- 与博客 kaii.homes 的 favicon 同一图标家族：六边形轮廓逐字复用
+       （底 #3E6B3F / rx7、六边形 M16 6.5… / 描边 2 / #B5CA4D）。
+       唯一差异是内芯语义 —— 博客是「站点坐标」实心圆 r=2.6，
+       本平台换成对勾：刷题就是一题一题打勾。
+       内芯为什么不用「H」：32px 下三条 2.2 笔画会糊成一坨，16px 完全不可辨。 -->
+  <rect width="32" height="32" rx="7" fill="#3E6B3F"/>
+  <path d="M16 6.5l8 4.5v9L16 24.5 8 20v-9l8-4.5z" fill="none" stroke="#B5CA4D"
+        stroke-width="2" stroke-linejoin="round"/>
+  <path d="M12.4 16.3l2.8 2.8 5.2-5.8" fill="none" stroke="#B5CA4D" stroke-width="2.6"
+        stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
