@@ -33,7 +33,12 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
     return new URL(DOWNLOAD_PATH, base).href;
   }, []);
 
-  const command = useMemo(() => `node ${DOWNLOAD_FILE} --endpoint ${tunnelEndpoint()}`, []);
+  // 带上 cd：浏览器把文件存到「下载」目录，用户在任意位置直接敲 node 会报
+  // Cannot find module。两行一起复制，粘进终端就能跑。
+  const command = useMemo(
+    () => `cd ~/Downloads\nnode ${DOWNLOAD_FILE} --endpoint ${tunnelEndpoint()}`,
+    []
+  );
 
   const copy = async () => {
     try {
@@ -77,7 +82,7 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" className="primaryButton" onClick={onRetry} disabled={waiting}>
         {waiting ? "等待中…" : "我连上了，重新运行"}
       </button>
-      <span>代码只在本机执行，不上传；窗口关掉即停止。</span>
+      <span>代码只在本机执行，不上传；窗口关掉即停止。若文件不在下载目录，先 cd 到它所在的目录。</span>
     </div>
   </div>;
 }
