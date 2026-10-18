@@ -176,7 +176,8 @@ test("runner 发 hello 后拿到刚配对的 token（必须在消息处理内回
     // runner 主动发 hello（真实 runner 连上后就会发）
     await new Session(state, {}).webSocketMessage(runner, JSON.stringify({ v: 1, t: "hello", payload: { role: "runner" } }));
 
-    assert.equal(runnerClient._recv.length, 1, "应收到一帧 hello");
+    // 会收到两帧：hello（带 token）和 presence（告诉 runner 网页是否已接入）
+    assert.equal(runnerClient._recv.length, 2, "应收到 hello + presence");
     const reply = JSON.parse(runnerClient._recv[0]);
     assert.equal(reply.t, "hello");
     assert.equal(typeof reply.payload.token, "string");
@@ -185,7 +186,8 @@ test("runner 发 hello 后拿到刚配对的 token（必须在消息处理内回
 
     // token 只发一次，重复 hello 不再回传（避免泄露给后续连接）
     await new Session(state, {}).webSocketMessage(runner, JSON.stringify({ v: 1, t: "hello", payload: {} }));
-    assert.equal(runnerClient._recv.length, 1, "第二次 hello 不应再回 token");
+    const tokens = runnerClient._recv.map((x) => JSON.parse(x)).filter((f) => f.t === "hello" && f.payload?.token);
+    assert.equal(tokens.length, 1, "token 只应回传一次");
   } finally {
     restore();
   }

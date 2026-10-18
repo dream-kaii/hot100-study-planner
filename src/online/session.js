@@ -210,6 +210,12 @@ export class Session {
         safeSend(ws, { t: FRAME.HELLO, payload: { role: "worker", token: pending, sid } });
         await this.state.storage.delete(KEY_PENDING_TOKEN);
       }
+      // 同时告诉 runner 网页那端是否已接入：
+      // runner 用旧 token 重连到"没人等的会话"时，靠这个提示用户换用新配对码。
+      safeSend(ws, {
+        t: FRAME.PRESENCE,
+        payload: { peer: this.socketsOf("browser").length > 0 ? "online" : "offline" }
+      });
       return; // 配对握手不转发给网页
     }
 

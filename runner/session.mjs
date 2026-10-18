@@ -33,7 +33,7 @@ async function resolveWebSocket() {
  * 断线后自动退避重连，直到 close() 被显式调用。
  */
 export class Tunnel {
-  constructor({ url, token, sid = "", code = "", onRun, onPaired = null, onLog = () => {}, onStateChange = () => {}, WebSocketImpl = null }) {
+  constructor({ url, token, sid = "", code = "", onRun, onPaired = null, onPeerState = () => {}, onLog = () => {}, onStateChange = () => {}, WebSocketImpl = null }) {
     this.url = url;
     this.token = token;
     /** 已有 token 时用 sid 直连；只有配对码时用 code 让 Worker 去查 sid。 */
@@ -41,6 +41,7 @@ export class Tunnel {
     this.code = code;
     this.onRun = onRun;
     this.onPaired = onPaired;
+    this.onPeerState = onPeerState;
     this.onLog = onLog;
     this.onStateChange = onStateChange;
     this.WebSocketImpl = WebSocketImpl;
@@ -200,8 +201,9 @@ export class Tunnel {
         return;
       }
       case FRAME.PRESENCE:
-        // Worker 告诉我们网页那一端的状态（开了/关了）。仅记录，不参与判题。
-        this.onStateChange({ state: this.state, presence: frame.payload?.peer });
+        // Worker 告诉我们网页那一端的状态。走独立回调：
+        // 混进 onStateChange 会被当成一次新的 OPEN，日志里重复出现"已连上隧道"。
+        this.onPeerState(frame.payload?.peer || "unknown");
         return;
       default:
         this.onLog("warn", `未知帧类型：${frame.t}`);

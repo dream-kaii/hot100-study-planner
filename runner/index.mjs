@@ -190,6 +190,29 @@ async function main() {
 
   const endpoint = session.endpoint || args.endpoint;
 
+  // 用本地保存的 token 连上、但网页一直没接入 —— 说明连的是旧会话。
+  // 这是真实踩过的坑：用户网页上看到一个新配对码，runner 却在等上一个会话。
+  let staleHintTimer = null;
+  let runArrived = false;
+  const armStaleSessionHint = () => {
+    if (args.code) return; // 用配对码连的，一定是当前会话
+    if (staleHintTimer) clearTimeout(staleHintTimer);
+    staleHintTimer = setTimeout(() => {
+      if (runArrived) return;
+      console.log(`
+⚠ 正在等待的这个会话没有网页在连。如果你网页上显示的是一个**新的**配对码，
+  说明 runner 连的是上一次的旧会话。二选一：
+
+  1) 用网页上的新码重跑：
+     node --use-env-proxy ${path.basename(process.argv[1] || "hot100-runner.mjs")} --code <6位码> --endpoint ${session.endpoint || args.endpoint}
+
+  2) 清掉旧凭据后重跑（启动时会问你要码）：
+     node ${path.basename(process.argv[1] || "hot100-runner.mjs")} --unpair
+`);
+    }, 8000);
+    staleHintTimer.unref?.();
+  };
+
   // 2. 建隧道
   const tunnel = new Tunnel({
     url: endpoint,
@@ -197,11 +220,24 @@ async function main() {
     // 只有配对码时走 ?code=，让 Worker 用 Lobby 换 sid；已有 token 时用 sid 直连。
     code: session.pairCode || "",
     sid: session.sid || "",
+    // 用本地凭据（而不是新配对码）连上时，网页可能根本不在这个会话上。
+    resumed: !args.code,
     WebSocketImpl: null,
     onLog: log,
     onStateChange: (event) => {
-      if (event.state === "OPEN") log("info", "已连上隧道，等待网页发来运行请求");
-      else if (event.state === "IDLE" && event.code) log("warn", `隧道断开（${event.code}）`);
+      if (event.state === "OPEN") {
+        log("info", "已连上隧道，等待网页发来运行请求");
+        armStaleSessionHint();
+      } else if (event.state === "IDLE" && event.code) {
+        log("warn", `隧道断开（${event.code}）`);
+      }
+    },
+    onPeerState: (peer) => {
+      // 网页接入了就撤销"连到旧会话"的告警。
+      if (peer === "online" && staleHintTimer) {
+        clearTimeout(staleHintTimer);
+        staleHintTimer = null;
+      }
     },
     onRun: async (frame) => {
       const check = validateRunFrame(frame, {
@@ -210,6 +246,8 @@ async function main() {
         maxCodeBytes: MAX_OUTPUT * 4
       });
       if (!check.ok) return { status: "error", error: check.error };
+      runArrived = true;
+      if (staleHintTimer) { clearTimeout(staleHintTimer); staleHintTimer = null; }
       log("info", `收到运行请求：${check.payload.language} / ${check.payload.mode}`);
       const started = Date.now();
       const result = await runExample(check.payload);
