@@ -10,9 +10,12 @@
     "directory": "./dist",
     "not_found_handling": "single-page-application"
   },
-  // routes 留空：域名由 Cloudflare 面板或部署时指定。
-  // 之前这里写死了别人的域名，部署会尝试绑定失败。
-  "routes": [],
+  // 自定义域名。写在这里而不是只靠面板，否则每次 wrangler deploy
+  // 都会按配置同步路由，把面板加上的域名清掉。
+  // 绑定的前提：kaii.homes 这个 zone 在本账号下托管。
+  "routes": [
+    { "pattern": "hot100.kaii.homes", "custom_domain": true }
+  ],
 
   // Session：一个会话（一个浏览器 ↔ 一台电脑）
   // Lobby  ：配对码 → 会话的短期索引，让只拿到 6 位码的 runner 能找到会话

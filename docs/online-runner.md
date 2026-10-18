@@ -205,13 +205,26 @@ node hot100-runner.mjs --stop     # 停掉后台
 所以部署到 `hot100.你的域名.com` 之后，页面上给出的命令会自动变成
 `--endpoint wss://hot100.你的域名.com/ws`，运行助手也跟着连新域名。
 
+### 当前已绑定
+
+**`hot100.kaii.homes`**（zk 的博客域名 `kaii.homes` 的子域名）。
+
+注意：一旦在 `wrangler.jsonc` 里声明了 `custom_domain` 路由，Cloudflare 会**关闭 workers.dev 访问**，
+只保留自定义域名。这是预期行为，也更干净。
+
 绑定步骤（Cloudflare 面板）：
 
-1. 确认域名已托管在 Cloudflare（和你的博客同一个账号即可）
-2. Workers & Pages → `hot100-study-planner` → **Settings** → **Domains & Routes**
-3. **Add** → **Custom domain** → 填 `hot100.你的域名.com`
-4. Cloudflare 会自动创建对应的 DNS 记录（CNAME 到 workers.dev）
-5. 等证书签发（通常 1–2 分钟）
+1. 确认域名已托管在 Cloudflare（和博客同一个账号即可）
+2. Workers & Pages → `hot100-study-planner` → **Domains**
+3. 右侧 **+ Add Domain**（不是 Add Route）→ 填 `hot100.你的域名.com`
+4. Cloudflare 自动创建 DNS 记录并签发证书（通常 1–2 分钟）
+5. **同时把域名写进 `wrangler.jsonc` 的 `routes`**，否则下次 `wrangler deploy` 会按配置同步、把它清掉：
+
+   ```jsonc
+   "routes": [
+     { "pattern": "hot100.kaii.homes", "custom_domain": true }
+   ]
+   ```
 
 绑好之后：
 

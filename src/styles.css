@@ -133,18 +133,24 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
    在此之前 .monacoHost 是 flex:1 + min-height:0 + height:0，加面板后会塌成 0。
    flex 必须写 0 0 auto：写成 0 1 auto 时面板会被挤成一条线。 */
 @media(min-width:801px){
-  .problemWorkspace .runnerPairPanel{flex:0 0 auto;max-height:62%;overflow:auto}
-  .problemWorkspace .monacoHost{min-height:150px}
+  .problemWorkspace .runnerPairPanel{flex:0 0 auto;max-height:72%;overflow:auto}
+  .problemWorkspace .monacoHost{min-height:110px}
 }
 .runnerPairCodeRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 6px}
 .runnerPairCodeRow small{color:var(--muted);font-size:11px}
 .runnerPairDownloadRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 6px}
 .runnerPairDownloadRow small{color:var(--muted);font-size:11px}
 
-/* 面板内容可能超过 max-height，操作按钮必须始终可见：贴在滚动区底部。 */
+/* 不要用 position:sticky 做操作栏：面板内容一超高，它就会盖住上方的命令框
+   （实测会正好挡住第二行）。内容压缩到不需要滚动即可。 */
 .problemWorkspace .runnerPairPanel .runnerPairActions{
-  position:sticky;bottom:-12px;background:#FFFDF8;
-  padding:10px 0 4px;margin-top:10px;border-top:1px solid #efe7dc
+  padding:8px 0 0;margin-top:8px;border-top:1px solid #efe7dc
 }
-/* 命令是两行（cd + node），需要保留换行 */
-.runnerPairCommand code{white-space:pre-wrap;line-height:1.5}
+/* 命令固定是两行（cd + node），用块级布局而不是 flex：
+   flex + 多行内联元素时行盒高度算不准，第二行会被裁掉。
+   右侧留出 64px 给「复制」按钮。 */
+.runnerPairCommand{position:relative;display:block;padding:8px 64px 8px 10px;min-width:0}
+.runnerPairCommand code{display:block;white-space:pre-wrap;line-height:1.7;
+  overflow-wrap:anywhere;word-break:break-word;background:none;padding:0;
+  color:#F1C9B8;font-size:12px}
+.runnerPairCommand button{position:absolute;right:8px;top:8px;flex:none}

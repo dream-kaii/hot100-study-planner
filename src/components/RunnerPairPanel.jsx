@@ -60,14 +60,13 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <div className="runnerPairCode" aria-live="polite">
         {code ? code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <em>正在生成…</em>}
       </div>
-      <small>输进终端 · 10 分钟内有效 · 用一次作废</small>
+      <small>输进终端 · 10 分钟内有效</small>
     </div>
 
     <div className="runnerPairDownloadRow">
       <a className="runnerPairDownload" href={downloadUrl} download={DOWNLOAD_FILE}>
         下载 {DOWNLOAD_FILE}（约 58 KB）
       </a>
-      <small>单文件，判题逻辑已内联，可直接打开审阅</small>
     </div>
 
     <div className="runnerPairCommand">
@@ -82,7 +81,7 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" className="primaryButton" onClick={onRetry} disabled={waiting}>
         {waiting ? "等待中…" : "我连上了，重新运行"}
       </button>
-      <span>代码只在本机执行，不上传；窗口关掉即停止。若文件不在下载目录，先 cd 到它所在的目录。</span>
+      <span>代码只在本机执行，不上传；关窗口即停止</span>
     </div>
   </div>;
 }
