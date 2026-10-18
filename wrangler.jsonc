@@ -1,7 +1,10 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "hot100-study-planner",
-  "main": "src/worker.js",
+  // 启用在线运行：Worker 接管 /api/* 与 /ws，其余仍回退到静态资源。
+  // 要回滚成纯静态站点，把这一行改回 "src/worker.js"，并删掉下面
+  // durable_objects 与 migrations 两段，然后重新部署。
+  "main": "src/online/index.js",
   "compatibility_date": "2026-06-29",
   "assets": {
     "directory": "./dist",
@@ -9,5 +12,19 @@
   },
   // routes 留空：域名由 Cloudflare 面板或部署时指定。
   // 之前这里写死了别人的域名，部署会尝试绑定失败。
-  "routes": []
+  "routes": [],
+
+  // Session：一个会话（一个浏览器 ↔ 一台电脑）
+  // Lobby  ：配对码 → 会话的短期索引，让只拿到 6 位码的 runner 能找到会话
+  "durable_objects": {
+    "bindings": [
+      { "name": "SESSION", "class_name": "Session" },
+      { "name": "LOBBY", "class_name": "Lobby" }
+    ]
+  },
+
+  // tag 一旦部署过就不能改。以后新增 DO 类要追加一条新 tag。
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["Session", "Lobby"] }
+  ]
 }

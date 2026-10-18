@@ -126,3 +126,5 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 .runnerPairError{margin:10px 0 0;color:#B03B4B;font-size:12px}
 .runnerPairActions{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap}
 .runnerPairActions span{color:var(--muted);font-size:11px}
+.runnerPairDownload{display:inline-block;margin:4px 0 0;padding:7px 12px;border-radius:6px;background:var(--primary);color:#FFFEFB;font-size:12px;font-weight:700;text-decoration:none}
+.runnerPairDownload:hover{opacity:.9}

@@ -15,6 +15,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import ProblemBank from "./pages/ProblemBank.jsx";
 import Mistakes from "./pages/Mistakes.jsx";
 import "./styles.css";
+import { createOnRun, canRunOnline } from "./online/runner-bridge.js";
 
 const solutionModules = import.meta.glob("./data/solutions/*.json", { eager: false, import: "default" });
 const STORAGE_KEYS = ["hot100-study-planner-v3", "hot100-study-planner-v1"];
@@ -163,15 +164,17 @@ function App() {
     const next = nextInOrder;
     if (next) open(next.id);
   };
-  const onRun = async (payload) => {
-    try {
-      const response = await fetch("/__runner", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      if (!response.ok) return { status: "unavailable", error: "本地运行接口返回了错误，请在本地开发环境重试。" };
-      return response.json();
-    } catch {
-      return { status: "unavailable", error: "请在本地开发环境运行：线上页面没有本地 Java/Python 运行接口。" };
-    }
-  };
+  // 运行能力探测：只判断"能不能点运行"，不做任何弹窗（用户明确要求不要环境提示）。
+  const [runnerAvailable, setRunnerAvailable] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    canRunOnline().then((ok) => { if (alive) setRunnerAvailable(ok); }).catch(() => { if (alive) setRunnerAvailable(false); });
+    return () => { alive = false; };
+  }, []);
+
+  // 运行入口：本地 dev 走 /__runner（原路），线上走「网页 → Worker → 本机 runner」隧道。
+  // 两条通路的判定在 src/online/runner-bridge.js 里，这里只负责转发。
+  const onRun = useMemo(() => createOnRun(), []);
   const onPractice = (mode) => {
     const pool = mode === "unfinished"
       ? studyQuestions.filter((q) => !hasCompletedLearning(progress[q.id]))
@@ -191,7 +194,7 @@ function App() {
       {view === "dashboard" && <Dashboard stats={stats} studyEntry={studyEntry} dueReviews={dueReviews} questions={dashboardQuestions} state={state} onOpen={open} onOpenStage={(phase) => { setFilters({ query: "", category: "全部", difficulty: "全部", status: "全部", phase }); setView("bank"); }} />}
       {view === "bank" && <ProblemBank questions={filtered} allQuestions={studyQuestions} progress={displayProgress} dailyNewLimit={state.profile?.dailyNewLimit} onDailyNewLimitChange={(value) => updateState((current) => ({ profile: { ...current.profile, dailyNewLimit: value } }))} filters={filters} onFiltersChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onOpenQuestion={open} onStatusChange={setStatus} onPractice={onPractice} categories={["全部", ...hot100.groups.map((group) => group.name)]} />}
       {view === "mistakes" && <Mistakes questions={hot100.questions} progress={displayProgress} rawProgress={progress} dailyNewLimit={state.profile?.dailyNewLimit} onOpen={open} />}
-      {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail question={selected} solution={selectedSolution} practiceHistory={getEffectivePracticeEvents(state, selected.id)} progressItem={progress[selected.id]} drafts={state.drafts} note={state.notes[selected.id]} defaultLanguage={state.profile?.defaultLanguage || "java"} runnerAvailable={Boolean(import.meta.env?.DEV && selectedSolution?.func)} onProgressChange={setStatus} onHint={recordHintUsage} onSolutionView={recordSolutionCodeView} onDraftChange={setDraft} onNoteChange={setNote} onRun={onRun} onPracticeOutcome={recordPracticeOutcome} onRecordHistory={recordHistory} onBack={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("bank"); }} onPrevious={previousInOrder ? () => open(previousInOrder.id) : undefined} previousQuestion={previousInOrder} onNext={nextInOrder ? nextQuestion : undefined} nextQuestion={nextInOrder} /> : <div className="contentCard loadingCard">正在加载这道题的题面和题解…</div>)}
+      {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail question={selected} solution={selectedSolution} practiceHistory={getEffectivePracticeEvents(state, selected.id)} progressItem={progress[selected.id]} drafts={state.drafts} note={state.notes[selected.id]} defaultLanguage={state.profile?.defaultLanguage || "java"} runnerAvailable={Boolean(runnerAvailable && selectedSolution?.func)} onProgressChange={setStatus} onHint={recordHintUsage} onSolutionView={recordSolutionCodeView} onDraftChange={setDraft} onNoteChange={setNote} onRun={onRun} onPracticeOutcome={recordPracticeOutcome} onRecordHistory={recordHistory} onBack={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("bank"); }} onPrevious={previousInOrder ? () => open(previousInOrder.id) : undefined} previousQuestion={previousInOrder} onNext={nextInOrder ? nextQuestion : undefined} nextQuestion={nextInOrder} /> : <div className="contentCard loadingCard">正在加载这道题的题面和题解…</div>)}
       {view === "detail" && !selected && <div className="contentCard emptyState">未找到这道题，请从上方题库重新选择。</div>}
     </main>
     <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} onConfigured={() => setBackupAvailable(true)} onImport={(incoming) => setState(parseState(incoming))} />

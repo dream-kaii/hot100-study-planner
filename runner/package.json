@@ -1,0 +1,14 @@
+{
+  "name": "hot100-runner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Hot 100 本机运行助手：把 src/services/runner.js 的判题能力通过 WSS 隧道暴露给线上页面",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.mjs",
+    "doctor": "node index.mjs --doctor"
+  }
+}

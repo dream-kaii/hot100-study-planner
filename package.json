@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "vite build && npm run build:runner",
+    "build:runner": "node scripts/build-runner.mjs",
     "deploy:cloudflare": "npm run build && npx wrangler deploy",
     "preview": "vite preview --host 127.0.0.1",
     "fetch:hot100": "node scripts/fetch-hot100.mjs",

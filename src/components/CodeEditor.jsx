@@ -3,6 +3,7 @@ import Editor from "@monaco-editor/react";
 import { getDraftKey, getRunResultDetails, getRunResultTitle } from "../services/editor.js";
 import { compareComplexity, estimateComplexity } from "../services/complexity.js";
 import ComplexityPanel from "./ComplexityPanel.jsx";
+import RunnerPairPanel from "./RunnerPairPanel.jsx";
 
 const LANGUAGE_LABELS = { python: "Python 3", java: "Java 17" };
 
@@ -45,6 +46,10 @@ export default function CodeEditor({
   const draftChangeRef = useRef(onDraftChange);
   const [result, setResult] = useState(null);
   const [running, setRunning] = useState(false);
+  // 在线运行：需要在用户电脑上启动 runner 时，本组件负责把配对码交到用户手上。
+  const [pairCode, setPairCode] = useState("");
+  const [pairError, setPairError] = useState("");
+  const pairCallbackRef = useRef(null);
   const [consumeEditorWheel, setConsumeEditorWheel] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 801px)").matches);
 
   useEffect(() => {
@@ -90,13 +95,38 @@ export default function CodeEditor({
   const run = async () => {
     if (!onRun || running) return;
     setRunning(true);
+    setPairError("");
     try {
-      setResult(await onRun({ questionId, language, mode, func, cases, code, input: example?.input ?? "", expectedOutput: example?.output ?? "" }));
+      const payload = { questionId, language, mode, func, cases, code, input: example?.input ?? "", expectedOutput: example?.output ?? "" };
+      // onRun 的第三个参数是配对回调：只有线上首次运行、需要用户在终端输码时才会被调用。
+      const outcome = await onRun(payload, undefined, (code) => {
+        setPairCode(code);
+        pairCallbackRef.current = code;
+      });
+      if (outcome?.status === "unavailable" && pairCallbackRef.current) {
+        // 需要配对：把错误留在面板里，不覆盖成"运行失败"。
+        setPairError(outcome.error || "");
+        setResult(null);
+        return;
+      }
+      setResult(outcome);
     } catch (error) {
       setResult({ status: "runtime_error", error: error.message || "运行请求失败，请重试。" });
     } finally {
       setRunning(false);
     }
+  };
+
+  const dismissPair = () => {
+    setPairCode("");
+    setPairError("");
+    pairCallbackRef.current = null;
+  };
+
+  const retryAfterPair = () => {
+    setPairCode("");
+    pairCallbackRef.current = null;
+    run();
   };
 
   const resultTitle = getRunResultTitle(result);
@@ -105,7 +135,7 @@ export default function CodeEditor({
   return <div className="codeEditor">
     <div className="editorMeta">
       <span>{LANGUAGE_LABELS[language] || language}</span>
-      <small>本地只运行公开示例</small>
+      <small id="hot100-run-hint">运行公开示例（代码在本机执行）</small>
     </div>
     <div className="monacoHost">
       <Editor
@@ -132,6 +162,7 @@ export default function CodeEditor({
         }}
       />
     </div>
+    {pairCode && <RunnerPairPanel code={pairCode} waiting={running} error={pairError} onRetry={retryAfterPair} onDismiss={dismissPair} />}
     <div className="editorActions">
       <button className="primaryButton" onClick={run} disabled={running || !onRun}>{running ? "运行中…" : "运行公开示例"}</button>
       <span className="draftStatus">{draftStatus || "输入来自左侧示例"}</span>

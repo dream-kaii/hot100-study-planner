@@ -49,9 +49,15 @@ function killProcessGroup(child) {
   try { process.kill(-child.pid, "SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch { /* already exited */ } }
 }
 
-function execute(command, args, { cwd, input = "", timeoutMs }) {
+// 固定 UTF-8，避免 Windows 的 GBK 系统默认编码把中文判错。
+// macOS/Linux 上这是 no-op，但显式设置可以挡住用户自定义 locale 带来的偏差。
+const UTF8_ENV = { PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" };
+
+function execute(command, args, { cwd, input = "", timeoutMs, env = null }) {
   return new Promise((resolve) => {
-    const child = spawn(command, args, { cwd, detached: true, stdio: ["pipe", "pipe", "pipe"] });
+    const spawnOptions = { cwd, detached: true, stdio: ["pipe", "pipe", "pipe"] };
+    if (env) spawnOptions.env = { ...process.env, ...env };
+    const child = spawn(command, args, spawnOptions);
     let output = "";
     let error = "";
     let outputBytes = 0;
@@ -494,15 +500,25 @@ async function runSingleExample({ language, mode = "acm", code = "", input = "",
     const sourceCode = isFunction ? (language === "python" ? pythonFunctionSource(code, func, input) : javaFunctionSource(code, func, input)) : code;
     await fs.writeFile(source, sourceCode, "utf8");
     if (language === "java") {
-      const compile = await execute("javac", [source], { cwd: directory, timeoutMs: COMPILE_TIMEOUT_MS });
+      // -encoding 让 javac 按 UTF-8 读源码；-J-Xmx256m 限制编译器自身内存，
+      // 避免用户写了一个巨大的源文件把整台机器拖慢。
+      const compile = await execute("javac", ["-encoding", "UTF-8", "-J-Xmx256m", source], { cwd: directory, timeoutMs: COMPILE_TIMEOUT_MS });
       if (compile.spawnError) return { status: "environment_error", output: "", error: "本机未找到 javac，请安装 JDK 后重试。", durationMs: Date.now() - started };
       if (compile.timedOut) return { status: "compile_timeout", output: compile.output, error: "Java 编译超过 10 秒", durationMs: Date.now() - started };
       if (compile.tooLarge) return { status: "output_limit", output: compile.output, error: "编译输出超过 64KB", durationMs: Date.now() - started };
       if (compile.code !== 0) return { status: "compile_error", output: compile.output, error: compile.error || "Java 编译失败", durationMs: Date.now() - started };
     }
     const command = language === "python" ? "python3" : "java";
-    const args = language === "python" ? [source] : ["-cp", directory, "Main"];
-    const result = await execute(command, args, { cwd: directory, input, timeoutMs: RUN_TIMEOUT_MS });
+    const args = language === "python"
+      ? ["-u", source]
+      : ["-Dfile.encoding=UTF-8", "-Xmx256m", "-cp", directory, "Main"];
+    // Python 额外固定 IO 编码；Java 靠 -Dfile.encoding，不需要环境变量。
+    const result = await execute(command, args, {
+      cwd: directory,
+      input,
+      timeoutMs: RUN_TIMEOUT_MS,
+      env: language === "python" ? UTF8_ENV : null
+    });
     const durationMs = Date.now() - started;
     if (result.spawnError) return { status: "environment_error", output: "", error: `本机未找到 ${command}，请安装运行环境后重试。`, durationMs };
     if (result.timedOut) return { status: "timeout", output: result.output, stderr: result.error, error: "程序运行超过 3 秒", durationMs };
