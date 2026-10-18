@@ -128,3 +128,21 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 .runnerPairActions span{color:var(--muted);font-size:11px}
 .runnerPairDownload{display:inline-block;margin:4px 0 0;padding:7px 12px;border-radius:6px;background:var(--primary);color:#FFFEFB;font-size:12px;font-weight:700;text-decoration:none}
 .runnerPairDownload:hover{opacity:.9}
+
+/* 配对面板不能把代码编辑器挤没：面板高度受控并内部滚动，编辑器保底 150px。
+   在此之前 .monacoHost 是 flex:1 + min-height:0 + height:0，加面板后会塌成 0。
+   flex 必须写 0 0 auto：写成 0 1 auto 时面板会被挤成一条线。 */
+@media(min-width:801px){
+  .problemWorkspace .runnerPairPanel{flex:0 0 auto;max-height:62%;overflow:auto}
+  .problemWorkspace .monacoHost{min-height:150px}
+}
+.runnerPairCodeRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 6px}
+.runnerPairCodeRow small{color:var(--muted);font-size:11px}
+.runnerPairDownloadRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0 6px}
+.runnerPairDownloadRow small{color:var(--muted);font-size:11px}
+
+/* 面板内容可能超过 max-height，操作按钮必须始终可见：贴在滚动区底部。 */
+.problemWorkspace .runnerPairPanel .runnerPairActions{
+  position:sticky;bottom:-12px;background:#FFFDF8;
+  padding:10px 0 4px;margin-top:10px;border-top:1px solid #efe7dc
+}

@@ -1,11 +1,11 @@
 // src/components/RunnerPairPanel.jsx
 // 在线运行的引导面板：用户点了"运行"、但本机还没有运行助手时出现。
 //
-// 设计原则（来自需求确认）：
+// 设计原则：
 //   1. 只在"已写代码 + 点了运行"之后出现，不在页面加载时打扰
-//   2. 明确告诉用户"代码在你自己的电脑上执行"
-//   3. 配对码是最显眼的元素，因为那是唯一需要手动输入的东西
-//   4. 一条命令就能启动，不要把用户丢进文档
+//   2. 配对码放最上面 —— 那是用户唯一要手输的东西，不能被折叠到滚动区外
+//   3. 明确告诉用户"代码在你自己的电脑上执行"
+//   4. 整体高度受控，不能把代码编辑器挤没
 
 import React, { useMemo, useState } from "react";
 
@@ -15,7 +15,7 @@ const DOWNLOAD_FILE = "hot100-runner.mjs";
 
 /**
  * 把当前页面的 origin 转成隧道地址。
- * 部署在哪个域名，runner 就连哪个域名 —— 不需要在构建时把地址写死，
+ * 部署在哪个域名，runner 就连哪个域名 —— 不需要在构建时写死，
  * 换域名、加自定义域、用 workers.dev 预览地址都不会失效。
  */
 function tunnelEndpoint() {
@@ -51,36 +51,24 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" className="runnerPairClose" onClick={onDismiss} aria-label="关闭">×</button>
     </div>
 
-    <p className="runnerPairLead">
-      代码只在你自己的电脑上执行，不会上传到服务器。只需要配置一次，之后每次点运行都会自动连上。
-    </p>
+    <div className="runnerPairCodeRow">
+      <div className="runnerPairCode" aria-live="polite">
+        {code ? code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <em>正在生成…</em>}
+      </div>
+      <small>输进终端 · 10 分钟内有效 · 用一次作废</small>
+    </div>
 
-    <ol className="runnerPairSteps">
-      <li>
-        <span>下载运行助手</span>
-        <a className="runnerPairDownload" href={downloadUrl} download={DOWNLOAD_FILE}>
-          下载 {DOWNLOAD_FILE}（约 57 KB）
-        </a>
-        <small>一个单文件 Node 脚本，已内联全部判题逻辑，可以直接用编辑器打开审一遍。</small>
-      </li>
-      <li>
-        <span>在下载目录执行</span>
-        <div className="runnerPairCommand">
-          <code>{command}</code>
-          <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
-        </div>
-        <small>
-          它会检查 node / python3 / javac，缺哪个会直接告诉你。想先自检可以加 <code>--doctor</code>。
-        </small>
-      </li>
-      <li>
-        <span>把下面的配对码粘进终端</span>
-        <div className="runnerPairCode" aria-live="polite">
-          {code ? code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <em>正在生成…</em>}
-        </div>
-        <small>配对码 10 分钟内有效，用一次就作废。窗口可以一直开着，关掉窗口就等于停止运行。</small>
-      </li>
-    </ol>
+    <div className="runnerPairDownloadRow">
+      <a className="runnerPairDownload" href={downloadUrl} download={DOWNLOAD_FILE}>
+        下载 {DOWNLOAD_FILE}（约 58 KB）
+      </a>
+      <small>单文件，判题逻辑已内联，可直接打开审阅</small>
+    </div>
+
+    <div className="runnerPairCommand">
+      <code>{command}</code>
+      <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
+    </div>
 
     {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…</p>}
     {error && <p className="runnerPairError" role="alert">{error}</p>}
@@ -89,7 +77,7 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" className="primaryButton" onClick={onRetry} disabled={waiting}>
         {waiting ? "等待中…" : "我连上了，重新运行"}
       </button>
-      <span>运行助手不会开机自启、不监听端口，也不会常驻后台。</span>
+      <span>代码只在本机执行，不上传；窗口关掉即停止。</span>
     </div>
   </div>;
 }
