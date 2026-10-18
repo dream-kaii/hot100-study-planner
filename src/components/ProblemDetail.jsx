@@ -6,6 +6,7 @@ import ProgressiveSolution from "./ProgressiveSolution.jsx";
 import { normalizeStudyText, splitStudyParagraphs } from "../services/study-text.js";
 import { createLanguageDrafts, getDraftKey, getExecutionCases, selectDraftRecord } from "../services/editor.js";
 import { classifyAttemptOutcome } from "../services/status.js";
+import { formatDateTime } from "../services/datetime.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
 // 「无本地运行接口」提示的关闭状态存储键（见组件内 runnerNoticeDismissed）
@@ -198,7 +199,7 @@ export default function ProblemDetail({
         </div>
         <details className="questionHistory" open={questionHistoryOpen} onToggle={handleQuestionHistoryToggle}>
           <summary>本题练习历史 · {practiceHistory.length} 次 · 最近一次{latestPracticeLabel}</summary>
-          <div className="questionHistoryBody">{practiceHistory.length ? practiceHistory.map((event, index) => <div className="questionHistoryRow" key={event.id || `${event.createdAt}-${index}`}><strong>第 {index + 1} 次 · {event.outcome === "failed" ? "运行失败" : event.outcome === "independent" ? "独立通过" : event.outcome === "needed-hint" ? "提示后通过" : event.outcome === "needed-solution" ? "看题解后通过" : "运行完成"}</strong><small>{event.language} · {event.mode} · {event.createdAt?.slice(0, 19).replace("T", " ")} · 提示 {event.hintsUsed || 0} 级 · {event.viewedSolutionCode ? "看过题解" : "未看题解"} · {Math.round((event.durationMs || 0) / 1000)} 秒</small></div>) : <p>本题还没有有效运行记录。</p>}</div>
+          <div className="questionHistoryBody">{practiceHistory.length ? practiceHistory.map((event, index) => <div className="questionHistoryRow" key={event.id || `${event.createdAt}-${index}`}><strong>第 {index + 1} 次 · {event.outcome === "failed" ? "运行失败" : event.outcome === "independent" ? "独立通过" : event.outcome === "needed-hint" ? "提示后通过" : event.outcome === "needed-solution" ? "看题解后通过" : "运行完成"}</strong><small>{event.language} · {event.mode} · {formatDateTime(event.createdAt)} · 提示 {event.hintsUsed || 0} 级 · {event.viewedSolutionCode ? "看过题解" : "未看题解"} · {Math.round((event.durationMs || 0) / 1000)} 秒</small></div>) : <p>本题还没有有效运行记录。</p>}</div>
         </details>
       </section>
     </div>

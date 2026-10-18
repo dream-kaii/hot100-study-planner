@@ -10,20 +10,8 @@ const outcomeLabels = {
   unknown: "已运行"
 };
 
-function formatDate(value) {
-  if (!value) return "时间未知";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "时间未知";
-  return new Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "short" }).format(date);
-}
-
-function formatDuration(value) {
-  const seconds = Math.max(0, Math.round(Number(value || 0) / 1000));
-  if (seconds < 60) return `${seconds} 秒`;
-  const minutes = Math.floor(seconds / 60);
-  const remainder = seconds % 60;
-  return remainder ? `${minutes} 分 ${remainder} 秒` : `${minutes} 分钟`;
-}
+// 时间/时长格式化统一放在 services/datetime.js，避免各处重复实现导致时区不一致。
+import { formatDateTime as formatDate, formatDuration } from "../services/datetime.js";
 
 export default function PracticeTimeline({ items = [], summary = {}, loading = false }) {
   const [filter, setFilter] = useState("all");

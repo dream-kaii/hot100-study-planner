@@ -164,3 +164,59 @@ Workers Free 额度（[Durable Objects Pricing](https://developers.cloudflare.co
 - **Windows 未验证**：runner 是纯 Node ESM，理论上跨平台，但 `process.kill(-pid)` 在 Windows 上行为不同，需要单独适配。
 - **答案随构建产物上线**：`dist/assets` 里仍含参考解与用例期望值。这是已知取舍（不做防作弊、不做答案剥离），如果要改，方向是把 `cases` 从客户端 bundle 里移出去。
 - **`RunnerPairPanel` 里的下载体积文字是硬编码**「约 57 KB」，rebuild 后如果体积变化要手动改。
+
+---
+
+## 9. 让终端能关掉：`--detach`
+
+运行助手必须**一直活着**才能执行代码——关掉进程就等于停止运行。如果嫌终端窗口占地方，用 `--detach`：
+
+```bash
+node hot100-runner.mjs --detach --endpoint wss://<你的域名>/ws
+```
+
+配对成功后它会：
+
+1. 把凭据写进 `~/.hot100-runner/session.json`
+2. 以 `--headless` 再启动一份脱离终端
+3. 打印 pid 和日志路径，然后**前台退出** —— 此时可以关掉终端窗口
+
+配套命令：
+
+```bash
+node hot100-runner.mjs --status   # 看后台在不在跑
+node hot100-runner.mjs --stop     # 停掉后台
+```
+
+日志在 `~/.hot100-runner/runner.log`，pid 在 `~/.hot100-runner/runner.pid`。
+
+> 注意：`--detach` 之后运行助手会常驻后台（这是它的工作方式）。介意的话就别用 `--detach`，保持前台运行、关窗口即停止。
+
+---
+
+## 10. 绑定自己的子域名
+
+**不需要改任何代码。** 页面里的隧道地址是按当前域名实时算的：
+
+```js
+`${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}/ws`
+```
+
+所以部署到 `hot100.你的域名.com` 之后，页面上给出的命令会自动变成
+`--endpoint wss://hot100.你的域名.com/ws`，运行助手也跟着连新域名。
+
+绑定步骤（Cloudflare 面板）：
+
+1. 确认域名已托管在 Cloudflare（和你的博客同一个账号即可）
+2. Workers & Pages → `hot100-study-planner` → **Settings** → **Domains & Routes**
+3. **Add** → **Custom domain** → 填 `hot100.你的域名.com`
+4. Cloudflare 会自动创建对应的 DNS 记录（CNAME 到 workers.dev）
+5. 等证书签发（通常 1–2 分钟）
+
+绑好之后：
+
+- 访问 `https://hot100.你的域名.com` 就是同一个站点
+- `*.workers.dev` 那个地址仍然可用（可以在 Settings 里关掉）
+- **国内通常能直连自定义域名**，运行助手就不用再配代理了
+
+> 如果你不想用子域名，也可以挂在路径上（比如 `你的域名.com/hot100`），但 `assets` 和 Worker 路由都要改前缀，麻烦得多。优先用子域名。

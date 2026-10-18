@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Hot 100">
+  <!-- 和顶部品牌方块一致：主色圆角底 + 白色 H -->
+  <rect width="32" height="32" rx="7" fill="#4f46e5"/>
+  <path d="M10.5 9v14M21.5 9v14M10.5 16h11"
+        stroke="#ffffff" stroke-width="3.2" stroke-linecap="round" fill="none"/>
+</svg>
