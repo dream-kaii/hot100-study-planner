@@ -108,6 +108,44 @@ async function doctor() {
   return ok;
 }
 
+/**
+ * 连不上隧道时给出可操作的提示。
+ * 最常见的原因是终端没走代理：浏览器能打开站点不代表终端能连 wss。
+ * 另一种是设了代理变量但忘了加 --use-env-proxy（Node 默认不读这些变量）。
+ */
+function printConnectHint(endpoint) {
+  const envKeys = ["HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy", "ALL_PROXY", "all_proxy"];
+  const hasProxyEnv = envKeys.some((key) => process.env[key]);
+  const usesEnvProxy = process.execArgv.some((arg) => arg === "--use-env-proxy");
+  const self = path.basename(process.argv[1] || "hot100-runner.mjs");
+
+  if (hasProxyEnv && !usesEnvProxy) {
+    console.log(`
+检测到你设了代理变量，但 Node 默认不读它们。加一个 --use-env-proxy 参数：
+
+  node --use-env-proxy ${self} --endpoint ${endpoint}
+`);
+    return;
+  }
+  if (hasProxyEnv && usesEnvProxy) {
+    console.log(`
+已经带了代理参数，但仍然连不上。请确认：
+  1. 代理软件里是「HTTP 代理」端口，不是 SOCKS 端口
+  2. 该端口在当前能正常转发 HTTPS（用 curl -x http://127.0.0.1:<端口> https://www.google.com 验证）
+`);
+    return;
+  }
+  console.log(`
+连不上隧道。浏览器能打开页面，不代表终端也能连 —— 终端需要单独走代理。
+
+如果你的网络需要代理，这样启动（端口换成你代理软件的 HTTP 端口）：
+
+  HTTP_PROXY=http://127.0.0.1:12450 HTTPS_PROXY=http://127.0.0.1:12450 node --use-env-proxy ${self} --endpoint ${endpoint}
+
+不需要代理的网络下直接重跑原命令即可。
+`);
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) { usage(); return 0; }
@@ -191,6 +229,7 @@ async function main() {
     await tunnel.connect();
   } catch (error) {
     log("error", error.message);
+    printConnectHint(endpoint);
     return 1;
   }
 
