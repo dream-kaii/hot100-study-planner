@@ -136,3 +136,5 @@ export async function checkOnce({ endpoint, currentVersion, targetPath, log = ()
 }
 
 // 版本 B：仅用于验证自动更新链路
+
+// 触发版本变化：验证 launchd 托管下的自动更新
