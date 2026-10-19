@@ -7,8 +7,21 @@ import { appendHistory } from "./services/history.js";
 import { getEffectivePracticeEvents } from "./services/history.js";
 import { filterQuestions, hasCompletedLearning, orderByStudyOrder, pickNextQuestion, pickPreviousQuestion, pickStudyQuestion } from "./services/practice.js";
 import { normalizeStudySolution } from "./services/study-text.js";
-import { isReviewDue } from "./services/review.js";
-import { recordHint, recordReviewOutcome, recordSolutionView, derivePracticeStatus } from "./services/status.js";
+import { recordHint, recordReviewOutcome, recordSolutionView, derivePracticeStatus, isMistakeStatus, isReviewPending } from "./services/status.js";
+import { canonicalStatus, statusLabel } from "./services/status-labels.js";
+import {
+  MAX_SOLUTIONS_PER_SCOPE,
+  appendVariant,
+  applyVerdict,
+  canAddVariant,
+  createVariant,
+  nextVariantName,
+  normalizeVariant,
+  removeVariant,
+  renameVariant,
+  selectScope,
+  updateVariant
+} from "./services/solutions.js";
 import BackupPanel from "./components/BackupPanel.jsx";
 import ProblemDetail from "./components/ProblemDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -22,11 +35,6 @@ import { createOnRun, canRunOnline } from "./online/runner-bridge.js";
 
 const solutionModules = import.meta.glob("./data/solutions/*.json", { eager: false, import: "default" });
 const STORAGE_KEYS = ["hot100-study-planner-v3", "hot100-study-planner-v1"];
-const STATUS_TO_CANONICAL = {
-  "未开始": "new", "思考中": "in-progress", "已完成": "completed", "错题": "reviewing", "待复习": "reviewing", "已掌握": "mastered",
-  new: "new", "in-progress": "in-progress", completed: "completed", reviewing: "reviewing", mastered: "mastered"
-};
-const STATUS_TO_LABEL = { new: "未开始", "in-progress": "思考中", completed: "已完成", reviewing: "待复习", mastered: "已掌握" };
 
 function loadState() {
   if (typeof localStorage === "undefined") return createDefaultState();
@@ -39,12 +47,19 @@ function loadState() {
   return createDefaultState();
 }
 
-function canonicalStatus(status) {
-  return STATUS_TO_CANONICAL[status] || status;
-}
-
-function uiProgress(progress = {}) {
-  return Object.fromEntries(Object.entries(progress).map(([id, item]) => [id, { ...item, status: STATUS_TO_LABEL[canonicalStatus(item?.status)] || item?.status || "未开始" }]));
+// 给 UI 的 progress 视图：把规范状态转成中文标签，
+// 顺便把「已完成但复习到期」显式标成待复习，避免各处再各算一次。
+function uiProgress(progress = {}, solutions = {}, now = new Date()) {
+  return Object.fromEntries(Object.entries(progress).map(([id, item]) => {
+    const derived = derivePracticeStatus(item, now);
+    // 该题一共存了几种解法（跨语言去重后取最大），题库卡片上会显示「N 种解法」。
+    const scopes = solutions?.[id] || {};
+    const variantCount = Object.values(scopes).reduce((max, modes) => {
+      const counts = Object.values(modes || {}).map((list) => (Array.isArray(list) ? list.length : 0));
+      return Math.max(max, 0, ...counts);
+    }, 0);
+    return [id, { ...item, status: statusLabel(derived), canonical: derived, variantCount }];
+  }));
 }
 
 function App() {
@@ -55,6 +70,9 @@ function App() {
   const [filters, setFilters] = useState({ query: "", category: "全部", difficulty: "全部", status: "全部" });
   const [lastBackupAt, setLastBackupAt] = useState("");
   const [selectedSolution, setSelectedSolution] = useState(null);
+  // 「从错题页点另起一种解法」要用的一次性标记。消费后清掉，
+  // 免得下次普通打开题目又莫名其妙多开一份。
+  const [freshStartFor, setFreshStartFor] = useState(null);
 
   useEffect(() => {
     hasBackupDirectory().then(setBackupAvailable).catch(() => setBackupAvailable(false));
@@ -78,15 +96,30 @@ function App() {
   }, [state, backupAvailable]);
 
   const progress = state.progress || {};
-  const displayProgress = useMemo(() => uiProgress(progress), [progress]);
+  const displayProgress = useMemo(() => uiProgress(progress, state.solutions), [progress, state.solutions]);
   const updateState = (updater) => setState((current) => ({ ...current, ...(typeof updater === "function" ? updater(current) : updater), updatedAt: new Date().toISOString() }));
 
+  // 手动改状态。
+  // 旧版在这里静默 return {} —— 用户点了「错题」什么都不发生，也没有提示，
+  // 一度让人以为「我明明标了错题，怎么找不到」。现在一律立刻生效。
   const setStatus = (questionId, status, timer) => updateState((current) => {
     const previous = current.progress?.[questionId] || {};
     const now = new Date().toISOString();
     const requested = canonicalStatus(status);
-    if (requested === "reviewing" && previous.status === "completed" && previous.reviewAt && Date.parse(previous.reviewAt) > Date.parse(now)) return {};
-    return { progress: { ...current.progress, [questionId]: { ...previous, status: requested, ...(["completed", "mastered"].includes(requested) ? { completedAt: previous.completedAt || now } : {}), ...(timer ? { timer } : {}), updatedAt: now } } };
+    const next = { ...previous, status: requested, ...(timer ? { timer } : {}), updatedAt: now };
+    if (["completed", "mastered"].includes(requested)) next.completedAt = previous.completedAt || now;
+    if (requested === "mastered" && !next.masteredAt) next.masteredAt = now;
+    if (requested === "reviewing") {
+      // 标成错题就要排进错题池，给一个立刻到期的复习日。
+      delete next.masteredAt;
+      next.reviewAt = now;
+    }
+    if (requested === "due") {
+      delete next.masteredAt;
+      next.reviewAt = now;
+    }
+    if (requested === "in-progress") delete next.masteredAt;
+    return { progress: { ...current.progress, [questionId]: next } };
   });
 
   const setNote = (questionId, note) => updateState((current) => ({ notes: { ...current.notes, [questionId]: { value: note, updatedAt: new Date().toISOString() } } }));
@@ -101,6 +134,74 @@ function App() {
     }
   }));
 
+  const readScope = (current, questionId, language, mode) => selectScope(current.solutions, questionId, language, mode);
+  const writeScope = (current, questionId, language, mode, list) => ({
+    ...current.solutions,
+    [questionId]: {
+      ...(current.solutions?.[questionId] || {}),
+      [language]: { ...(current.solutions?.[questionId]?.[language] || {}), [mode]: list }
+    }
+  });
+
+  // 点「+ 新解法」的语义：
+  //   1) 如果当前还是「未存档草稿」，先把它存成一份（不丢任何已写代码）；
+  //   2) 再追加一份空白模板解法并切过去，用户立刻开始写新思路。
+  // 这样「另起一种解法」永远不等于「删掉上一份」。
+  const addSolutionVariant = (questionId, language, mode, draft, options = {}) => updateState((current) => {
+    let list = readScope(current, questionId, language, mode);
+    if (list.length === 0 && draft?.code) {
+      // 第一次存档：把这份草稿连同它的判题结论一起收进「解法 1」。
+      const first = createVariant(draft, { seed: 0, name: nextVariantName(list) });
+      list = appendVariant(list, {
+        ...first,
+        verdict: options.verdict || first.verdict,
+        verifiedAt: options.verifiedAt || first.verifiedAt
+      });
+    }
+    if (!canAddVariant(list)) return { solutions: writeScope(current, questionId, language, mode, list) };
+    const now = new Date().toISOString();
+    // 新建的这份是空白模板，必须不带判题结论 ——
+    // 通过徽标只属于刚被存档的那份代码，不能跟着新解法一起复制。
+    const blank = normalizeVariant({
+      id: options.newId,
+      name: nextVariantName(list),
+      code: options.template || "",
+      createdAt: now,
+      updatedAt: now
+    }, list.length);
+    list = appendVariant(list, blank);
+    // 草稿归零：以后编辑器内容完全由「激活的解法」驱动，避免两份代码互相打架。
+    const drafts = { ...current.drafts };
+    if (drafts[questionId]?.[language]) {
+      const scoped = { ...drafts[questionId][language] };
+      delete scoped[mode];
+      drafts[questionId] = { ...drafts[questionId], [language]: scoped };
+    }
+    return { solutions: writeScope(current, questionId, language, mode, list), drafts };
+  });
+
+  // 把当前草稿覆盖写回某份已存在的解法。
+  const saveSolutionVariant = (questionId, language, mode, variantId, draft) => updateState((current) => {
+    const list = readScope(current, questionId, language, mode);
+    if (!list.some((item) => item.id === variantId)) return {};
+    return {
+      solutions: writeScope(current, questionId, language, mode, updateVariant(list, variantId, {
+        code: draft?.code ?? "",
+        cursor: draft?.cursor ?? 0,
+        scrollTop: draft?.scrollTop ?? 0,
+        updatedAt: new Date().toISOString()
+      }))
+    };
+  });
+
+  const renameSolutionVariant = (questionId, language, mode, variantId, name) => updateState((current) => ({
+    solutions: writeScope(current, questionId, language, mode, renameVariant(readScope(current, questionId, language, mode), variantId, name))
+  }));
+
+  const removeSolutionVariant = (questionId, language, mode, variantId) => updateState((current) => ({
+    solutions: writeScope(current, questionId, language, mode, removeVariant(readScope(current, questionId, language, mode), variantId))
+  }));
+
   const recordHintUsage = (questionId, level, language, mode) => updateState((current) => ({
     progress: { ...current.progress, [questionId]: recordHint(current.progress?.[questionId] || {}, level, new Date(), language, mode) }
   }));
@@ -111,34 +212,41 @@ function App() {
 
   const recordHistory = (event) => updateState((current) => appendHistory(current, event));
 
-  const recordPracticeOutcome = ({ questionId, language, mode, outcome, hintsUsed, viewedSolutionCode, attemptId, attemptHintsUsed, attemptViewedSolutionCode, caseId, durationMs, error }) => updateState((current) => {
+  const recordPracticeOutcome = ({ questionId, language, mode, outcome, hintsUsed, viewedSolutionCode, attemptId, attemptHintsUsed, attemptViewedSolutionCode, caseId, durationMs, error, variantId }) => updateState((current) => {
     const now = new Date().toISOString();
     const nextProgress = outcome === "completed"
       ? current.progress?.[questionId] || {}
       : recordReviewOutcome(current.progress?.[questionId] || {}, outcome, now);
-    return appendHistory({ ...current, progress: { ...current.progress, [questionId]: nextProgress } }, {
-      questionId, language, mode, outcome, hintsUsed, viewedSolutionCode, attemptId, attemptHintsUsed, attemptViewedSolutionCode, caseId, durationMs, errorMessage: error, createdAt: now
+    // 判题结论顺手回填到该解法的快照上，切换器里才能显示「这份跑通过」。
+    const list = readScope(current, questionId, language, mode);
+    const nextSolutions = variantId && list.some((item) => item.id === variantId)
+      ? writeScope(current, questionId, language, mode, applyVerdict(list, variantId, { verdict: outcome, outcome }))
+      : current.solutions;
+    return appendHistory({ ...current, progress: { ...current.progress, [questionId]: nextProgress }, solutions: nextSolutions }, {
+      questionId, language, mode, outcome, hintsUsed, viewedSolutionCode, attemptId, attemptHintsUsed, attemptViewedSolutionCode, caseId, durationMs, errorMessage: error, variantId, createdAt: now
     });
   });
 
+  // 统计口径统一：错题 = 派生为 reviewing；待复习 = 派生为 due。
+  // 两者都不再和「已完成」混在一起，统计卡和题库筛选用的是同一个派生函数。
   const stats = useMemo(() => {
     const values = hot100.questions.map((q) => derivePracticeStatus(progress[q.id]));
     return {
       total: hot100.questions.length,
       done: values.filter((value) => ["completed", "mastered"].includes(value)).length,
-      wrong: values.filter((value) => value === "reviewing").length,
+      wrong: values.filter((value) => isMistakeStatus(value)).length,
       mastered: values.filter((value) => value === "mastered").length,
-      due: hot100.questions.filter((q) => isReviewDue(progress[q.id])).length
+      due: values.filter((value) => value === "due").length
     };
   }, [progress]);
 
-  const filtered = useMemo(() => filterQuestions(hot100.questions, progress, { ...filters, status: filters.status === "全部" ? "全部" : canonicalStatus(filters.status) }), [progress, filters]);
+  const filtered = useMemo(() => filterQuestions(hot100.questions, progress, filters), [progress, filters]);
   const studyQuestions = useMemo(() => orderByStudyOrder(hot100.questions), []);
   const dashboardQuestions = useMemo(() => hot100.questions.map((question) => ({ ...question, phase: String(question.phase || "").replace("阶段一", "阶段 1").replace("阶段二", "阶段 2").replace("阶段三", "阶段 3").replace("阶段四", "阶段 4").replace("阶段五", "阶段 5").replace("阶段六", "阶段 6").replace("阶段七", "阶段 7") })), []);
   const studyEntry = useMemo(() => pickStudyQuestion(studyQuestions, progress), [progress, studyQuestions]);
   const nextInOrder = pickNextQuestion(studyQuestions, { currentId: selectedId });
   const previousInOrder = pickPreviousQuestion(studyQuestions, { currentId: selectedId });
-  const dueReviews = useMemo(() => studyQuestions.filter(q => isReviewDue(progress[q.id])), [progress, studyQuestions]);
+  const dueReviews = useMemo(() => studyQuestions.filter(q => isReviewPending(progress[q.id])), [progress, studyQuestions]);
   const selected = hot100.questions.find((question) => question.id === selectedId);
 
   // 浏览器标签标题跟随当前视图。
@@ -161,14 +269,12 @@ function App() {
 
   const open = (id, options = {}) => {
     if (!id) return;
-    if (options.resetDraft) updateState((current) => {
-      const drafts = { ...current.drafts };
-      delete drafts[String(id)];
-      return { drafts };
-    });
-    const nextId = String(id);
-    setSelectedId(nextId);
-    if (typeof window !== "undefined") window.history.pushState({}, "", `?question=${encodeURIComponent(nextId)}`);
+    // 「另起一种解法」不再粗暴删掉草稿（那是不可逆的）。
+    // 现在只是挂一个一次性标记，由 ProblemDetail 挂载时走和「+ 新解法」完全相同的路径：
+    // 先把已有代码存档，再开一份干净的模板。旧代码永远留在存档里。
+    if (options.freshStart) setFreshStartFor(String(id));
+    setSelectedId(String(id));
+    if (typeof window !== "undefined") window.history.pushState({}, "", `?question=${encodeURIComponent(String(id))}`);
     setView("detail");
   };
   const nextQuestion = () => {
@@ -189,8 +295,8 @@ function App() {
   const onPractice = (mode) => {
     const pool = mode === "unfinished"
       ? studyQuestions.filter((q) => !hasCompletedLearning(progress[q.id]))
-      : mode === "wrong" ? hot100.questions.filter((q) => derivePracticeStatus(progress[q.id]) === "reviewing")
-        : mode === "due" ? hot100.questions.filter((q) => isReviewDue(progress[q.id])) : filtered;
+      : mode === "wrong" ? hot100.questions.filter((q) => isMistakeStatus(derivePracticeStatus(progress[q.id])))
+        : mode === "due" ? hot100.questions.filter((q) => isReviewPending(progress[q.id])) : filtered;
     const next = mode === "sequential" || mode === "unfinished" ? pickStudyQuestion(pool, progress) : pickNextQuestion(pool, { mode: mode === "random" ? "random" : "sequential" });
     if (next) open(next.id);
   };
@@ -213,8 +319,38 @@ function App() {
     <main>
       {view === "dashboard" && <Dashboard stats={stats} studyEntry={studyEntry} dueReviews={dueReviews} questions={dashboardQuestions} state={state} onOpen={open} onOpenStage={(phase) => { setFilters({ query: "", category: "全部", difficulty: "全部", status: "全部", phase }); setView("bank"); }} />}
       {view === "bank" && <ProblemBank questions={filtered} allQuestions={studyQuestions} progress={displayProgress} dailyNewLimit={state.profile?.dailyNewLimit} onDailyNewLimitChange={(value) => updateState((current) => ({ profile: { ...current.profile, dailyNewLimit: value } }))} filters={filters} onFiltersChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onOpenQuestion={open} onStatusChange={setStatus} onPractice={onPractice} categories={["全部", ...hot100.groups.map((group) => group.name)]} />}
-      {view === "mistakes" && <Mistakes questions={hot100.questions} progress={displayProgress} rawProgress={progress} dailyNewLimit={state.profile?.dailyNewLimit} onOpen={open} />}
-      {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail question={selected} solution={selectedSolution} practiceHistory={getEffectivePracticeEvents(state, selected.id)} progressItem={progress[selected.id]} drafts={state.drafts} note={state.notes[selected.id]} defaultLanguage={state.profile?.defaultLanguage || "java"} runnerAvailable={Boolean(runnerAvailable && selectedSolution?.func)} onProgressChange={setStatus} onHint={recordHintUsage} onSolutionView={recordSolutionCodeView} onDraftChange={setDraft} onNoteChange={setNote} onRun={onRun} onPracticeOutcome={recordPracticeOutcome} onRecordHistory={recordHistory} onBack={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("bank"); }} onPrevious={previousInOrder ? () => open(previousInOrder.id) : undefined} previousQuestion={previousInOrder} onNext={nextInOrder ? nextQuestion : undefined} nextQuestion={nextInOrder} /> : <div className="contentCard loadingCard">正在加载这道题的题面和题解…</div>)}
+      {view === "mistakes" && <Mistakes questions={hot100.questions} rawProgress={progress} dailyNewLimit={state.profile?.dailyNewLimit} onOpen={open} />}
+      {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail
+        question={selected}
+        solution={selectedSolution}
+        practiceHistory={getEffectivePracticeEvents(state, selected.id)}
+        progressItem={progress[selected.id]}
+        drafts={state.drafts}
+        solutions={state.solutions}
+        note={state.notes[selected.id]}
+        defaultLanguage={state.profile?.defaultLanguage || "java"}
+        runnerAvailable={Boolean(runnerAvailable && selectedSolution?.func)}
+        maxVariants={MAX_SOLUTIONS_PER_SCOPE}
+        freshStart={freshStartFor === selectedId}
+        onFreshStartConsumed={() => setFreshStartFor(null)}
+        onProgressChange={setStatus}
+        onHint={recordHintUsage}
+        onSolutionView={recordSolutionCodeView}
+        onDraftChange={setDraft}
+        onNoteChange={setNote}
+        onAddVariant={addSolutionVariant}
+        onSaveVariant={saveSolutionVariant}
+        onRenameVariant={renameSolutionVariant}
+        onRemoveVariant={removeSolutionVariant}
+        onRun={onRun}
+        onPracticeOutcome={recordPracticeOutcome}
+        onRecordHistory={recordHistory}
+        onBack={() => { window.history.pushState({}, "", window.location.pathname); setSelectedId(null); setView("bank"); }}
+        onPrevious={previousInOrder ? () => open(previousInOrder.id) : undefined}
+        previousQuestion={previousInOrder}
+        onNext={nextInOrder ? nextQuestion : undefined}
+        nextQuestion={nextInOrder}
+      /> : <div className="contentCard loadingCard">正在加载这道题的题面和题解…</div>)}
       {view === "detail" && !selected && <div className="contentCard emptyState">未找到这道题，请从上方题库重新选择。</div>}
     </main>
     <SiteFooter />

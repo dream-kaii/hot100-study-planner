@@ -89,3 +89,44 @@ test("merge state uses parent timestamps when note records are plain values", ()
   assert.equal(mergeState(current, older).notes["1"], "old");
   assert.equal(mergeState(current, newer).notes["1"], "new");
 });
+
+test("solutions are version-3 optional data and survive a round trip", () => {
+  const state = parseState(JSON.stringify({
+    version: 3,
+    solutions: { "1": { java: { function: [{ id: "a", name: "哈希", code: "class Solution {}", verdict: "independent", verifiedAt: "2026-10-19T00:00:00.000Z" }] } } }
+  }));
+  assert.equal(state.solutions["1"].java.function[0].name, "哈希");
+  assert.equal(state.solutions["1"].java.function[0].verdict, "independent");
+  const round = parseState(serializeState(state));
+  assert.equal(round.solutions["1"].java.function[0].code, "class Solution {}");
+});
+
+test("old backups without solutions still parse", () => {
+  const state = parseState(JSON.stringify({ version: 3, progress: { "1": { status: "已完成" } } }));
+  assert.deepEqual(state.solutions, {});
+  assert.equal(state.progress["1"].status, "completed");
+});
+
+test("merging backups unions solution variants across languages", () => {
+  const base = parseState(JSON.stringify({
+    version: 3,
+    solutions: { "1": { java: { function: [{ id: "j1", code: "java-1", updatedAt: "2026-10-19T00:00:00.000Z" }] } } }
+  }));
+  const incoming = parseState(JSON.stringify({
+    version: 3,
+    solutions: { "1": { java: { function: [{ id: "j1", code: "java-2", updatedAt: "2026-10-19T02:00:00.000Z" }] }, python: { function: [{ id: "p1", code: "py", updatedAt: "2026-10-19T00:00:00.000Z" }] } } }
+  }));
+  const merged = mergeState(base, incoming);
+  assert.equal(merged.solutions["1"].java.function.length, 1);
+  assert.equal(merged.solutions["1"].java.function[0].code, "java-2");
+  assert.equal(merged.solutions["1"].python.function[0].code, "py");
+});
+
+test("待复习 migrates to due instead of sharing reviewing with 错题", () => {
+  const state = parseState(JSON.stringify({
+    version: 3,
+    progress: { "1": { status: "待复习" }, "2": { status: "错题" } }
+  }));
+  assert.equal(state.progress["1"].status, "due");
+  assert.equal(state.progress["2"].status, "reviewing");
+});

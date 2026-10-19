@@ -32,6 +32,9 @@ function normalizeEvent(event, fallbackId) {
     createdAt: isValidDate(source.createdAt) ? source.createdAt : new Date().toISOString()
   };
   if (source.attemptId) normalized.attemptId = String(source.attemptId);
+  // 这次结果是哪一份解法跑出来的。练习历史里因此能显示「解法 2」，
+  // 而不是一堆看不出差别的同名记录。
+  if (source.variantId) normalized.variantId = String(source.variantId);
   if (Object.hasOwn(source, "attemptHintsUsed")) normalized.attemptHintsUsed = Number.isFinite(source.attemptHintsUsed) ? source.attemptHintsUsed : 0;
   if (Object.hasOwn(source, "attemptViewedSolutionCode")) normalized.attemptViewedSolutionCode = Boolean(source.attemptViewedSolutionCode);
   if (Number.isFinite(source.reviewIntervalDays)) normalized.reviewIntervalDays = source.reviewIntervalDays;

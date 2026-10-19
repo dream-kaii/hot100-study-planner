@@ -1,3 +1,7 @@
+import { mergeSolutions, normalizeSolutions } from "./solutions.js";
+
+// 版本号保持不变：solutions 是纯新增的可选字段，
+// 升版会让已经导出的 v3 备份全部被判为「版本不受支持」。
 export const STATE_VERSION = 3;
 
 const EPOCH = "1970-01-01T00:00:00.000Z";
@@ -8,6 +12,7 @@ export function createDefaultState() {
     profile: { dailyMinutes: 90, dailyNewLimit: 1, defaultLanguage: "java" },
     progress: {},
     drafts: {},
+    solutions: {},
     notes: {},
     history: [],
     timer: null,
@@ -64,6 +69,7 @@ function normalizeCurrent(value) {
     profile: { ...defaults.profile, ...(isObject(source.profile) ? source.profile : {}) },
     progress: normalizeProgress(source.progress),
     drafts: normalizeDrafts(source.drafts),
+    solutions: normalizeSolutions(source.solutions),
     notes: isObject(source.notes) ? source.notes : {},
     history: Array.isArray(source.history) ? source.history.filter(isObject) : [],
     timer: source.timer ?? null,
@@ -75,7 +81,9 @@ function normalizeCurrent(value) {
 function migrateProgressItem(item) {
   if (!isObject(item)) return item;
   const oldStatus = item.status;
-  const statusMap = { 未开始: "new", 思考中: "in-progress", 已完成: "completed", 错题: "reviewing", 待复习: "reviewing", 已掌握: "completed" };
+  // 「待复习」迁移成 due，不再和「错题」共用 reviewing：
+  // 两者语义不同，共用会让统计和筛选互相打架。
+  const statusMap = { 未开始: "new", 思考中: "in-progress", 已完成: "completed", 错题: "reviewing", 待复习: "due", 已掌握: "completed" };
   const status = statusMap[oldStatus] || oldStatus;
   const migrated = { ...item, status };
   if (oldStatus && oldStatus !== status) migrated.legacy = { ...(isObject(item.legacy) ? item.legacy : {}), status: oldStatus };
@@ -191,6 +199,7 @@ export function mergeState(current, incoming) {
     profile: newer({ value: base.profile, updatedAt: base.updatedAt }, { value: next.profile, updatedAt: next.updatedAt }).value,
     progress: mergeRecords(base.progress, next.progress, base.updatedAt, next.updatedAt),
     drafts: mergeDrafts(base.drafts, next.drafts),
+    solutions: mergeSolutions(base.solutions, next.solutions),
     notes: mergeRecords(base.notes, next.notes, base.updatedAt, next.updatedAt),
     history: mergeHistory(base.history, next.history),
     timer: newer({ value: base.timer, updatedAt: base.updatedAt }, { value: next.timer, updatedAt: next.updatedAt }).value,

@@ -266,3 +266,192 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 .runnerPairAdvanced{margin:8px 0 0}
 .runnerPairAdvanced summary{cursor:pointer;color:var(--muted);font-size:11px}
 .runnerPairAdvanced .runnerPairCommand{margin-top:6px}
+
+/* ============================================================
+   多解法切换器
+   ------------------------------------------------------------
+   完全复用现有设计令牌，不引入新颜色：
+     描边 #ded8ce、卡片底 #FFFEFB、激活底 #f7e7df / 字 #8e3f25、
+     强调描边 #d49a83、通过态用现成的 --success #247653。
+   胶囊尺寸对齐 .modeTabs button（7px 9px / 12px），
+   所以在编辑器顶栏里看起来和 [函数][ACM] 是同一组控件。
+   ============================================================ */
+.solutionVariants {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+.variantPill,
+.variantAdd,
+.variantMore {
+  border: 1px solid #ded8ce;
+  background: #FFFEFB;
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: #756f66;
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.variantPill:hover,
+.variantAdd:hover:not(:disabled),
+.variantMore:hover {
+  border-color: #d49a83;
+  color: #8e3f25;
+}
+.variantPill.active {
+  border-color: #d49a83;
+  background: #f7e7df;
+  color: #8e3f25;
+  font-weight: 700;
+}
+/* 通过态不用新绿色，直接用站内已有的 --success，避免和主色打架 */
+.variantPill.passed { border-color: #c9d8cd; }
+.variantCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #247653;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  flex: none;
+}
+.variantCheck.failed { background: #a83d3d; }
+.variantAdd:disabled,
+.variantMore:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+.variantHint {
+  color: #a39c92;
+  font-size: 11px;
+  white-space: nowrap;
+  padding-right: 2px;
+}
+.variantNameInput {
+  width: 78px;
+  border: 1px solid #d49a83;
+  background: #FFFEFB;
+  border-radius: 7px;
+  padding: 6px 7px;
+  color: #292824;
+  font-size: 12px;
+  line-height: 1;
+}
+.variantMenu { position: relative; display: inline-flex; }
+.variantMenuList {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 132px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #FFFEFB;
+  border: 1px solid #ded8ce;
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(86, 58, 40, .14);
+}
+.variantMenuList button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  border-radius: 5px;
+  padding: 7px 8px;
+  color: #292824;
+  font-size: 12px;
+  text-align: left;
+  white-space: nowrap;
+}
+.variantMenuList button:hover { background: #f7e7df; color: #8e3f25; }
+.variantMenuList .dangerItem { color: #a83d3d; }
+.variantMenuList .dangerItem:hover { background: #f9e9e9; color: #a83d3d; }
+
+/* 桌面端编辑器顶栏已经很紧：胶囊再收一档，保证和 [Java][Python] 同排不换行。 */
+@media (min-width: 801px) {
+  .problemWorkspace .editorControls .variantPill,
+  .problemWorkspace .editorControls .variantAdd,
+  .problemWorkspace .editorControls .variantMore {
+    padding: 4px 6px;
+    font-size: 11px;
+  }
+  .problemWorkspace .editorControls .solutionVariants { max-width: 100%; }
+  .problemWorkspace .editorControls .variantNameInput { width: 66px; padding: 3px 5px; font-size: 11px; }
+}
+@media (max-width: 800px) {
+  .solutionVariants { flex-wrap: wrap; }
+}
+
+/* 错题池 / 到期复习的条目用左侧色条区分，不加新色 */
+.reviewRow.mistake { border-left: 3px solid #a83d3d; padding-left: 10px; }
+.reviewRow.due { border-left: 3px solid #9a681b; padding-left: 10px; }
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 9px;
+  background: #f7e7df;
+  color: #8e3f25;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.reviewSubhead { margin-top: 26px !important; }
+
+/* 窄屏紧凑形态：下拉 + 「+」。见 SolutionVariants 的 COMPACT_QUERY 说明。 */
+.solutionVariants.compact { gap: 5px; }
+.variantSelect {
+  border: 1px solid #ded8ce;
+  background: #FFFEFB;
+  border-radius: 7px;
+  padding: 6px 7px;
+  color: #292824;
+  font-size: 12px;
+  line-height: 1.2;
+  max-width: 132px;
+  min-width: 92px;
+}
+.solutionVariants.compact .variantAdd { min-width: 26px; justify-content: center; }
+@media (min-width: 801px) {
+  .problemWorkspace .editorControls .variantSelect { padding: 4px 5px; font-size: 11px; max-width: 116px; min-width: 84px; }
+}
+
+/* 1024 宽度下编辑器卡片只有 456px：标题「固定编码区」会被挤成两行。
+   标题不该换行，让右侧控件组按需收缩。 */
+.problemWorkspace .editorHeader>div:first-child{min-width:0}
+.problemWorkspace .editorHeader h2{white-space:nowrap}
+@media (max-width:1200px){
+  .problemWorkspace .editorHeader{gap:6px}
+  .problemWorkspace .editorHeader h2{font-size:16px}
+}
+
+/* 移动端紧凑形态必须单行：select + 「+」+ 「⋯」总和要压到容器内，
+   否则「⋯」会掉到第二行，把编辑器又往下推一截。 */
+@media (max-width:800px){
+  /* 窄屏下这一行必须真的能收缩：select 用 flex:1 吃掉剩余宽度，
+     否则 360px 视口下「⋯」会顶出卡片外 14px，整页横向滚动。 */
+  .problemWorkspace .editorControls{width:100%;min-width:0}
+  .solutionVariants.compact{flex-wrap:nowrap;gap:4px;min-width:0;flex:1 1 auto;justify-content:flex-end}
+  .problemWorkspace .solutionVariants.compact .variantSelect{min-width:0;width:auto;flex:1 1 auto;padding:6px 5px}
+  .solutionVariants.compact .variantMore{padding:6px 7px;flex:none}
+  .solutionVariants.compact .variantAdd{padding:6px 8px;flex:none}
+}

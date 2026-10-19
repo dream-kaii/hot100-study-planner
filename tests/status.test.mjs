@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   derivePracticeStatus,
   getMasteryLevel,
+  isMistakeStatus,
+  isReviewPending,
   recordHint,
   recordReviewOutcome,
   recordSolutionView
@@ -14,13 +16,33 @@ test("derives practice status and mastery level from one progress contract", () 
   assert.equal(derivePracticeStatus({}, now), "new");
   assert.equal(derivePracticeStatus({ status: "in-progress" }, now), "in-progress");
   assert.equal(derivePracticeStatus({ status: "completed", reviewAt: "2026-10-20T00:00:00.000Z" }, now), "completed");
-  assert.equal(derivePracticeStatus({ status: "completed", reviewAt: "2026-10-13T00:00:00.000Z" }, now), "reviewing");
+  // 已完成 + 复习到期 = 待复习（due），不是错题（reviewing）。
+  // 题本身没做错，只是该重做了；混成同一个状态正是之前统计对不上的根源。
+  assert.equal(derivePracticeStatus({ status: "completed", reviewAt: "2026-10-13T00:00:00.000Z" }, now), "due");
+  assert.equal(derivePracticeStatus({ status: "reviewing" }, now), "reviewing");
+  assert.equal(derivePracticeStatus({ status: "错题" }, now), "reviewing");
+  assert.equal(derivePracticeStatus({ status: "待复习" }, now), "due");
+  assert.equal(derivePracticeStatus({ status: "due" }, now), "due");
+  assert.equal(derivePracticeStatus({ status: "mastered" }, now), "mastered");
   assert.equal(derivePracticeStatus({ masteredAt: now }, now), "mastered");
   assert.equal(getMasteryLevel({}), "new");
   assert.equal(getMasteryLevel({ status: "in-progress" }), "learning");
   assert.equal(getMasteryLevel({ status: "reviewing" }), "reviewing");
+  assert.equal(getMasteryLevel({ status: "due" }), "reviewing");
   assert.equal(getMasteryLevel({ masteredAt: now }), "mastered");
-  assert.equal(getMasteryLevel({ status: "completed", reviewAt: "2026-10-13T00:00:00.000Z" }, now), "reviewing");
+});
+
+test("mistake and due stay distinct predicates across every view", () => {
+  const overdue = { status: "completed", reviewAt: "2026-10-13T00:00:00.000Z" };
+  const missed = { status: "reviewing" };
+  const mastered = { status: "reviewing", masteredAt: now };
+  assert.equal(isMistakeStatus(derivePracticeStatus(overdue, now)), false);
+  assert.equal(isMistakeStatus(derivePracticeStatus(missed, now)), true);
+  assert.equal(isMistakeStatus(derivePracticeStatus(mastered, now)), false);
+  assert.equal(isReviewPending(overdue, now), true);
+  assert.equal(isReviewPending(missed, now), true);
+  assert.equal(isReviewPending(mastered, now), false);
+  assert.equal(isReviewPending({ status: "completed", reviewAt: "2026-12-01T00:00:00.000Z" }, now), false);
 });
 
 test("hints and solution views preserve a previous independent pass", () => {

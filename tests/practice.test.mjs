@@ -67,3 +67,29 @@ test("previous and next navigation follow studyOrder and stop at both ends", asy
   assert.equal(pickPreviousQuestion(mixed,{currentId:"last"}).id,"middle");
   assert.equal(pickNextQuestion(mixed,{currentId:"last"}),null);
 });
+
+test("mistake filter matches the dashboard counter for overdue completions", () => {
+  // 这条是回归测试：以前统计卡用派生状态（到期复习 → reviewing），
+  // 题库筛选用原始 status，导致「顶部显示 1 道错题、筛选出来 0 条」。
+  const now = new Date("2026-10-19T00:00:00.000Z");
+  const overdue = { "1": { status: "completed", reviewAt: "2026-10-10T00:00:00.000Z" } };
+  assert.deepEqual(filterQuestions(questions, overdue, { status: "错题" }, now).map((q) => q.id), []);
+  assert.deepEqual(filterQuestions(questions, overdue, { status: "待复习" }, now).map((q) => q.id), ["1"]);
+  const missed = { "2": { status: "reviewing" } };
+  assert.deepEqual(filterQuestions(questions, missed, { status: "错题" }, now).map((q) => q.id), ["2"]);
+  assert.deepEqual(filterQuestions(questions, missed, { status: "待复习" }, now).map((q) => q.id), []);
+});
+
+test("status filter accepts both canonical values and Chinese labels", () => {
+  const now = new Date("2026-10-19T00:00:00.000Z");
+  const missed = { "2": { status: "reviewing" } };
+  assert.deepEqual(filterQuestions(questions, missed, { status: "reviewing" }, now).map((q) => q.id), ["2"]);
+  assert.deepEqual(filterQuestions(questions, missed, { status: "错题" }, now).map((q) => q.id), ["2"]);
+});
+
+test("a mastered item never shows up as a mistake even with a stale reviewing status", () => {
+  const now = new Date("2026-10-19T00:00:00.000Z");
+  const mastered = { "1": { status: "reviewing", masteredAt: "2026-01-01T00:00:00.000Z" } };
+  assert.deepEqual(filterQuestions(questions, mastered, { status: "错题" }, now).map((q) => q.id), []);
+  assert.deepEqual(filterQuestions(questions, mastered, { status: "已掌握" }, now).map((q) => q.id), ["1"]);
+});
