@@ -134,3 +134,5 @@ export async function checkOnce({ endpoint, currentVersion, targetPath, log = ()
   log("info", `已更新 ${currentVersion} → ${latest}`);
   return { updated: true, from: currentVersion, to: latest };
 }
+
+// 版本 B：仅用于验证自动更新链路
