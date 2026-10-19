@@ -183,16 +183,116 @@ await fs.writeFile(commandPath, launcher, "utf8");
 await fs.chmod(commandPath, 0o755);
 
 // 打成 zip：浏览器下载不会保留可执行位，zip 会。
+//
+// 这里刻意不用 `ditto` / `zip` 命令：
+//   2026-10-19 换成 Cloudflare Workers Builds 自动部署后才发现，
+//   原实现只在 macOS 上成立 —— 构建跑在 Linux 容器里，没有 ditto，
+//   catch 分支静默跳过，然后 dist/download/hot100-runner.zip 根本不存在。
+//   页面上的下载链接于是返回 Cloudflare 的 1101（Worker exception），
+//   用户点「下载双击版」直接 500。
+//   纯 Node 的 deflate 实现没有平台依赖，本地和 CI 产出完全一致。
 const zipPath = path.join(OUT_DIR, "hot100-runner.zip");
-await fs.rm(zipPath, { force: true });
-try {
-  const { execFileSync } = await import("node:child_process");
-  execFileSync("ditto", ["-c", "-k", "--keepParent", commandPath, zipPath], { stdio: "ignore" });
-} catch {
-  console.warn("! 没有 ditto，跳过 zip 打包（macOS 自带 ditto，通常不会缺）");
-}
+await fs.writeFile(zipPath, await makeZip([
+  { name: COMMAND_NAME, data: Buffer.from(launcher, "utf8"), mode: 0o755 }
+]));
 
 const zipStat = await fs.stat(zipPath).catch(() => null);
 console.log(`✔ runner 已打包 → dist/download/hot100-runner.mjs（${sizeKb} KB，版本 ${VERSION}）`);
 console.log(`✔ 双击版 → dist/download/${COMMAND_NAME}（${(launcher.length / 1024).toFixed(1)} KB，隧道 ${ENDPOINT}）`);
-if (zipStat) console.log(`✔ 压缩包 → dist/download/hot100-runner.zip（${(zipStat.size / 1024).toFixed(1)} KB）`);
+if (!zipStat) throw new Error("zip 打包失败：hot100-runner.zip 未生成");
+console.log(`✔ 压缩包 → dist/download/hot100-runner.zip（${(zipStat.size / 1024).toFixed(1)} KB）`);
+
+/**
+ * 生成一个只含少量文件的 zip（deflate）。
+ * 只为「保留可执行位」这一件事存在，所以不做目录、不做多卷、不做 ZIP64。
+ */
+async function makeZip(entries) {
+  const { deflateRawSync } = await import("node:zlib");
+  const { crc32 } = await import("node:zlib");
+  // crc32 是 Node 22.2+ 才有的；旧版本退回手算，避免 CI 版本差异。
+  const crc = typeof crc32 === "function" ? (buf) => crc32(buf) : crc32Fallback;
+
+  const now = new Date();
+  const dosTime = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)) & 0xffff;
+  const dosDate = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate()) & 0xffff;
+
+  const locals = [];
+  const centrals = [];
+  let offset = 0;
+
+  for (const entry of entries) {
+    const nameBuf = Buffer.from(entry.name, "utf8");
+    const raw = entry.data;
+    const packed = deflateRawSync(raw, { level: 9 });
+    const checksum = crc(raw);
+    // bit 11 表示文件名是 UTF-8，中文文件名靠它才能在解压时正确还原。
+    const flags = 0x0800;
+    const mode = (entry.mode ?? 0o644) >>> 0;
+    const externalAttrs = ((mode << 16) | (mode & 0xffff)) >>> 0;
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);          // version needed
+    local.writeUInt16LE(flags, 6);
+    local.writeUInt16LE(8, 8);           // deflate
+    local.writeUInt16LE(dosTime, 10);
+    local.writeUInt16LE(dosDate, 12);
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(packed.length, 18);
+    local.writeUInt32LE(raw.length, 22);
+    local.writeUInt16LE(nameBuf.length, 26);
+    local.writeUInt16LE(0, 28);          // extra len
+    locals.push(local, nameBuf, packed);
+
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(0x031e, 4);    // made by: unix, 3.0
+    central.writeUInt16LE(20, 6);
+    central.writeUInt16LE(flags, 8);
+    central.writeUInt16LE(8, 10);
+    central.writeUInt16LE(dosTime, 12);
+    central.writeUInt16LE(dosDate, 14);
+    central.writeUInt32LE(checksum, 16);
+    central.writeUInt32LE(packed.length, 20);
+    central.writeUInt32LE(raw.length, 24);
+    central.writeUInt16LE(nameBuf.length, 28);
+    central.writeUInt16LE(0, 30);        // extra
+    central.writeUInt16LE(0, 32);        // comment
+    central.writeUInt16LE(0, 34);        // disk
+    central.writeUInt16LE(0, 36);        // internal attrs
+    central.writeUInt32LE(externalAttrs, 38);
+    central.writeUInt32LE(offset, 42);
+    centrals.push(central, nameBuf);
+
+    offset += local.length + nameBuf.length + packed.length;
+  }
+
+  const centralBuf = Buffer.concat(centrals);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(0x06054b50, 0);
+  end.writeUInt16LE(0, 4);
+  end.writeUInt16LE(0, 6);
+  end.writeUInt16LE(entries.length, 8);
+  end.writeUInt16LE(entries.length, 10);
+  end.writeUInt32LE(centralBuf.length, 12);
+  end.writeUInt32LE(offset, 16);
+  end.writeUInt16LE(0, 20);
+
+  return Buffer.concat([...locals, centralBuf, end]);
+}
+
+/** CRC-32（IEEE），在没有 zlib.crc32 的 Node 上使用。 */
+function crc32Fallback(buf) {
+  let table = crc32Fallback.table;
+  if (!table) {
+    table = crc32Fallback.table = new Int32Array(256);
+    for (let i = 0; i < 256; i += 1) {
+      let c = i;
+      for (let k = 0; k < 8; k += 1) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      table[i] = c;
+    }
+  }
+  let crc = -1;
+  for (let i = 0; i < buf.length; i += 1) crc = (crc >>> 8) ^ table[(crc ^ buf[i]) & 0xff];
+  return (crc ^ -1) >>> 0;
+}
