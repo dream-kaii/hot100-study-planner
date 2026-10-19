@@ -95,6 +95,8 @@ npm run deploy:cloudflare
 
 等价于 `npm run build && npx wrangler deploy`。站点配置在 `wrangler.jsonc`，`assets.directory` 指向 `./dist`，SPA 回退由 `not_found_handling: "single-page-application"` 处理。
 
+如果改用 Cloudflare 面板的 Git 自动部署（Workers Builds），构建命令填 `npm run build`、部署命令填 `npx wrangler deploy`。注意两点：`dist/` 被 gitignore，**必须**先跑构建命令，否则 `assets.directory` 是空的；Vite 7 要求 Node `^20.19.0 || >=22.12.0`，构建镜像的默认版本可能不够，需要在环境变量里显式钉 `NODE_VERSION=22`。
+
 ## 已知说明
 
 - **Monaco 编辑器从 CDN 加载**（`@monaco-editor/react` 默认行为），因此首次打开代码编辑器需要联网；其余功能离线可用。
