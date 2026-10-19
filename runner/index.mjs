@@ -467,6 +467,14 @@ async function main() {
       if (manual) log("info", `没有更新：${result.reason}`);
       return;
     }
+    // 交给开机自启托管时，必须让 launchd 来重启，不能自己 spawn 一个脱离的进程
+    // —— 否则新进程脱离 launchd 监管，之后再崩就不会被拉起了。
+    // plist 里 KeepAlive.SuccessfulExit=false，所以退出码非 0 才会重启。
+    if (isMac() && agentInstalled() && agentLoaded()) {
+      log("info", `自动更新完成：${result.from} → ${result.to}，交给开机自启重启`);
+      process.exit(75);
+    }
+
     log("info", `自动更新完成：${result.from} → ${result.to}，正在用新版本重启`);
     const pid = respawnSelf();
     log("info", `新实例已启动（pid ${pid}），本进程退出`);
