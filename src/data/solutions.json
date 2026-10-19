@@ -2207,7 +2207,66 @@
         "url": "/solutions/98-1.png"
       }
     ],
-    "sourceNote": "题解内容来自代码随想录 problems 知识库。"
+    "sourceNote": "题解内容来自代码随想录 problems 知识库。",
+    "cases": [
+      {
+        "id": "98-basic-1",
+        "input": {
+          "root": [
+            2,
+            1,
+            3
+          ]
+        },
+        "expected": true,
+        "tags": [
+          "basic"
+        ],
+        "note": "标准有效二叉搜索树。"
+      },
+      {
+        "id": "98-boundary-1",
+        "input": {
+          "root": [
+            1
+          ]
+        },
+        "expected": true,
+        "tags": [
+          "boundary"
+        ],
+        "note": "单节点树应视为有效。"
+      },
+      {
+        "id": "98-adversarial-1",
+        "input": {
+          "root": [
+            10,
+            5,
+            15,
+            null,
+            null,
+            6,
+            20
+          ]
+        },
+        "expected": false,
+        "tags": [
+          "adversarial"
+        ],
+        "note": "右子树深处的 6 小于根节点 10，不能只比较直接孩子。"
+      }
+    ],
+    "acm": {
+      "input": "本站定义的输入协议（不是力扣原始协议）：\nroot = [2,1,3]",
+      "output": "true",
+      "examples": [
+        {
+          "input": "root = [2,1,3]",
+          "output": "true"
+        }
+      ]
+    }
   },
   {
     "id": "230",

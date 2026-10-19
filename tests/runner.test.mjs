@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { compareResult, getEnvironmentStatus, normalizeCaseInput, runExample } from "../src/services/runner.js";
+import { createLanguageDrafts } from "../src/services/editor.js";
 
 test("compares exact values and reports a useful mismatch", () => {
   assert.deepEqual(compareResult("exact", { value: 1 }, { value: 1 }), { passed: true, message: "" });
@@ -176,6 +177,23 @@ test("copied 283 Java and Python solutions compare mutated arrays, including emp
     assert.deepEqual(result.cases[0].actual, [1,3,12,0,0]);
     assert.deepEqual(result.cases.at(-1).actual, []);
   }
+});
+
+test("an untouched 283 template may pass a trivial case but the whole run remains failed", async () => {
+  const { default: solution } = await import('../src/data/solutions/283.json', { with: { type: 'json' } });
+  for (const language of ["java", "python"]) {
+    const result = await runExample({ questionId: "283", language, mode: "function", func: solution.func, code: createLanguageDrafts(solution, "function")[language], cases: solution.cases });
+    assert.equal(result.status, "failed", `${language}: a partial example pass must not complete an untouched template`);
+    assert.deepEqual(result.cases.map((item) => item.status), ["mismatch", "passed", "mismatch"]);
+  }
+});
+
+test("validation BST cases include a valid tree so the untouched Java template cannot pass everything", async () => {
+  const { default: solution } = await import('../src/data/solutions/98.json', { with: { type: 'json' } });
+  const result = await runExample({ questionId: "98", language: "java", mode: "function", func: solution.func, code: createLanguageDrafts(solution, "function").java, cases: solution.cases });
+  assert.equal(result.status, "failed");
+  assert.ok(result.cases.some((item) => item.expected === true), "must include a valid BST case");
+  assert.ok(result.cases.some((item) => item.expected === false), "must retain an invalid BST case");
 });
 
 test("uses func.compare for return values instead of defaulting to exact comparison", async () => {
