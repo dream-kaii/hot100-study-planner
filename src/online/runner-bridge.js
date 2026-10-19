@@ -18,7 +18,7 @@ import { probeOnlineRunner, explainUnavailable } from "./probe.js";
 export function createOnRun({ onPairCode: defaultPairHandler, signal } = {}) {
   // 第二个参数是 AbortSignal（可选），第三个是本次运行的配对码回调。
   // CodeEditor 会把配对回调放在第三位，这里必须接住，否则用户永远看不到配对码。
-  return async function onRun(payload, abortSignal, pairHandler) {
+  return async function onRun(payload, abortSignal, pairHandler, offlineHandler) {
     const onPairCode = pairHandler || defaultPairHandler;
     const effectiveSignal = abortSignal || signal;
     const capability = await probeOnlineRunner();
@@ -45,7 +45,12 @@ export function createOnRun({ onPairCode: defaultPairHandler, signal } = {}) {
     // 线上：动态 import，避免把隧道代码打进首屏包
     try {
       const mod = await import("./client.js");
-      return await mod.requestRun(payload, { onPairCode, signal: effectiveSignal });
+      return await mod.requestRun(payload, {
+        onPairCode,
+        // 已经配过对、但本机助手没在运行：不生成新配对码，只提示去启动它。
+        onRunnerOffline: offlineHandler,
+        signal: effectiveSignal
+      });
     } catch (error) {
       return {
         status: "unavailable",

@@ -48,6 +48,9 @@ export default function CodeEditor({
   const [running, setRunning] = useState(false);
   // 在线运行：需要在用户电脑上启动 runner 时，本组件负责把配对码交到用户手上。
   const [pairCode, setPairCode] = useState("");
+  // "pair"   = 需要用户输配对码（首次）
+  // "offline"= 已配对过，但本机助手没在运行（不再生成新码）
+  const [pairMode, setPairMode] = useState("pair");
   const [pairError, setPairError] = useState("");
   const pairCallbackRef = useRef(null);
   const [consumeEditorWheel, setConsumeEditorWheel] = useState(() => typeof window !== "undefined" && window.matchMedia("(min-width: 801px)").matches);
@@ -96,13 +99,21 @@ export default function CodeEditor({
     if (!onRun || running) return;
     setRunning(true);
     setPairError("");
+    setPairMode("pair");
     try {
       const payload = { questionId, language, mode, func, cases, code, input: example?.input ?? "", expectedOutput: example?.output ?? "" };
       // onRun 的第三个参数是配对回调：只有线上首次运行、需要用户在终端输码时才会被调用。
-      const outcome = await onRun(payload, undefined, (code) => {
-        setPairCode(code);
-        pairCallbackRef.current = code;
-      });
+      const outcome = await onRun(
+        payload,
+        undefined,
+        (code) => {
+          setPairCode(code);
+          setPairMode("pair");
+          pairCallbackRef.current = code;
+        },
+        // 已配对但 runner 没开：不显示新配对码，只提示去启动它
+        () => setPairMode("offline")
+      );
       if (outcome?.status === "unavailable" && pairCallbackRef.current) {
         // 需要配对：把错误留在面板里，不覆盖成"运行失败"。
         setPairError(outcome.error || "");
@@ -116,6 +127,8 @@ export default function CodeEditor({
       setResult(outcome);
     } catch (error) {
       setResult({ status: "runtime_error", error: error.message || "运行请求失败，请重试。" });
+      setPairCode("");
+      setPairMode("pair");
     } finally {
       setRunning(false);
     }
@@ -166,7 +179,14 @@ export default function CodeEditor({
         }}
       />
     </div>
-    {pairCode && <RunnerPairPanel code={pairCode} waiting={running} error={pairError} onRetry={retryAfterPair} onDismiss={dismissPair} />}
+    {(pairCode || pairMode === "offline") && running && <RunnerPairPanel
+      code={pairCode}
+      mode={pairMode}
+      waiting={running}
+      error={pairError}
+      onRetry={retryAfterPair}
+      onDismiss={dismissPair}
+    />}
     <div className="editorActions">
       <button className="primaryButton" onClick={run} disabled={running || !onRun}>{running ? "运行中…" : "运行公开示例"}</button>
       <span className="draftStatus">{draftStatus || "输入来自左侧示例"}</span>

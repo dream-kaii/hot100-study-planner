@@ -30,8 +30,10 @@ function tunnelEndpoint() {
   return `${scheme}//${window.location.host}/ws`;
 }
 
-export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = false, error = "" }) {
+export default function RunnerPairPanel({ code, mode = "pair", onRetry, onDismiss, waiting = false, error = "" }) {
+  const offline = mode === "offline";
   const [copied, setCopied] = useState(false);
+  const [copiedFresh, setCopiedFresh] = useState(false);
 
   // base "./" 是 vite.config.js 里设的，所以下载链接用相对路径，部署在子路径下也能用。
   const zipUrl = useMemo(() => {
@@ -41,9 +43,18 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
 
   // 带上 cd：浏览器把文件存到「下载」目录，用户在任意位置直接敲 node 会报
   // Cannot find module。两行一起复制，粘进终端就能跑。
+  // 已装过助手的人（绝大多数）：一条命令搞定，配对码直接带上，不用手输。
   const command = useMemo(
-    () => `cd ~/Downloads\nnode ${MJS_FILE} --endpoint ${tunnelEndpoint()}`,
-    []
+    () => (offline
+      ? "node ~/.hot100-runner/hot100-runner.mjs --launch"
+      : `node ~/.hot100-runner/hot100-runner.mjs --launch --code ${code || "······"}`),
+    [offline, code]
+  );
+
+  // 还没装过：文件在下载目录，用这条。
+  const freshCommand = useMemo(
+    () => `cd ~/Downloads\nnode ${MJS_FILE} --endpoint ${tunnelEndpoint()} --code ${code || "······"}`,
+    [code]
   );
 
   const copy = async () => {
@@ -56,32 +67,50 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
     }
   };
 
+  const copyFresh = async () => {
+    try {
+      await navigator.clipboard.writeText(freshCommand);
+      setCopiedFresh(true);
+      setTimeout(() => setCopiedFresh(false), 1600);
+    } catch {
+      setCopiedFresh(false);
+    }
+  };
+
   return <div className="runnerPairPanel" role="dialog" aria-label="启动本机运行助手">
     <div className="runnerPairHead">
       <strong>在你的电脑上运行</strong>
       <button type="button" className="runnerPairClose" onClick={onDismiss} aria-label="关闭">×</button>
     </div>
 
-    <div className="runnerPairCodeRow">
-      <div className="runnerPairCode" aria-live="polite">
-        {code ? code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <em>正在生成…</em>}
-      </div>
-      <small>输进终端 · 10 分钟内有效</small>
-    </div>
+    {offline
+      ? <p className="runnerPairWait" role="status">
+          已配对过，但运行助手现在没有在运行 —— 启动它就会自动继续，不需要新的配对码。
+        </p>
+      : <div className="runnerPairCodeRow">
+          <div className="runnerPairCode" aria-live="polite">
+            {code ? code.split("").map((digit, index) => <span key={index}>{digit}</span>) : <em>正在生成…</em>}
+          </div>
+          <small>输进终端 · 10 分钟内有效</small>
+        </div>}
 
     <div className="runnerPairDownloadRow">
       <a className="runnerPairDownload" href={zipUrl} download={ZIP_FILE}>
         下载双击版（{ZIP_FILE}）
       </a>
-      <small>解压后双击「Hot100 运行助手.command」，按提示粘上面的配对码</small>
+      <small>{offline ? "还没装的话下载这个，解压后双击即可" : "解压后双击「Hot100 运行助手.command」，按提示粘上面的配对码"}</small>
     </div>
 
-    <details className="runnerPairAdvanced">
-      <summary>或者用命令行</summary>
+    <details className="runnerPairAdvanced" open={offline}>
+      <summary>{offline ? "启动命令" : "或者用命令行（已装过助手）"}</summary>
       <div className="runnerPairCommand">
         <code>{command}</code>
         <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
       </div>
+      {!offline && <div className="runnerPairCommand runnerPairCommandAlt">
+        <code>{freshCommand}</code>
+        <button type="button" onClick={copyFresh}>{copiedFresh ? "已复制" : "复制"}</button>
+      </div>}
     </details>
 
     {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…连上后会自动继续运行</p>}
@@ -91,7 +120,7 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
       <button type="button" className="primaryButton" onClick={onRetry} disabled={waiting}>
         {waiting ? "等待中…" : "我连上了，重新运行"}
       </button>
-      <span>代码只在本机执行，不上传；关窗口即停止</span>
+      <span>{offline ? "启动后会自动接上，不用重新配对" : "代码只在本机执行，不上传；关窗口即停止"}</span>
     </div>
   </div>;
 }

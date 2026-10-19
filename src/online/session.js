@@ -78,14 +78,18 @@ export class Session {
 
   /** 网页轮询状态；也用于 runner 连上后页面发现"可以运行了"。 */
   async handleStatus() {
-    const [state, lastSeen] = await Promise.all([
+    const [state, lastSeen, token] = await Promise.all([
       this.state.storage.get(KEY_STATE),
-      this.state.storage.get(KEY_LAST_SEEN)
+      this.state.storage.get(KEY_LAST_SEEN),
+      this.state.storage.get(KEY_TOKEN)
     ]);
     return json({
       state: state || SESSION_STATE.IDLE,
       lastSeen: lastSeen || 0,
-      runnerOnline: this.socketsOf("runner").length > 0
+      runnerOnline: this.socketsOf("runner").length > 0,
+      // 区分「这个会话确实配过对，只是 runner 没开」和「这个 sid 根本不认识」。
+      // 没有它，网页无法判断该等还是该重新配对 —— DO 对未知 sid 也会返回默认值。
+      paired: Boolean(token)
     });
   }
 

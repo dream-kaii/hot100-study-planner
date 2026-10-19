@@ -246,11 +246,11 @@ export default function ProblemDetail({
 
   // pairHandler 是 CodeEditor 传下来的配对码回调（线上首次运行时才会有）。
   // 这一层只做统计与本机记录，必须把参数原样透传，否则用户看不到配对码。
-  const execute = async (payload, signal, pairHandler) => {
+  const execute = async (payload, signal, pairHandler, offlineHandler) => {
     const session = sessionRef.current;
     const variantIdAtRun = activeVariantId;
     const attempt = attemptRef.current || { attemptId: `${question.id}-legacy`, hintsUsed: 0, viewedSolutionCode: false };
-    const result = await onRun?.(payload, signal, pairHandler);
+    const result = await onRun?.(payload, signal, pairHandler, offlineHandler);
     if (!result || result.status === "unavailable") return result;
     if (sessionRef.current !== session || sessionRef.current?.questionId !== String(question.id)
       || sessionRef.current?.language !== payload.language || sessionRef.current?.mode !== payload.mode) return result;

@@ -67,57 +67,62 @@ function openSocket(sid) {
  *
  * onPairCode(code) 会在需要用户动手时被调用，参数是 6 位码。
  */
-export async function requestRun(payload, { onPairCode, signal, resumeWindowMs } = {}) {
-  let saved = readSaved();
-  if (saved?.sid) {
-    try {
-      // 先确认 runner 还在线。不在线时不要立刻重新配对：
-      // runner 可能正在重连（网络抖动、开机后 launchd 刚拉起、DO 切换），
-      // 这段窗口内重新配对会让用户看到一个新配对码，白折腾一次。
-      if (await waitForExistingRunner(saved.sid, { signal, windowMs: resumeWindowMs })) {
-        return await runOverSocket(saved.sid, payload, { signal });
-      }
-      saved = null;
-    } catch (error) {
-      // 会话不存在/已回收 → 重新配对；网络抖动原样抛出。
-      if (error.status !== 404 && error.status !== 410) throw error;
-      saved = null;
-    }
+export async function requestRun(payload, { onPairCode, onRunnerOffline, signal, resumeWindowMs } = {}) {
+  const saved = readSaved();
+
+  // 候选会话：当前 + 曾经用过的。
+  // 为什么要有"曾经用过的"：网页在 runner 没开的时候刷新过，就会自己开一个新会话
+  // 并显示配对码；而本机 runner 认的还是旧会话。两边各连各的，网页永远等到"等待中"。
+  // 把旧 sid 一起轮询，谁有 runner 就用谁，这种错位能自己长回来。
+  const candidates = [];
+  if (saved?.sid) candidates.push(saved.sid);
+  for (const sid of saved?.previous || []) {
+    if (sid && !candidates.includes(sid)) candidates.push(sid);
   }
 
+  const usable = [];
+  for (const sid of candidates) {
+    const status = await fetchStatus(sid).catch(() => null);
+    // 没配过对（paired=false）说明这个 sid 是新建的、或者服务端已经回收了它的凭据，
+    // 等下去也不会有 runner 来，直接跳过。
+    if (status?.paired) usable.push({ sid, online: Boolean(status.runnerOnline) });
+  }
+
+  if (usable.length) {
+    const alreadyOnline = usable.find((item) => item.online);
+    if (!alreadyOnline) onRunnerOffline?.({ sids: usable.map((item) => item.sid) });
+    const sid = alreadyOnline?.sid || (await waitForAnyRunner(usable.map((item) => item.sid), { signal, windowMs: resumeWindowMs }));
+    if (sid !== saved?.sid) writeSaved({ sid, previous: [], pairedAt: saved?.pairedAt || Date.now() });
+    return runOverSocket(sid, payload, { signal });
+  }
+
+  // 一个可用的都没有 → 真的需要重新配对
   const { sid, code } = await postJson("/api/pair");
-  writeSaved({ sid, pairedAt: Date.now() });
+  const previous = [saved?.sid, ...(saved?.previous || [])].filter(Boolean).slice(0, 3);
+  writeSaved({ sid, previous, pairedAt: Date.now() });
   onPairCode?.(code);
   await waitForRunner(sid, { signal });
   return runOverSocket(sid, payload, { signal });
 }
 
-/**
- * 已有 sid 时，给 runner 一小段回连窗口。
- * 直接判定"不在线就重新配对"会把正常的重连误判成需要重新配对。
- */
-async function waitForExistingRunner(sid, { signal, windowMs = 20000 } = {}) {
-  if (!Number.isFinite(windowMs) || windowMs < 0) windowMs = 20000;
-  const deadline = Date.now() + windowMs;
-  do {
-    if (await isRunnerOnline(sid)) return true;
-    if (signal?.aborted) return false;
-    await new Promise((resolve) => setTimeout(resolve, 800));
-  } while (Date.now() < deadline);
-  return false;
+async function fetchStatus(sid) {
+  const response = await fetch(`/api/status/${sid}`, { cache: "no-store" });
+  if (!response.ok) return null;
+  return response.json().catch(() => null);
 }
 
-/** 查一次会话状态，确认 runner 隧道是否还挂着。 */
-async function isRunnerOnline(sid) {
-  const response = await fetch(`/api/status/${sid}`, { cache: "no-store" });
-  if (response.status === 404 || response.status === 410) {
-    const error = new Error("会话已失效");
-    error.status = response.status;
-    throw error;
+/** 在多个候选会话里等，谁先连上 runner 就用谁。 */
+async function waitForAnyRunner(sids, { signal, windowMs = PAIR_WAIT_MS } = {}) {
+  const deadline = Date.now() + (Number.isFinite(windowMs) && windowMs >= 0 ? windowMs : PAIR_WAIT_MS);
+  while (Date.now() < deadline) {
+    if (signal?.aborted) throw new DOMException("已取消", "AbortError");
+    for (const sid of sids) {
+      const status = await fetchStatus(sid).catch(() => null);
+      if (status?.paired && status.runnerOnline) return sid;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   }
-  if (!response.ok) return false;
-  const status = await response.json();
-  return Boolean(status.runnerOnline);
+  throw new Error("运行助手还没有连上。确认它正在运行（双击「Hot 100 运行助手」，或执行 node ~/.hot100-runner/hot100-runner.mjs --launch），连上后会自动继续。");
 }
 
 /** 轮询状态直到 runner 上线。超时给出可操作提示。 */

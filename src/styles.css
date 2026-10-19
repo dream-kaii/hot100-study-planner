@@ -455,3 +455,6 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
   .solutionVariants.compact .variantMore{padding:6px 7px;flex:none}
   .solutionVariants.compact .variantAdd{padding:6px 8px;flex:none}
 }
+
+/* 配对面板：第二条命令给"文件还在下载目录"的人，弱化显示 */
+.runnerPairCommandAlt { margin-top: 6px; opacity: .82; }
