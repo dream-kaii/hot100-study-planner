@@ -38,7 +38,9 @@ const CORE_BUNDLED = !fs.existsSync(RUNNER_CORE);
 const DEFAULT_ENDPOINT = "wss://hot100-study-planner.example.workers.dev/ws";
 
 function log(level, message) {
-  const stamp = new Date().toLocaleTimeString("zh-CN", { hour12: false });
+  // 带上日期：后台日志会跨越很多天，只有时分秒看不出是哪天出的问题。
+  const now = new Date();
+  const stamp = `${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${now.toLocaleTimeString("zh-CN", { hour12: false })}`;
   const mark = level === "error" ? "✖" : level === "warn" ? "!" : "·";
   console.log(`${stamp} ${mark} ${message}`);
 }
@@ -292,6 +294,18 @@ async function main() {
   if (args.stop) return stopBackground() ? 0 : 1;
 
   if (args.status) {
+    // 开机自启写的是当时的 node 绝对路径。用 nvm 升级 Node 后旧路径会消失，
+    // 表现为"明明装了自启却再也不启动"，这里主动查一下。
+    if (agentInstalled() && isMac()) {
+      try {
+        const plist = fs.readFileSync(plistPath(), "utf8");
+        const program = plist.match(/<key>ProgramArguments<\/key>\s*<array>\s*<string>([^<]+)<\/string>/);
+        if (program && !fs.existsSync(program[1])) {
+          log("warn", `自启里的 Node 路径已不存在：${program[1]}`);
+          log("warn", "可能升级过 Node。重新运行一次双击版，或执行 --install 重新登记。");
+        }
+      } catch { /* 读不到就算了 */ }
+    }
     const pid = readPid();
     if (isAlive(pid)) {
       log("info", `后台实例正在运行（pid ${pid}），日志：${logPath()}`);
@@ -331,6 +345,9 @@ async function main() {
     return 0;
   }
 
+  if (args.headless) {
+    log("info", `后台实例启动（pid ${process.pid}）`);
+  }
   if (!args.headless) {
     console.log("Hot 100 本机运行助手");
     console.log("代码在你自己的电脑上执行，不会上传。关掉这个窗口即停止；想关窗口又不停止，用 --detach。\n");
@@ -374,6 +391,9 @@ async function main() {
   let runArrived = false;
   const armStaleSessionHint = () => {
     if (args.code) return; // 用配对码连的，一定是当前会话
+    // 后台实例（--headless / launchd 拉起）本来就是"没人连"的状态，
+    // 这条提示只有盯着终端的人才看得懂，后台模式下纯属误报且会污染日志。
+    if (args.headless || !process.stdout.isTTY) return;
     if (staleHintTimer) clearTimeout(staleHintTimer);
     staleHintTimer = setTimeout(() => {
       if (runArrived) return;
