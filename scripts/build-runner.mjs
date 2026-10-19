@@ -18,6 +18,19 @@ const ENTRY = path.join(ROOT, "runner", "index.mjs");
 const OUT_DIR = path.join(ROOT, "dist", "download");
 const OUT_FILE = path.join(OUT_DIR, "hot100-runner.mjs");
 
+/** 从 wrangler.jsonc 的 routes 里取自定义域名，作为双击版的默认隧道地址。 */
+async function resolveEndpoint() {
+  try {
+    const config = await fs.readFile(path.join(ROOT, "wrangler.jsonc"), "utf8");
+    // 只认 custom_domain: true 的 route，避免把通配路由误当域名。
+    const match = config.match(/\{\s*"pattern"\s*:\s*"([^"]+)"[^}]*"custom_domain"\s*:\s*true/);
+    if (match) return `wss://${match[1]}/ws`;
+  } catch { /* 读不到就用占位地址 */ }
+  return "wss://hot100-study-planner.example.workers.dev/ws";
+}
+
+const ENDPOINT = await resolveEndpoint();
+
 const RESULT = await build({
   entryPoints: [ENTRY],
   outfile: OUT_FILE,
@@ -70,4 +83,78 @@ await fs.writeFile(
   "utf8"
 );
 
+// ── 生成双击即用的 .command ───────────────────────────────────────
+// 把打包好的 JS 用 base64 内嵌进 shell 脚本：用户只需要下载一个文件、双击。
+// 脚本首次运行时把 payload 释放到 ~/.hot100-runner/，之后直接复用。
+const payload = (await fs.readFile(OUT_FILE)).toString("base64");
+const COMMAND_NAME = "Hot100 运行助手.command";
+const commandPath = path.join(OUT_DIR, COMMAND_NAME);
+
+const launcher = `#!/bin/bash
+# Hot 100 本机运行助手（双击启动）
+# 这个文件把运行助手和它的判题逻辑都内嵌在里面，双击即可，不需要别的文件。
+# 只做 macOS。
+
+set -u
+
+DIR="$HOME/.hot100-runner"
+BIN="$DIR/hot100-runner.mjs"
+mkdir -p "$DIR"
+
+pause_exit() {
+  echo ""
+  echo "$1"
+  echo ""
+  read -n 1 -s -r -p "按任意键关闭这个窗口…"
+  echo ""
+  exit 1
+}
+
+# 找 node：launchd 的 PATH 很干净，所以这里列常见安装位置。
+find_node() {
+  if command -v node >/dev/null 2>&1; then command -v node; return; fi
+  for candidate in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
+    if [ -x "$candidate" ]; then echo "$candidate"; return; fi
+  done
+}
+
+NODE="$(find_node)"
+if [ -z "$NODE" ]; then
+  pause_exit "没有找到 Node.js。请先安装：https://nodejs.org （或 brew install node），然后重新双击这个文件。"
+fi
+
+# 释放内嵌的运行助手。加一个版本标记，脚本更新后会自动覆盖旧的。
+/usr/bin/base64 -D > "$BIN.tmp" <<'HOT100_PAYLOAD_EOF'
+${payload}
+HOT100_PAYLOAD_EOF
+
+if [ ! -s "$BIN.tmp" ]; then
+  pause_exit "运行助手解析失败，请重新下载这个文件。"
+fi
+mv "$BIN.tmp" "$BIN"
+chmod 600 "$BIN"
+
+cd "$DIR" || pause_exit "无法进入 $DIR"
+exec "$NODE" "$BIN" --launch --endpoint "${ENDPOINT}" "$@"
+
+# 走到这里说明 node 异常退出，让窗口停住好让用户看到输出。
+pause_exit "运行助手意外退出。"
+`;
+
+await fs.writeFile(commandPath, launcher, "utf8");
+await fs.chmod(commandPath, 0o755);
+
+// 打成 zip：浏览器下载不会保留可执行位，zip 会。
+const zipPath = path.join(OUT_DIR, "hot100-runner.zip");
+await fs.rm(zipPath, { force: true });
+try {
+  const { execFileSync } = await import("node:child_process");
+  execFileSync("ditto", ["-c", "-k", "--keepParent", commandPath, zipPath], { stdio: "ignore" });
+} catch {
+  console.warn("! 没有 ditto，跳过 zip 打包（macOS 自带 ditto，通常不会缺）");
+}
+
+const zipStat = await fs.stat(zipPath).catch(() => null);
 console.log(`✔ runner 已打包 → dist/download/hot100-runner.mjs（${sizeKb} KB）`);
+console.log(`✔ 双击版 → dist/download/${COMMAND_NAME}（${(launcher.length / 1024).toFixed(1)} KB，隧道 ${ENDPOINT}）`);
+if (zipStat) console.log(`✔ 压缩包 → dist/download/hot100-runner.zip（${(zipStat.size / 1024).toFixed(1)} KB）`);

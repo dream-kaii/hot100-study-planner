@@ -263,3 +263,6 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 @media (prefers-reduced-motion: reduce) {
   .topBackLink { transition: none; }
 }
+.runnerPairAdvanced{margin:8px 0 0}
+.runnerPairAdvanced summary{cursor:pointer;color:var(--muted);font-size:11px}
+.runnerPairAdvanced .runnerPairCommand{margin-top:6px}

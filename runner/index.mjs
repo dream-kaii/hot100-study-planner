@@ -12,6 +12,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawn as spawnDetached } from "node:child_process";
+import readline from "node:readline/promises";
+import { install as installAgent, uninstall as uninstallAgent, isInstalled as agentInstalled, isLoaded as agentLoaded, isMac, plistPath } from "./launchd.mjs";
 import { fileURLToPath } from "node:url";
 
 import { Tunnel } from "./session.mjs";
@@ -53,7 +55,11 @@ function parseArgs(argv) {
     detach: false,
     headless: false,
     stop: false,
-    status: false
+    status: false,
+    launch: false,
+    install: false,
+    uninstall: false,
+    noAutostart: false
   };
   for (let i = 0; i < argv.length; i += 1) {
     const item = argv[i];
@@ -63,6 +69,10 @@ function parseArgs(argv) {
     else if (item === "--headless") args.headless = true;
     else if (item === "--stop") args.stop = true;
     else if (item === "--status") args.status = true;
+    else if (item === "--launch") args.launch = true;
+    else if (item === "--install") args.install = true;
+    else if (item === "--uninstall") args.uninstall = true;
+    else if (item === "--no-autostart") args.noAutostart = true;
     else if (item === "--help" || item === "-h") args.help = true;
     else if (item === "--code") args.code = String(argv[++i] || "");
     else if (item.startsWith("--code=")) args.code = item.slice("--code=".length);
@@ -84,6 +94,8 @@ function usage() {
   node hot100-runner.mjs --detach         配对成功后转入后台，终端窗口可以关掉
   node hot100-runner.mjs --status         查看后台实例是否在运行
   node hot100-runner.mjs --stop           停止后台实例
+  node hot100-runner.mjs --install       安装开机自启（macOS LaunchAgent）
+  node hot100-runner.mjs --uninstall     取消开机自启
 
 环境变量：
   HOT100_ENDPOINT   同 --endpoint
@@ -118,6 +130,12 @@ function isAlive(pid) {
 }
 
 function stopBackground() {
+  // launchd 托管的实例要连自启一起摘掉，否则停了又被拉起来。
+  if (agentInstalled()) {
+    uninstallAgent();
+    log("info", "已取消开机自启并停止");
+    return true;
+  }
   const pid = readPid();
   if (!pid) {
     log("info", "没有找到后台实例");
@@ -233,6 +251,29 @@ function printConnectHint(endpoint) {
 `);
 }
 
+/** 交互式 yes/no。非 TTY 时直接返回默认值。 */
+async function askYesNo(question, defaultValue = false) {
+  if (!process.stdin.isTTY) return defaultValue;
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = (await rl.question(`${question} ${defaultValue ? "[Y/n]" : "[y/N]"} `)).trim().toLowerCase();
+    if (!answer) return defaultValue;
+    return answer === "y" || answer === "yes" || answer === "是";
+  } finally {
+    rl.close();
+  }
+}
+
+function installAutostart(endpoint) {
+  const scriptPath = path.resolve(process.argv[1]);
+  return installAgent({
+    nodePath: process.execPath,
+    scriptPath,
+    endpoint,
+    logsDir: credentialsDir()
+  });
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help) { usage(); return 0; }
@@ -256,8 +297,38 @@ async function main() {
       log("info", `后台实例正在运行（pid ${pid}），日志：${logPath()}`);
       return 0;
     }
-    log("info", "后台实例没有在运行");
+    if (agentInstalled() && agentLoaded()) {
+      log("info", "由 macOS 开机自启托管，正在运行");
+      return 0;
+    }
+    log("info", "没有在运行");
     return 1;
+  }
+
+  if (args.uninstall) {
+    if (!isMac()) {
+      log("error", "开机自启目前只支持 macOS");
+      return 1;
+    }
+    uninstallAgent();
+    log("info", "已取消开机自启");
+    return 0;
+  }
+
+  if (args.install) {
+    if (!isMac()) {
+      log("error", "开机自启目前只支持 macOS");
+      return 1;
+    }
+    const saved = await loadSession();
+    if (!saved?.token) {
+      log("error", "还没有配对凭据，先正常启动一次完成配对，再加开机自启。");
+      return 1;
+    }
+    const target = installAutostart(saved.endpoint || args.endpoint);
+    log("info", `已安装开机自启：${target}`);
+    log("info", "取消：node hot100-runner.mjs --uninstall");
+    return 0;
   }
 
   if (!args.headless) {
@@ -383,7 +454,45 @@ async function main() {
     return 1;
   }
 
-  // 4. --detach：配对完成后转入后台，让终端可以关掉
+  // 4. --launch：双击启动后的完整体验 —— 配对 → 问是否开机自启 → 后台 → 退出
+  if (args.launch) {
+    if (!session.pairCode) resolvePaired(true);
+    const ok = await Promise.race([
+      pairedOrReady,
+      new Promise((resolve) => setTimeout(() => resolve(false), 60000))
+    ]);
+    if (!ok) {
+      log("error", "配对没有完成。请重新双击启动。");
+      return 1;
+    }
+
+    let managed = false;
+    if (isMac()) {
+      const wantAuto = args.noAutostart ? false : await askYesNo("\n以后开机自动启动？", true);
+      if (wantAuto) {
+        try {
+          const target = installAutostart(endpoint);
+          managed = true;
+          log("info", `已设置开机自启：${target}`);
+        } catch (error) {
+          log("warn", `设置开机自启失败：${error.message}`);
+        }
+      }
+    }
+
+    if (!managed) {
+      const pid = spawnBackground(args);
+      log("info", `已转入后台（pid ${pid}）`);
+    }
+    tunnel.close();
+    console.log("");
+    log("info", "配置完成，这个窗口可以关掉了。");
+    log("info", `日志：${logPath()}`);
+    log("info", "停止：node hot100-runner.mjs --stop" + (managed ? " 或 --uninstall" : ""));
+    return 0;
+  }
+
+  // 5. --detach：配对完成后转入后台，让终端可以关掉
   if (args.detach) {
     if (!session.pairCode) resolvePaired(true); // 用的是已有 token，无需等待配对
     const ok = await Promise.race([

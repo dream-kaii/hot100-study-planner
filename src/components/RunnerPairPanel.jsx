@@ -9,9 +9,15 @@
 
 import React, { useMemo, useState } from "react";
 
-/** 单文件构建的下载路径，由 scripts/build-runner.mjs 产出到 dist/download/。 */
-const DOWNLOAD_PATH = "download/hot100-runner.mjs";
-const DOWNLOAD_FILE = "hot100-runner.mjs";
+/**
+ * 由 scripts/build-runner.mjs 产出到 dist/download/：
+ *   hot100-runner.zip            双击版压缩包（zip 才留得住可执行位）
+ *   Hot100 运行助手.command      双击版（解压后的文件）
+ *   hot100-runner.mjs            纯命令行版
+ */
+const ZIP_PATH = "download/hot100-runner.zip";
+const ZIP_FILE = "hot100-runner.zip";
+const MJS_FILE = "hot100-runner.mjs";
 
 /**
  * 把当前页面的 origin 转成隧道地址。
@@ -28,15 +34,15 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
   const [copied, setCopied] = useState(false);
 
   // base "./" 是 vite.config.js 里设的，所以下载链接用相对路径，部署在子路径下也能用。
-  const downloadUrl = useMemo(() => {
+  const zipUrl = useMemo(() => {
     const base = typeof document !== "undefined" ? document.baseURI : "/";
-    return new URL(DOWNLOAD_PATH, base).href;
+    return new URL(ZIP_PATH, base).href;
   }, []);
 
   // 带上 cd：浏览器把文件存到「下载」目录，用户在任意位置直接敲 node 会报
   // Cannot find module。两行一起复制，粘进终端就能跑。
   const command = useMemo(
-    () => `cd ~/Downloads\nnode ${DOWNLOAD_FILE} --endpoint ${tunnelEndpoint()}`,
+    () => `cd ~/Downloads\nnode ${MJS_FILE} --endpoint ${tunnelEndpoint()}`,
     []
   );
 
@@ -64,15 +70,19 @@ export default function RunnerPairPanel({ code, onRetry, onDismiss, waiting = fa
     </div>
 
     <div className="runnerPairDownloadRow">
-      <a className="runnerPairDownload" href={downloadUrl} download={DOWNLOAD_FILE}>
-        下载 {DOWNLOAD_FILE}（约 58 KB）
+      <a className="runnerPairDownload" href={zipUrl} download={ZIP_FILE}>
+        下载双击版（{ZIP_FILE}）
       </a>
+      <small>解压后双击「Hot100 运行助手.command」，按提示粘上面的配对码</small>
     </div>
 
-    <div className="runnerPairCommand">
-      <code>{command}</code>
-      <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
-    </div>
+    <details className="runnerPairAdvanced">
+      <summary>或者用命令行</summary>
+      <div className="runnerPairCommand">
+        <code>{command}</code>
+        <button type="button" onClick={copy}>{copied ? "已复制" : "复制"}</button>
+      </div>
+    </details>
 
     {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…连上后会自动继续运行</p>}
     {error && <p className="runnerPairError" role="alert">{error}</p>}

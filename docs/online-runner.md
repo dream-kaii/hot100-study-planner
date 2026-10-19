@@ -233,3 +233,51 @@ node hot100-runner.mjs --stop     # 停掉后台
 - **国内通常能直连自定义域名**，运行助手就不用再配代理了
 
 > 如果你不想用子域名，也可以挂在路径上（比如 `你的域名.com/hot100`），但 `assets` 和 Worker 路由都要改前缀，麻烦得多。优先用子域名。
+
+---
+
+## 11. 双击即用（推荐给最终用户）
+
+页面上的「下载双击版」会给出 `hot100-runner.zip`，解压后是 **`Hot100 运行助手.command`**。
+
+它是**一个自包含文件**：运行助手和全部判题逻辑都以 base64 内嵌在里面，不需要别的文件。
+
+### 使用流程
+
+1. 下载 `hot100-runner.zip` → 解压（Safari 通常自动解压）
+2. 双击 `Hot100 运行助手.command`
+3. 它会自动：
+   - 找不到 Node 就提示安装地址并停住
+   - 把内嵌的运行助手释放到 `~/.hot100-runner/hot100-runner.mjs`
+   - 检查 node / python3 / javac
+   - 让你粘 6 位配对码
+   - 问你「以后开机自动启动？」（默认 Y）
+   - 完成后转入后台，**这个终端窗口可以关掉**
+4. 之后这台电脑就不用再管了，直接在网页上练习
+
+### 关于两台电脑 / 换机
+
+配对凭据在 `~/.hot100-runner/session.json`，是**每台机器各自一份**。换电脑就双击一次、输一次配对码。
+
+### 开机自启做了什么
+
+选「是」会写一个 macOS LaunchAgent：
+
+```
+~/Library/LaunchAgents/com.hot100.runner.plist
+```
+
+- `RunAtLoad` —— 登录后自动启动
+- `KeepAlive.SuccessfulExit=false` —— 崩溃/断网会自动拉起，但你手动 `--stop`（正常退出）不会再被启动
+- 日志：`~/.hot100-runner/runner.log`
+
+取消：
+
+```bash
+node ~/.hot100-runner/hot100-runner.mjs --uninstall
+```
+
+### 为什么打成 zip
+
+macOS 从浏览器下载的文件**不会保留可执行权限**，`.command` 双击会变成用文本编辑器打开。
+zip 会保留权限位，所以分发 zip 是唯一能真正「下载后直接双击」的方式。
