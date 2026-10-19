@@ -33,7 +33,7 @@ export default function Mistakes({ questions, rawProgress = {}, dailyNewLimit = 
     const item = rawProgress[question.id] || {};
     const status = derivePracticeStatus(item);
     const detail = isMistakeStatus(status)
-      ? `错题 · ${item.failedCount ? `累计失败 ${item.failedCount} 次` : "需要重做"}`
+      ? `错题 · 需要重做${item.reviewCount ? ` · 已练习 ${item.reviewCount} 次` : ""}`
       : item.reviewAt ? `${statusLabel(status)} · 复习于 ${String(item.reviewAt).slice(0, 10)}` : statusLabel(status);
     return <div className={`reviewRow ${tone}`} key={question.id}>
       <div>
