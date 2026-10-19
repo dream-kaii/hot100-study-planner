@@ -37,6 +37,12 @@ const CORE_BUNDLED = !fs.existsSync(RUNNER_CORE);
 /** 默认隧道地址。部署后改成你的 Workers 域名。 */
 const DEFAULT_ENDPOINT = "wss://hot100-study-planner.example.workers.dev/ws";
 
+/**
+ * 构建版本号，由 scripts/build-runner.mjs 用 esbuild define 注入。
+ * 直接跑源码时没有这个 define，用 typeof 兜底成 dev。
+ */
+const BUILD_VERSION = typeof __BUILD_VERSION__ !== "undefined" ? __BUILD_VERSION__ : "dev";
+
 function log(level, message) {
   // 带上日期：后台日志会跨越很多天，只有时分秒看不出是哪天出的问题。
   const now = new Date();
@@ -61,7 +67,8 @@ function parseArgs(argv) {
     launch: false,
     install: false,
     uninstall: false,
-    noAutostart: false
+    noAutostart: false,
+    version: false
   };
   for (let i = 0; i < argv.length; i += 1) {
     const item = argv[i];
@@ -75,6 +82,7 @@ function parseArgs(argv) {
     else if (item === "--install") args.install = true;
     else if (item === "--uninstall") args.uninstall = true;
     else if (item === "--no-autostart") args.noAutostart = true;
+    else if (item === "--version" || item === "-v") args.version = true;
     else if (item === "--help" || item === "-h") args.help = true;
     else if (item === "--code") args.code = String(argv[++i] || "");
     else if (item.startsWith("--code=")) args.code = item.slice("--code=".length);
@@ -98,6 +106,7 @@ function usage() {
   node hot100-runner.mjs --stop           停止后台实例
   node hot100-runner.mjs --install       安装开机自启（macOS LaunchAgent）
   node hot100-runner.mjs --uninstall     取消开机自启
+  node hot100-runner.mjs --version       只输出版本号
 
 环境变量：
   HOT100_ENDPOINT   同 --endpoint
@@ -278,7 +287,8 @@ function installAutostart(endpoint) {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
-  if (args.help) { usage(); return 0; }
+  if (args.version) { console.log(BUILD_VERSION); return 0; }
+  if (args.help) { usage(); console.log(`\n版本：${BUILD_VERSION}`); return 0; }
 
   if (args.doctor) {
     const ok = await doctor();
@@ -346,10 +356,10 @@ async function main() {
   }
 
   if (args.headless) {
-    log("info", `后台实例启动（pid ${process.pid}）`);
+    log("info", `后台实例启动（pid ${process.pid}，版本 ${BUILD_VERSION}）`);
   }
   if (!args.headless) {
-    console.log("Hot 100 本机运行助手");
+    console.log(`Hot 100 本机运行助手（版本 ${BUILD_VERSION}）`);
     console.log("代码在你自己的电脑上执行，不会上传。关掉这个窗口即停止；想关窗口又不停止，用 --detach。\n");
     await doctor();
     console.log("");
@@ -487,6 +497,24 @@ async function main() {
 
   // 4. --launch：双击启动后的完整体验 —— 配对 → 问是否开机自启 → 后台 → 退出
   if (args.launch) {
+    // 更新/重装场景：必须先停掉正在跑的实例。
+    // 否则新旧两个 runner 会同时连着同一个会话，运行请求可能被投递到旧连接上，
+    // 表现为"更新了但行为没变"，或者一次运行只收到一半结果。
+    let stopped = false;
+    if (isMac() && agentInstalled()) {
+      uninstallAgent();
+      stopped = true;
+    }
+    const previous = readPid();
+    if (isAlive(previous)) {
+      try { process.kill(previous, "SIGTERM"); stopped = true; } catch { /* 已退出 */ }
+      fs.rmSync(pidPath(), { force: true });
+    }
+    if (stopped) {
+      log("info", "已停止正在运行的旧实例");
+      await new Promise((resolve) => setTimeout(resolve, 600));
+    }
+
     if (!session.pairCode) resolvePaired(true);
     const ok = await Promise.race([
       pairedOrReady,

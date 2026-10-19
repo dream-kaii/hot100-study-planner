@@ -31,6 +31,24 @@ async function resolveEndpoint() {
 
 const ENDPOINT = await resolveEndpoint();
 
+/** 构建版本号：git 短哈希 + 是否脏。用来判断用户装的是不是最新版。 */
+async function resolveVersion() {
+  const { execFileSync } = await import("node:child_process");
+  try {
+    const sha = execFileSync("git", ["rev-parse", "--short", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+    let dirty = "";
+    try {
+      const status = execFileSync("git", ["status", "--porcelain"], { cwd: ROOT, encoding: "utf8" }).trim();
+      if (status) dirty = "+dirty";
+    } catch { /* ignore */ }
+    return `${sha}${dirty}`;
+  } catch {
+    return `t${Date.now().toString(36)}`;
+  }
+}
+
+const VERSION = await resolveVersion();
+
 const RESULT = await build({
   entryPoints: [ENTRY],
   outfile: OUT_FILE,
@@ -44,10 +62,11 @@ const RESULT = await build({
   minify: false,
   sourcemap: false,
   legalComments: "none",
+  define: { __BUILD_VERSION__: JSON.stringify(VERSION) },
   banner: {
     js: [
       "#!/usr/bin/env node",
-      "// Hot 100 本机运行助手（单文件构建）",
+      `// Hot 100 本机运行助手（单文件构建，版本 ${VERSION}）`,
       "// 代码只在本机执行；不监听端口、不写入系统目录、不开机自启。",
       "// 用法： node hot100-runner.mjs --endpoint wss://<你的域名>/ws",
       ""
@@ -75,6 +94,7 @@ if (leaks.length) {
 await fs.writeFile(
   path.join(OUT_DIR, "VERSION.txt"),
   [
+    `version: ${VERSION}`,
     `built-at: ${new Date().toISOString()}`,
     `size: ${sizeKb} KB`,
     `entry: runner/index.mjs`,
@@ -123,16 +143,34 @@ if [ -z "$NODE" ]; then
   pause_exit "没有找到 Node.js。请先安装：https://nodejs.org （或 brew install node），然后重新双击这个文件。"
 fi
 
-# 释放内嵌的运行助手。加一个版本标记，脚本更新后会自动覆盖旧的。
+# 记下旧版本，好在更新后告诉用户发生了什么
+OLD_VERSION=""
+if [ -f "$BIN" ]; then
+  OLD_VERSION="$("$NODE" "$BIN" --version 2>/dev/null | head -1 || true)"
+fi
+
+# 释放内嵌的运行助手（覆盖旧版本）
 /usr/bin/base64 -D > "$BIN.tmp" <<'HOT100_PAYLOAD_EOF'
 ${payload}
 HOT100_PAYLOAD_EOF
 
 if [ ! -s "$BIN.tmp" ]; then
+  rm -f "$BIN.tmp"
   pause_exit "运行助手解析失败，请重新下载这个文件。"
 fi
 mv "$BIN.tmp" "$BIN"
 chmod 600 "$BIN"
+
+NEW_VERSION="$("$NODE" "$BIN" --version 2>/dev/null | head -1 || true)"
+echo ""
+if [ -z "$OLD_VERSION" ] || [ "$OLD_VERSION" = "dev" ]; then
+  echo "✔ 已安装运行助手\${NEW_VERSION:+（版本 $NEW_VERSION）}"
+elif [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
+  echo "✔ 已是最新版本（$NEW_VERSION），无需更新"
+else
+  echo "✔ 运行助手已更新：$OLD_VERSION → $NEW_VERSION"
+fi
+echo ""
 
 cd "$DIR" || pause_exit "无法进入 $DIR"
 exec "$NODE" "$BIN" --launch --endpoint "${ENDPOINT}" "$@"
@@ -155,6 +193,6 @@ try {
 }
 
 const zipStat = await fs.stat(zipPath).catch(() => null);
-console.log(`✔ runner 已打包 → dist/download/hot100-runner.mjs（${sizeKb} KB）`);
+console.log(`✔ runner 已打包 → dist/download/hot100-runner.mjs（${sizeKb} KB，版本 ${VERSION}）`);
 console.log(`✔ 双击版 → dist/download/${COMMAND_NAME}（${(launcher.length / 1024).toFixed(1)} KB，隧道 ${ENDPOINT}）`);
 if (zipStat) console.log(`✔ 压缩包 → dist/download/hot100-runner.zip（${(zipStat.size / 1024).toFixed(1)} KB）`);
