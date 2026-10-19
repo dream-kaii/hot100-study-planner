@@ -138,6 +138,13 @@ export function parseState(raw) {
   return migrateState(parsed);
 }
 
+// 判断这份状态里是否已有学习痕迹（用于"换浏览器后是否自动恢复备份"的决策）
+export function isStateEmpty(state) {
+  const value = parseState(state);
+  const hasRecords = (record) => Boolean(record) && typeof record === "object" && Object.keys(record).length > 0;
+  return !hasRecords(value.progress) && !hasRecords(value.solutions) && !hasRecords(value.notes) && !hasRecords(value.drafts) && !(Array.isArray(value.history) && value.history.length > 0);
+}
+
 export function serializeState(state) {
   return JSON.stringify(normalizeCurrent(migrateState(state)), null, 2);
 }

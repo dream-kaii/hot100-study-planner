@@ -1,5 +1,6 @@
 import React, { useRef, useState } from "react";
-import { exportBackup, mergeOrReplaceState, readBackupFile, requestBackupDirectory, writeBackup } from "../services/backup.js";
+import { exportBackup, mergeOrReplaceState, readBackupFile, readBackupFromDirectory, requestBackupDirectory, writeBackup } from "../services/backup.js";
+import { isStateEmpty } from "../services/storage.js";
 import { saveDeviceBackup } from "../services/device.js";
 
 export default function BackupPanel({ state, onImport, lastBackupAt, backupAvailable = false, deviceBackupName = "", onConfigured }) {
@@ -12,6 +13,18 @@ export default function BackupPanel({ state, onImport, lastBackupAt, backupAvail
       const handle = await requestBackupDirectory();
       if (handle?.name) saveDeviceBackup(handle.name);
       onConfigured?.();
+      // 这个文件夹里如果已经有备份（比如换浏览器后选回了原来那个），直接读回来合并，
+      // 这样"选一次位置"就等于"数据也回来了"。
+      const incoming = await readBackupFromDirectory(handle);
+      if (incoming) {
+        const empty = isStateEmpty(state);
+        const merge = empty || window.confirm("这个文件夹里已有备份数据，合并到当前浏览器吗？\n点「取消」则保持现状（不会覆盖）。");
+        if (merge) {
+          onImport?.(mergeOrReplaceState(state, incoming, "merge"));
+          setMessage(empty ? "已从这个文件夹恢复学习数据" : "已合并该文件夹里的备份数据");
+          return;
+        }
+      }
       setMessage("备份位置已设置，之后会自动保存");
     } catch (error) { setMessage(error.message); }
   };

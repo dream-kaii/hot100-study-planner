@@ -65,6 +65,19 @@ export async function readBackupFile(file) {
   return parseState(parsed);
 }
 
+// 换浏览器后重新授权同一个文件夹时，把文件夹里已有的备份读回来，
+// 才能真正做到"数据统一"——只恢复授权是不够的，数据还在各自的 localStorage 里。
+export async function readBackupFromDirectory(directory = memoryHandle) {
+  if (!directory || typeof directory.getFileHandle !== "function") return null;
+  try {
+    const fileHandle = await directory.getFileHandle(FILE_NAME);
+    const file = await fileHandle.getFile();
+    return await readBackupFile(file);
+  } catch {
+    return null; // 文件夹里还没有备份文件
+  }
+}
+
 export function mergeOrReplaceState(current, incoming, mode = "merge") {
   return mode === "replace" ? parseState(incoming) : mergeState(current, incoming);
 }
