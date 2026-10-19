@@ -23,6 +23,7 @@ import {
   updateVariant
 } from "./services/solutions.js";
 import BackupPanel from "./components/BackupPanel.jsx";
+import { fetchDeviceBackup } from "./services/device.js";
 import ProblemDetail from "./components/ProblemDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ProblemBank from "./pages/ProblemBank.jsx";
@@ -69,13 +70,24 @@ function App() {
   const [view, setView] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("question") ? "detail" : "dashboard");
   const [filters, setFilters] = useState({ query: "", category: "全部", difficulty: "全部", status: "全部" });
   const [lastBackupAt, setLastBackupAt] = useState("");
+  const [deviceBackupName, setDeviceBackupName] = useState("");
   const [selectedSolution, setSelectedSolution] = useState(null);
   // 「从错题页点另起一种解法」要用的一次性标记。消费后清掉，
   // 免得下次普通打开题目又莫名其妙多开一份。
   const [freshStartFor, setFreshStartFor] = useState(null);
 
   useEffect(() => {
-    hasBackupDirectory().then(setBackupAvailable).catch(() => setBackupAvailable(false));
+    hasBackupDirectory()
+      .then((has) => {
+        setBackupAvailable(has);
+        // 本浏览器还没有句柄时，问问这台设备是不是在别的浏览器里设过。
+        if (!has) {
+          fetchDeviceBackup()
+            .then((info) => { if (info?.name) setDeviceBackupName(info.name); })
+            .catch(() => {});
+        }
+      })
+      .catch(() => setBackupAvailable(false));
   }, []);
 
   useEffect(() => {
@@ -359,7 +371,7 @@ function App() {
       {view === "detail" && !selected && <div className="contentCard emptyState">未找到这道题，请从上方题库重新选择。</div>}
     </main>
     <SiteFooter />
-    <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} onConfigured={() => setBackupAvailable(true)} onImport={(incoming) => setState(parseState(incoming))} />
+    <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} deviceBackupName={deviceBackupName} onConfigured={() => setBackupAvailable(true)} onImport={(incoming) => setState(parseState(incoming))} />
   </div>;
 }
 

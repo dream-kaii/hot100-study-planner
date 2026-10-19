@@ -6,6 +6,8 @@
 //
 // 对外只暴露一个函数：requestRun(payload) → Promise<runExample 结果>
 
+import { adoptSession } from "../services/device.js";
+
 const PAIR_KEY = "hot100:onlineRunner";
 /** 单次判题的客户端超时。服务端 runExample 自身有 3s/10s 超时，这里留 2 倍余量。 */
 const RUN_TIMEOUT_MS = 60 * 1000;
@@ -88,11 +90,27 @@ export async function requestRun(payload, { onPairCode, onRunnerOffline, signal,
     if (status?.paired) usable.push({ sid, online: Boolean(status.runnerOnline) });
   }
 
+  // 本地没有任何可用会话时，先问一句"这台设备以前配过对吗"。
+  // 换浏览器、无痕窗口、清过数据都属于这种情况：localStorage 是空的，
+  // 但本机 runner 还连着它上一次配对的那个会话，服务端按设备记着这条线索。
+  if (!usable.length) {
+    const adopted = await adoptSession();
+    if (adopted?.sid && !candidates.includes(adopted.sid)) {
+      const status = await fetchStatus(adopted.sid).catch(() => null);
+      if (status?.paired) {
+        candidates.push(adopted.sid);
+        usable.push({ sid: adopted.sid, online: Boolean(status.runnerOnline) });
+      }
+    }
+  }
+
   if (usable.length) {
     const alreadyOnline = usable.find((item) => item.online);
     if (!alreadyOnline) onRunnerOffline?.({ sids: usable.map((item) => item.sid) });
     const sid = alreadyOnline?.sid || (await waitForAnyRunner(usable.map((item) => item.sid), { signal, windowMs: resumeWindowMs }));
-    if (sid !== saved?.sid) writeSaved({ sid, previous: [], pairedAt: saved?.pairedAt || Date.now() });
+    if (sid !== saved?.sid) {
+      writeSaved({ sid, previous: candidates.filter((item) => item !== sid).slice(0, 3), pairedAt: saved?.pairedAt || Date.now() });
+    }
     return runOverSocket(sid, payload, { signal });
   }
 

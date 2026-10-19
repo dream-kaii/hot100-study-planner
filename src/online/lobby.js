@@ -22,6 +22,13 @@ const LOOKUP_FAIL_LIMIT = 30;
 
 const KEY_PREFIX = "c:";
 const KEY_FAILS = "lookupFails";
+/** r:<设备指纹> → 这台设备的 runner 最近连过的会话，用来免配对找回。 */
+const KEY_RUNNER = "r:";
+/** b:<设备指纹> → 这台设备上次选的备份文件夹名。 */
+const KEY_BACKUP = "b:";
+const RUNNER_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+const BACKUP_TTL_MS = 365 * 24 * 60 * 60 * 1000;
+const DEVICE_PATTERN = /^[0-9a-f]{32}$/;
 
 export class Lobby {
   constructor(state, env) {
@@ -34,6 +41,9 @@ export class Lobby {
 
     if (url.pathname.endsWith("/register")) return this.handleRegister(request);
     if (url.pathname.endsWith("/lookup")) return this.handleLookup(url);
+    if (url.pathname.endsWith("/runner-online")) return this.handleRunnerOnline(request);
+    if (url.pathname.endsWith("/adopt")) return this.handleAdopt(url);
+    if (url.pathname.endsWith("/backup")) return this.handleBackup(request, url);
 
     return json({ error: "未知路径" }, 404);
   }
@@ -85,14 +95,74 @@ export class Lobby {
     return json({ sid: entry.sid, state: SESSION_STATE.PAIRED });
   }
 
+  /** runner 每次连上隧道都来登记一次，记下"这台设备的助手现在在哪个会话"。 */
+  async handleRunnerOnline(request) {
+    if (request.method !== "POST") return json({ error: "只支持 POST" }, 405);
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return json({ error: "请求不是有效 JSON" }, 400);
+    }
+    const ip = String(body?.ip || "");
+    const sid = String(body?.sid || "");
+    if (!DEVICE_PATTERN.test(ip)) return json({ error: "设备指纹格式不正确" }, 400);
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(sid)) return json({ error: "sid 格式不正确" }, 400);
+
+    const expireAt = Date.now() + RUNNER_TTL_MS;
+    await this.state.storage.put({ [`${KEY_RUNNER}${ip}`]: { sid, at: Date.now(), expireAt } });
+    await this.state.storage.setAlarm(expireAt + 1000);
+    return json({ ok: true });
+  }
+
+  /**
+   * 网页说"我是这台设备，把我已经配好的会话还给我"。
+   * ip 由 Worker 从请求头算出，客户端传不进来，所以没法枚举别人的会话。
+   */
+  async handleAdopt(url) {
+    const ip = url.searchParams.get("ip") || "";
+    if (!DEVICE_PATTERN.test(ip)) return json({ error: "设备指纹格式不正确" }, 400);
+    const entry = await this.state.storage.get(`${KEY_RUNNER}${ip}`);
+    if (!entry) return json({ error: "这台设备还没有配过对的助手" }, 404);
+    return json({ sid: entry.sid, at: entry.at });
+  }
+
+  /** 备份文件夹名（只有名字，没有路径——浏览器拿不到完整路径）。 */
+  async handleBackup(request, url) {
+    if (request.method === "POST") {
+      const ip = request.headers.get("x-hot100-device") || "";
+      if (!DEVICE_PATTERN.test(ip)) return json({ error: "设备指纹格式不正确" }, 400);
+      let body;
+      try {
+        body = await request.json();
+      } catch {
+        return json({ error: "请求不是有效 JSON" }, 400);
+      }
+      const name = String(body?.name || "").trim().slice(0, 120);
+      if (!name) return json({ error: "缺少文件夹名称" }, 400);
+      const expireAt = Date.now() + BACKUP_TTL_MS;
+      await this.state.storage.put({ [`${KEY_BACKUP}${ip}`]: { name, at: Date.now(), expireAt } });
+      await this.state.storage.setAlarm(expireAt + 1000);
+      return json({ ok: true, name });
+    }
+
+    const ip = url.searchParams.get("ip") || "";
+    if (!DEVICE_PATTERN.test(ip)) return json({ error: "设备指纹格式不正确" }, 400);
+    const entry = await this.state.storage.get(`${KEY_BACKUP}${ip}`);
+    if (!entry) return json({});
+    return json({ name: entry.name, at: entry.at });
+  }
+
   /** 清理过期条目。 */
   async alarm() {
-    const all = await this.state.storage.list({ prefix: KEY_PREFIX });
+    const all = await this.state.storage.list();
     const now = Date.now();
     const stale = [];
     let nextAlarm = 0;
     for (const [key, value] of all) {
-      if (!value || now > value.expireAt) stale.push(key);
+      // 限流计数没有 expireAt，跳过。
+      if (!value || typeof value.expireAt !== "number") continue;
+      if (now > value.expireAt) stale.push(key);
       else if (!nextAlarm || value.expireAt < nextAlarm) nextAlarm = value.expireAt;
     }
     if (stale.length) await this.state.storage.delete(stale);

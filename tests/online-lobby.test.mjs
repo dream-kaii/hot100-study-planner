@@ -128,3 +128,67 @@ test("token 是 pair: 前缀时退化成用 code 连接", () => {
   const url = new URL(tunnel.buildEndpoint());
   assert.equal(url.searchParams.get("code"), "777777");
 });
+
+// ---- 设备身份：同一台设备换浏览器不用重新配对 ----
+
+const IP = (ch) => ch.repeat(32);
+
+test("runner 连上后，网页能按设备找回同一个会话", async () => {
+  const state = makeState();
+  const ip = IP("a");
+  const sid = "s".repeat(32);
+  const online = await new Lobby(state, {}).fetch(new Request("https://lobby/runner-online", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ ip, sid })
+  }));
+  assert.equal(online.status, 200);
+
+  const adopted = await new Lobby(state, {}).fetch(new Request(`https://lobby/adopt?ip=${ip}`, { method: "POST" }));
+  assert.equal(adopted.status, 200);
+  assert.equal((await adopted.json()).sid, sid);
+});
+
+test("没登记过的设备拿不到会话", async () => {
+  const state = makeState();
+  const res = await new Lobby(state, {}).fetch(new Request(`https://lobby/adopt?ip=${IP("b")}`, { method: "POST" }));
+  assert.equal(res.status, 404);
+  assert.match((await res.json()).error, /还没有配过对/);
+});
+
+test("设备指纹格式不对直接拒绝", async () => {
+  const state = makeState();
+  const res = await new Lobby(state, {}).fetch(new Request("https://lobby/adopt?ip=not-a-fingerprint", { method: "POST" }));
+  assert.equal(res.status, 400);
+});
+
+test("备份文件夹名按设备记住，另一个浏览器也读得到", async () => {
+  const state = makeState();
+  const ip = IP("c");
+  const saved = await new Lobby(state, {}).fetch(new Request("https://lobby/backup", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-hot100-device": ip },
+    body: JSON.stringify({ name: "Hot100备份" })
+  }));
+  assert.equal(saved.status, 200);
+
+  const read = await new Lobby(state, {}).fetch(new Request(`https://lobby/backup?ip=${ip}`));
+  assert.equal(read.status, 200);
+  assert.equal((await read.json()).name, "Hot100备份");
+});
+
+test("没设置过备份位置时返回空对象而不是报错", async () => {
+  const state = makeState();
+  const read = await new Lobby(state, {}).fetch(new Request(`https://lobby/backup?ip=${IP("d")}`));
+  assert.equal(read.status, 200);
+  assert.deepEqual(await read.json(), {});
+});
+
+test("清理过期条目时不会误删限流计数", async () => {
+  const state = makeState();
+  const lobby = new Lobby(state, {});
+  await lobby.fetch(new Request("https://lobby/lookup?code=000000"));
+  assert.ok(state._mem.has("lookupFails"));
+  await lobby.alarm();
+  assert.ok(state._mem.has("lookupFails"), "限流计数没有 expireAt，不该被当成过期条目删掉");
+});

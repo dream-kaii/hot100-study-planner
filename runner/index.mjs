@@ -20,6 +20,7 @@ import { Tunnel } from "./session.mjs";
 import { checkOnce, respawnSelf, FIRST_CHECK_DELAY_MS, CHECK_INTERVAL_MS } from "./autoupdate.mjs";
 import { FRAME, validateRunFrame } from "./protocol.mjs";
 import { loadSession, saveSession, clearSession, promptPairCode, pairedMessage, credentialsPath, credentialsDir } from "./pair.mjs";
+import { startLocalApi } from "./localapi.mjs";
 import {
   runExample,
   getEnvironmentStatus,
@@ -427,6 +428,16 @@ async function main() {
   // 表现为"我明明传了新域名，却还连着老地址"。
   const endpoint = args.endpointExplicit ? args.endpoint : session.endpoint || args.endpoint;
 
+  // 同机网页靠这个接口认回"这台设备已经配过对"，换浏览器 / 无痕窗口就不用再输码。
+  // 端口占不到也不影响判题，网页会安静退回配对码。
+  const localApi = startLocalApi({
+    endpoint,
+    version: BUILD_VERSION,
+    getSession: () => session,
+    log
+  });
+  process.on("exit", () => { try { localApi.close(); } catch { /* 已在退出 */ } });
+
   // 用本地保存的 token 连上、但网页一直没接入 —— 说明连的是旧会话。
   // 这是真实踩过的坑：用户网页上看到一个新配对码，runner 却在等上一个会话。
   let staleHintTimer = null;
@@ -550,6 +561,8 @@ async function main() {
 
   tunnel.onPaired = async (payload) => {
     const next = { sid: payload.sid, token: payload.token, endpoint, pairedAt: Date.now() };
+    // 本机接口读的是这个变量，配对完成后必须跟着更新，否则它报的是一个空 sid。
+    session = next;
     await saveSession(next);
     log("info", pairedMessage(next));
     resolvePaired(true);
