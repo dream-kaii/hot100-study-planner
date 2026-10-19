@@ -72,8 +72,8 @@ export async function requestRun(payload, { onPairCode, signal, resumeWindowMs }
   if (saved?.sid) {
     try {
       // 先确认 runner 还在线。不在线时不要立刻重新配对：
-      // runner 可能正因为网络抖动/DO 切换在重连（约 0.5~2 秒），
-      // 这段时间内重新配对会让用户看到一个新配对码，白折腾一次。
+      // runner 可能正在重连（网络抖动、开机后 launchd 刚拉起、DO 切换），
+      // 这段窗口内重新配对会让用户看到一个新配对码，白折腾一次。
       if (await waitForExistingRunner(saved.sid, { signal, windowMs: resumeWindowMs })) {
         return await runOverSocket(saved.sid, payload, { signal });
       }
@@ -96,8 +96,8 @@ export async function requestRun(payload, { onPairCode, signal, resumeWindowMs }
  * 已有 sid 时，给 runner 一小段回连窗口。
  * 直接判定"不在线就重新配对"会把正常的重连误判成需要重新配对。
  */
-async function waitForExistingRunner(sid, { signal, windowMs = 6000 } = {}) {
-  if (!Number.isFinite(windowMs) || windowMs < 0) windowMs = 6000;
+async function waitForExistingRunner(sid, { signal, windowMs = 20000 } = {}) {
+  if (!Number.isFinite(windowMs) || windowMs < 0) windowMs = 20000;
   const deadline = Date.now() + windowMs;
   do {
     if (await isRunnerOnline(sid)) return true;

@@ -450,6 +450,17 @@ async function main() {
     await tunnel.connect();
   } catch (error) {
     log("error", error.message);
+    if (!args.code && session?.token) {
+      // 用的是本地保存的凭据却连不上：最常见是站点换了域名，或凭据已失效。
+      // 不提示的话用户只会看到"连接失败"，不知道该怎么办。
+      console.log(`
+这次用的是本地保存的凭据。如果站点换过域名、或凭据已经失效，重新配对一次：
+
+  node ${path.basename(process.argv[1] || "hot100-runner.mjs")} --unpair
+
+然后重新启动，输入网页上显示的 6 位配对码。
+`);
+    }
     printConnectHint(endpoint);
     return 1;
   }

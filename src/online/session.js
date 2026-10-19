@@ -278,12 +278,13 @@ export class Session {
     const silent = Date.now() - lastSeen;
 
     if (state === SESSION_STATE.ONLINE && silent > IDLE_TIMEOUT_MS) {
+      // 只断开僵尸连接，**保留 token**。
+      // 之前这里会把 token 一起删掉，结果是用户关机过夜后凭据失效，
+      // 下次开机 runner 用旧 token 连上来只会 401 然后无限重连 ——
+      // 和"配一次就不用管"的目标直接冲突。会话本来就只存在 DO 存储里，留着不占什么。
       for (const ws of this.state.getWebSockets()) {
         try { ws.close(4001, "idle timeout"); } catch { /* 已断 */ }
       }
-      await this.state.storage.put({ [KEY_STATE]: SESSION_STATE.DEAD });
-      // 状态回到需要重新配对，避免页面拿着一个永远连不上的 sid。
-      await this.state.storage.delete([KEY_TOKEN]);
       return;
     }
     if (state === SESSION_STATE.PAIRED) {
