@@ -147,9 +147,14 @@ function App() {
   //   1) 如果当前还是「未存档草稿」，先把它存成一份（不丢任何已写代码）；
   //   2) 再追加一份空白模板解法并切过去，用户立刻开始写新思路。
   // 这样「另起一种解法」永远不等于「删掉上一份」。
+  //
+  // 唯一的例外：草稿就是原样未改的模板（一个字符都没写）时不再额外存档，
+  // 否则刚打开题目点一下「+ 新解法」会凭空多出两份一模一样的空模板。
+  const isUntouchedTemplate = (code, template) => !String(code || "").trim() || String(code || "").trim() === String(template || "").trim();
+
   const addSolutionVariant = (questionId, language, mode, draft, options = {}) => updateState((current) => {
     let list = readScope(current, questionId, language, mode);
-    if (list.length === 0 && draft?.code) {
+    if (list.length === 0 && draft?.code && !isUntouchedTemplate(draft.code, options.template)) {
       // 第一次存档：把这份草稿连同它的判题结论一起收进「解法 1」。
       const first = createVariant(draft, { seed: 0, name: nextVariantName(list) });
       list = appendVariant(list, {
