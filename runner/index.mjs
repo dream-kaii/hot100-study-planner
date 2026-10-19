@@ -13,7 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn as spawnDetached } from "node:child_process";
 import readline from "node:readline/promises";
-import { install as installAgent, uninstall as uninstallAgent, isInstalled as agentInstalled, isLoaded as agentLoaded, isMac, plistPath } from "./launchd.mjs";
+import { install as installAgent, uninstall as uninstallAgent, isInstalled as agentInstalled, isLoaded as agentLoaded, kickstart as kickstartAgent, isMac, plistPath } from "./launchd.mjs";
 import { fileURLToPath } from "node:url";
 
 import { Tunnel } from "./session.mjs";
@@ -319,8 +319,14 @@ async function main() {
       log
     });
     if (result.updated) {
-      log("info", "用新版本重新启动后台实例");
-      respawnSelf();
+      // 手动更新后不要 spawn 游离进程：自启托管时交给 launchd 重启，
+      // 否则会和 launchd 那份同时存在两个实例。
+      if (isMac() && agentInstalled()) {
+        const ok = kickstartAgent();
+        log("info", ok ? "已重启开机自启实例，新版本生效" : "已更新文件，请手动重启一次");
+      } else {
+        log("info", "已更新文件，重新运行一次即可生效");
+      }
       return 0;
     }
     log("info", result.latest ? `没有更新：${result.reason}（最新 ${result.latest}）` : `没有更新：${result.reason}`);

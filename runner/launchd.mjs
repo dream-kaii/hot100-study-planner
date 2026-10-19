@@ -101,6 +101,16 @@ export function uninstall() {
 }
 
 /** 查 launchd 是否真的加载了（plist 存在不等于在跑）。 */
+/** 让 launchd 重启当前作业（文件已更新、进程还在跑旧代码时用）。 */
+export function kickstart() {
+  try {
+    execFileSync("launchctl", ["kickstart", "-k", `gui/${process.getuid()}/${LABEL}`], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function isLoaded() {
   if (!isMac()) return false;
   try {
