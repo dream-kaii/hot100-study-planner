@@ -17,6 +17,7 @@ import { install as installAgent, uninstall as uninstallAgent, isInstalled as ag
 import { fileURLToPath } from "node:url";
 
 import { Tunnel } from "./session.mjs";
+import { checkOnce, respawnSelf, FIRST_CHECK_DELAY_MS, CHECK_INTERVAL_MS } from "./autoupdate.mjs";
 import { FRAME, validateRunFrame } from "./protocol.mjs";
 import { loadSession, saveSession, clearSession, promptPairCode, pairedMessage, credentialsPath, credentialsDir } from "./pair.mjs";
 import {
@@ -68,7 +69,9 @@ function parseArgs(argv) {
     install: false,
     uninstall: false,
     noAutostart: false,
-    version: false
+    version: false,
+    autoUpdate: true,
+    update: false
   };
   for (let i = 0; i < argv.length; i += 1) {
     const item = argv[i];
@@ -83,6 +86,8 @@ function parseArgs(argv) {
     else if (item === "--uninstall") args.uninstall = true;
     else if (item === "--no-autostart") args.noAutostart = true;
     else if (item === "--version" || item === "-v") args.version = true;
+    else if (item === "--no-auto-update") args.autoUpdate = false;
+    else if (item === "--update") args.update = true;
     else if (item === "--help" || item === "-h") args.help = true;
     else if (item === "--code") args.code = String(argv[++i] || "");
     else if (item.startsWith("--code=")) args.code = item.slice("--code=".length);
@@ -107,6 +112,8 @@ function usage() {
   node hot100-runner.mjs --install       安装开机自启（macOS LaunchAgent）
   node hot100-runner.mjs --uninstall     取消开机自启
   node hot100-runner.mjs --version       只输出版本号
+  node hot100-runner.mjs --update        立刻检查并安装最新版
+  node hot100-runner.mjs --no-auto-update 关闭自动更新（默认开启）
 
 环境变量：
   HOT100_ENDPOINT   同 --endpoint
@@ -301,6 +308,25 @@ async function main() {
     return 0;
   }
 
+  if (args.update) {
+    // 显式更新：用和后台实例同一套 endpoint 优先级算地址
+    const saved = await loadSession();
+    const target = args.endpointExplicit ? args.endpoint : saved?.endpoint || args.endpoint || DEFAULT_ENDPOINT;
+    const result = await checkOnce({
+      endpoint: target,
+      currentVersion: BUILD_VERSION,
+      targetPath: path.resolve(process.argv[1]),
+      log
+    });
+    if (result.updated) {
+      log("info", "用新版本重新启动后台实例");
+      respawnSelf();
+      return 0;
+    }
+    log("info", result.latest ? `没有更新：${result.reason}（最新 ${result.latest}）` : `没有更新：${result.reason}`);
+    return 0;
+  }
+
   if (args.stop) return stopBackground() ? 0 : 1;
 
   if (args.status) {
@@ -421,6 +447,32 @@ async function main() {
     staleHintTimer.unref?.();
   };
 
+  // 正在判题的并发数。有任务在跑时不自动更新，免得把用户的一次运行打断。
+  let activeRuns = 0;
+  let autoUpdateStarted = false;
+
+  const tryAutoUpdate = async ({ manual = false } = {}) => {
+    if (!args.autoUpdate && !manual) return;
+    if (activeRuns > 0) {
+      log("info", `有 ${activeRuns} 个判题在跑，等它结束再检查更新`);
+      return;
+    }
+    const result = await checkOnce({
+      endpoint,
+      currentVersion: BUILD_VERSION,
+      targetPath: path.resolve(process.argv[1]),
+      log
+    });
+    if (!result.updated) {
+      if (manual) log("info", `没有更新：${result.reason}`);
+      return;
+    }
+    log("info", `自动更新完成：${result.from} → ${result.to}，正在用新版本重启`);
+    const pid = respawnSelf();
+    log("info", `新实例已启动（pid ${pid}），本进程退出`);
+    process.exit(0);
+  };
+
   // 2. 建隧道
   const tunnel = new Tunnel({
     url: endpoint,
@@ -436,6 +488,14 @@ async function main() {
       if (event.state === "OPEN") {
         log("info", "已连上隧道，等待网页发来运行请求");
         armStaleSessionHint();
+        // 连上后先等一会儿再查，免得和首次配对抢时间
+        if (args.autoUpdate && !autoUpdateStarted) {
+          autoUpdateStarted = true;
+          const first = setTimeout(() => { void tryAutoUpdate(); }, FIRST_CHECK_DELAY_MS);
+          first.unref?.();
+          const repeat = setInterval(() => { void tryAutoUpdate(); }, CHECK_INTERVAL_MS);
+          repeat.unref?.();
+        }
       } else if (event.state === "IDLE" && event.code) {
         log("warn", `隧道断开（${event.code}）`);
       }
@@ -448,6 +508,7 @@ async function main() {
       }
     },
     onRun: async (frame) => {
+      activeRuns += 1;
       const check = validateRunFrame(frame, {
         supportedLanguages: SUPPORTED_LANGUAGES,
         supportedModes: SUPPORTED_MODES,
@@ -458,9 +519,13 @@ async function main() {
       if (staleHintTimer) { clearTimeout(staleHintTimer); staleHintTimer = null; }
       log("info", `收到运行请求：${check.payload.language} / ${check.payload.mode}`);
       const started = Date.now();
-      const result = await runExample(check.payload);
-      log("info", `完成：${result.status}（${Date.now() - started}ms）`);
-      return result;
+      try {
+        const result = await runExample(check.payload);
+        log("info", `完成：${result.status}（${Date.now() - started}ms）`);
+        return result;
+      } finally {
+        activeRuns -= 1;
+      }
     }
   });
 
