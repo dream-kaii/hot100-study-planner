@@ -3,6 +3,7 @@ import Editor from "@monaco-editor/react";
 import { getDraftKey, getRunResultDetails, getRunResultTitle } from "../services/editor.js";
 import { compareComplexity, estimateComplexity } from "../services/complexity.js";
 import ComplexityPanel from "./ComplexityPanel.jsx";
+import { describeError } from "../services/errors.js";
 import RunnerPairPanel from "./RunnerPairPanel.jsx";
 
 const LANGUAGE_LABELS = { python: "Python 3", java: "Java 17" };
@@ -126,7 +127,7 @@ export default function CodeEditor({
       pairCallbackRef.current = null;
       setResult(outcome);
     } catch (error) {
-      setResult({ status: "runtime_error", error: error.message || "运行请求失败，请重试。" });
+      setResult({ status: "runtime_error", error: describeError(error, "运行请求失败，请重试。") });
       setPairCode("");
       setPairMode("pair");
     } finally {

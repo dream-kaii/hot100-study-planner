@@ -2,6 +2,7 @@ import React, { useRef, useState } from "react";
 import { exportBackup, mergeOrReplaceState, readBackupFile, readBackupFromDirectory, requestBackupDirectory, writeBackup } from "../services/backup.js";
 import { isStateEmpty } from "../services/storage.js";
 import { saveDeviceBackup } from "../services/device.js";
+import { describeError, isAbortError } from "../services/errors.js";
 
 export default function BackupPanel({ state, onImport, lastBackupAt, backupAvailable = false, backupNeedsGrant = false, deviceBackupName = "", onConfigured }) {
   const inputRef = useRef(null);
@@ -31,11 +32,11 @@ export default function BackupPanel({ state, onImport, lastBackupAt, backupAvail
   // 句柄在、权限被收回时，点这里会弹一次"允许写入"，过完就恢复自动备份，不用重选文件夹。
   const backup = async () => {
     if (!backupAvailable && !backupNeedsGrant) { setMessage("备份是可选功能；请先选择位置，或使用导出下载文件。"); return; }
-    try { const at = await writeBackup(state); setMessage(`已备份：${at}`); onConfigured?.(); } catch (error) { setMessage(error.message); }
+    try { const at = await writeBackup(state); setMessage(`已备份：${at}`); onConfigured?.(); } catch (error) { setMessage(describeError(error, "备份失败，请重试。")); }
   };
   const importFile = async (event) => {
     const file = event.target.files?.[0]; if (!file) return;
-    try { const incoming = await readBackupFile(file); const mode = window.confirm("确定覆盖当前数据吗？点击取消将合并导入。") ? "replace" : "merge"; onImport?.(mergeOrReplaceState(state, incoming, mode)); setMessage("导入完成"); } catch (error) { setMessage(error.message); }
+    try { const incoming = await readBackupFile(file); const mode = window.confirm("确定覆盖当前数据吗？点击取消将合并导入。") ? "replace" : "merge"; onImport?.(mergeOrReplaceState(state, incoming, mode)); setMessage("导入完成"); } catch (error) { setMessage(describeError(error, "导入失败，请确认选的是 hot100-backup.json。")); }
     event.target.value = "";
   };
   const download = () => { const url = URL.createObjectURL(exportBackup(state)); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "hot100-backup.json"; anchor.click(); URL.revokeObjectURL(url); setMessage("已导出当前学习数据"); };
