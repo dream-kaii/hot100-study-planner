@@ -10,6 +10,7 @@ import { classifyAttemptOutcome, derivePracticeStatus } from "../services/status
 import { STATUS_BUTTONS } from "../services/status-labels.js";
 import { MAX_SOLUTIONS_PER_SCOPE, createVariantId, normalizeVariant, selectScope } from "../services/solutions.js";
 import { formatDateTime } from "../services/datetime.js";
+import { readLocal, removeLocal, writeLocal } from "../services/local-store.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
 // 「无本地运行接口」提示的关闭状态存储键（见组件内 runnerNoticeDismissed）
@@ -25,12 +26,7 @@ function hasDraft(drafts, questionId, language, mode) {
 }
 
 function readQuestionHistoryOpen(questionId) {
-  try {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(`${QUESTION_HISTORY_KEY_PREFIX}${questionId}`) === "1";
-  } catch {
-    return false;
-  }
+  return readLocal(`${QUESTION_HISTORY_KEY_PREFIX}${questionId}`) === "1";
 }
 
 function activeVariantKey(questionId, language, mode) {
@@ -38,26 +34,18 @@ function activeVariantKey(questionId, language, mode) {
 }
 
 function readActiveVariant(questionId, language, mode, scope) {
-  try {
-    if (typeof window === "undefined") return null;
-    const stored = window.localStorage.getItem(activeVariantKey(questionId, language, mode));
-    if (stored && scope.some((item) => item.id === stored)) return stored;
-  } catch {
-    // localStorage 不可用时退回默认选择
-  }
+  // readLocal 在本地存储被禁用时返回 null，自动退回下面的默认选择。
+  const stored = readLocal(activeVariantKey(questionId, language, mode));
+  if (stored && scope.some((item) => item.id === stored)) return stored;
   // 没有记录时默认接着最后一份写，避免「明明存过却打开是空白模板」。
   return scope.length ? scope.at(-1).id : null;
 }
 
 function writeActiveVariant(questionId, language, mode, variantId) {
-  try {
-    if (typeof window === "undefined") return;
-    const key = activeVariantKey(questionId, language, mode);
-    if (variantId) window.localStorage.setItem(key, variantId);
-    else window.localStorage.removeItem(key);
-  } catch {
-    // 存不了就只保留内存态
-  }
+  // 存不了就只保留内存态，不影响当前操作。
+  const key = activeVariantKey(questionId, language, mode);
+  if (variantId) writeLocal(key, variantId);
+  else removeLocal(key);
 }
 
 export default function ProblemDetail({
@@ -107,20 +95,11 @@ export default function ProblemDetail({
   // 运行器不可用提示：可关闭，并记住选择。
   // 线上构建（import.meta.env.DEV === false）永远没有 /__runner 接口，
   // 这个提示会一直挂着，所以给一个关闭入口；关一次后不再打扰。
-  const [runnerNoticeDismissed, setRunnerNoticeDismissed] = useState(() => {
-    try {
-      return typeof window !== "undefined" && window.localStorage.getItem(RUNNER_NOTICE_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
+  const [runnerNoticeDismissed, setRunnerNoticeDismissed] = useState(() => readLocal(RUNNER_NOTICE_KEY) === "1");
   const dismissRunnerNotice = () => {
     setRunnerNoticeDismissed(true);
-    try {
-      window.localStorage.setItem(RUNNER_NOTICE_KEY, "1");
-    } catch {
-      // localStorage 不可用时静默降级：至少本次会话内不再显示
-    }
+    // 存不下也无所谓：至少本次会话内不再显示。
+    writeLocal(RUNNER_NOTICE_KEY, "1");
   };
   const attemptRef = useRef(null);
   const sessionRef = useRef(null);
@@ -237,11 +216,8 @@ export default function ProblemDetail({
   const handleQuestionHistoryToggle = (event) => {
     const open = event.currentTarget.open;
     setQuestionHistoryOpen(open);
-    try {
-      window.localStorage.setItem(`${QUESTION_HISTORY_KEY_PREFIX}${question.id}`, open ? "1" : "0");
-    } catch {
-      // localStorage 不可用时仍保持本次页面内的折叠状态。
-    }
+    // 存不下也不影响本次页面内的折叠状态。
+    writeLocal(`${QUESTION_HISTORY_KEY_PREFIX}${question.id}`, open ? "1" : "0");
   };
 
   // pairHandler 是 CodeEditor 传下来的配对码回调（线上首次运行时才会有）。

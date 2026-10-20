@@ -136,3 +136,41 @@ test("a completed item with a future review date is not manually downgraded to a
   assert.equal(item.status, "completed");
   assert.ok(Date.parse(item.reviewAt) > Date.parse("2026-10-16T00:00:00.000Z"));
 });
+
+// 回归：派生状态是全站的必经函数（总览/题库/错题页/顶栏统计都在调），
+// 它以前用会抛错的 asDate 解析 reviewAt。只要一条 progress 里的 reviewAt
+// 是坏字符串（手改 localStorage、旧备份、跨设备合并都可能），
+// 一次渲染就抛错，实测整个 React 树被卸载 —— 整页白屏，一个字都不剩。
+// 派生状态是只读展示逻辑，坏数据只能让它退化成「没有复习日」。
+test("a malformed reviewAt degrades to no review date instead of throwing", () => {
+  const cases = [
+    { status: "completed", reviewAt: "not-a-date" },
+    { status: "completed", reviewAt: 123 },
+    { status: "completed", reviewAt: {} },
+    { reviewAt: "not-a-date" },
+    { reviewAt: null },
+    null,
+    undefined,
+    "completed",
+    { status: null },
+    { status: {} }
+  ];
+  for (const item of cases) {
+    assert.doesNotThrow(() => derivePracticeStatus(item, now), `派生状态不接受坏数据 ${JSON.stringify(item)}`);
+    assert.equal(typeof derivePracticeStatus(item, now), "string");
+  }
+  // 坏复习日 = 当作没有复习日，状态就是已通过本身。
+  assert.equal(derivePracticeStatus({ status: "completed", reviewAt: "not-a-date" }, now), "completed");
+  // 坏数据不能让人凭空拿到「已掌握」。
+  assert.equal(derivePracticeStatus({ reviewAt: "not-a-date" }, now), "new");
+  assert.equal(isReviewPending({ status: "completed", reviewAt: "not-a-date" }, now), false);
+  assert.equal(isMistakeStatus(derivePracticeStatus({ reviewAt: "not-a-date" }, now)), false);
+});
+
+test("a malformed stored reviewAt does not break recording a new outcome", () => {
+  // 14 天那一步会读旧的 reviewAt 判断「是不是还排着复习」。
+  // 旧值坏掉时也不能抛错，否则用户点「重做完成」像没反应。
+  assert.doesNotThrow(() => recordReviewOutcome({ reviewStep: 3, reviewAt: "not-a-date" }, "independent", now));
+  const next = recordReviewOutcome({ reviewStep: 3, reviewAt: "not-a-date" }, "independent", now);
+  assert.equal(next.status, "mastered");
+});

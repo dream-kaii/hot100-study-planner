@@ -2,12 +2,14 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import hot100 from "./data/hot100.json";
 import { createDefaultState, parseState } from "./services/storage.js";
+import { readLocal, writeLocal } from "./services/local-store.js";
 import { hasBackupDirectory, hasBackupHandle, writeBackup } from "./services/backup.js";
 import { appendHistory } from "./services/history.js";
 import { getEffectivePracticeEvents } from "./services/history.js";
 import { filterQuestions, hasCompletedLearning, orderByStudyOrder, pickNextQuestion, pickPreviousQuestion, pickStudyQuestion } from "./services/practice.js";
 import { normalizeStudySolution } from "./services/study-text.js";
 import { recordHint, recordReviewOutcome, recordSolutionView, derivePracticeStatus, isMistakeStatus, isReviewPending } from "./services/status.js";
+import { getNextReviewAt } from "./services/review.js";
 import { canonicalStatus, statusLabel } from "./services/status-labels.js";
 import {
   MAX_SOLUTIONS_PER_SCOPE,
@@ -38,9 +40,10 @@ const solutionModules = import.meta.glob("./data/solutions/*.json", { eager: fal
 const STORAGE_KEYS = ["hot100-study-planner-v3", "hot100-study-planner-v1"];
 
 function loadState() {
-  if (typeof localStorage === "undefined") return createDefaultState();
+  // 全部走 local-store：某些浏览器里 `localStorage` 属性本身就会抛 SecurityError
+  // （Safari「阻止所有 Cookie」、企业策略等），直接访问会让整页白屏。
   for (const key of STORAGE_KEYS) {
-    const raw = localStorage.getItem(key);
+    const raw = readLocal(key);
     if (raw) {
       try { return parseState(raw); } catch { /* ignore unsupported/corrupt local data and keep the app usable */ }
     }
@@ -68,6 +71,8 @@ function App() {
   const [backupAvailable, setBackupAvailable] = useState(false);
   // 句柄还在、但写入权限被浏览器收回了：点一次就能恢复，不必重新选文件夹。
   const [backupNeedsGrant, setBackupNeedsGrant] = useState(false);
+  // localStorage 写不进去时的提示文案。非空就说明「这次的改动没保存」。
+  const [storageError, setStorageError] = useState(null);
   const [selectedId, setSelectedId] = useState(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("question"));
   const [view, setView] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("question") ? "detail" : "dashboard");
   const [filters, setFilters] = useState({ query: "", category: "全部", difficulty: "全部", status: "全部" });
@@ -110,7 +115,17 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEYS[0], JSON.stringify(state));
+    // 写盘必须容错。
+    // localStorage 会抛错的场景比想象中多：配额写满、Safari 隐私模式、
+    // 站点数据被系统清掉、某些企业策略下整个 Storage 被禁用。
+    // 这个 effect 是在渲染之后跑的，抛出的异常会冒到 React 根部，
+    // 实测结果是整个 React 树被卸载 —— 页面变空白，用户刚点的那一下也跟着没了。
+    // 存不下是环境问题，不该让人连页面都看不见，所以捕获后只在界面上提示一次。
+    const saved = writeLocal(STORAGE_KEYS[0], JSON.stringify(state));
+    // 用 null 表示"没问题"而不是空字符串，这样提示条只在真出问题时挂载。
+    setStorageError(saved.ok ? null : saved.reason === "quota"
+      ? { message: "浏览器本地存储已满，这次的改动没能保存。清理本站数据或删掉一些浏览器存储后刷新即可恢复。", hint: "建议先把数据从下方「备份」导出成文件，再清理浏览器存储。" }
+      : { message: "这个浏览器不允许本站使用本地存储，改动只在当前页面有效，关掉就会丢。", hint: "换一个浏览器，或在设置里允许本站保存数据（退出隐私模式也需要）。" });
     if (!backupAvailable) return undefined;
     const timer = window.setTimeout(() => writeBackup(state).then(setLastBackupAt).catch((error) => {
       // 句柄还在但授权过期时会走到这里：把状态翻回"需重新授权"，别让用户以为一直在备份。
@@ -126,23 +141,36 @@ function App() {
   // 手动改状态。
   // 旧版在这里静默 return {} —— 用户点了「错题」什么都不发生，也没有提示，
   // 一度让人以为「我明明标了错题，怎么找不到」。现在一律立刻生效。
+  //
+  // reviewAt 必须跟着状态一起改，不能留着上一个状态的旧值 ——
+  // 否则「错题」点成「已完成」时，旧的到期日还在过去，题目会立刻变回「待复习」，
+  // 用户会觉得这个按钮根本没生效。
   const setStatus = (questionId, status, timer) => updateState((current) => {
     const previous = current.progress?.[questionId] || {};
     const now = new Date().toISOString();
     const requested = canonicalStatus(status);
     const next = { ...previous, status: requested, ...(timer ? { timer } : {}), updatedAt: now };
     if (["completed", "mastered"].includes(requested)) next.completedAt = previous.completedAt || now;
-    if (requested === "mastered" && !next.masteredAt) next.masteredAt = now;
-    if (requested === "reviewing") {
-      // 标成错题就要排进错题池，给一个立刻到期的复习日。
-      delete next.masteredAt;
-      next.reviewAt = now;
+    if (requested === "mastered") {
+      next.masteredAt = previous.masteredAt || now;
+      delete next.reviewAt;
+      return { progress: { ...current.progress, [questionId]: next } };
     }
-    if (requested === "due") {
-      delete next.masteredAt;
+    delete next.masteredAt;
+    if (requested === "reviewing" || requested === "due") {
+      // 标成错题/待复习就要立刻进池子：给一个当场到期的复习日。
       next.reviewAt = now;
+      return { progress: { ...current.progress, [questionId]: next } };
     }
-    if (requested === "in-progress") delete next.masteredAt;
+    if (requested === "completed") {
+      // 只有旧的复习日还在未来才保留，否则重新排一个完整间隔，
+      // 免得「刚做完」立刻又被算成「该复习了」。
+      const stillScheduled = previous.reviewAt && Date.parse(previous.reviewAt) > Date.parse(now);
+      next.reviewAt = stillScheduled ? previous.reviewAt : getNextReviewAt("completed", now);
+      return { progress: { ...current.progress, [questionId]: next } };
+    }
+    // 未开始 / 思考中：不该出现在任何复习队列里。
+    delete next.reviewAt;
     return { progress: { ...current.progress, [questionId]: next } };
   });
 
@@ -258,11 +286,15 @@ function App() {
 
   // 统计口径统一：错题 = 派生为 reviewing；待复习 = 派生为 due。
   // 两者都不再和「已完成」混在一起，统计卡和题库筛选用的是同一个派生函数。
+  //
+  // 「已完成」的计数不能再拿派生状态去数：一道题通过后复习到期，派生会变成 due，
+  // 已经做完的进度会凭空掉一格，看着像倒退了。这里只问「曾经做完过没有」——
+  // 与「只抽未完成」「学习主线」用的是同一个 hasCompletedLearning。
   const stats = useMemo(() => {
     const values = hot100.questions.map((q) => derivePracticeStatus(progress[q.id]));
     return {
       total: hot100.questions.length,
-      done: values.filter((value) => ["completed", "mastered"].includes(value)).length,
+      done: hot100.questions.filter((q) => hasCompletedLearning(progress[q.id])).length,
       wrong: values.filter((value) => isMistakeStatus(value)).length,
       mastered: values.filter((value) => value === "mastered").length,
       due: values.filter((value) => value === "due").length
@@ -321,11 +353,13 @@ function App() {
   // 运行入口：本地 dev 走 /__runner（原路），线上走「网页 → Worker → 本机 runner」隧道。
   // 两条通路的判定在 src/online/runner-bridge.js 里，这里只负责转发。
   const onRun = useMemo(() => createOnRun(), []);
+  // 「只抽到期复习」只抽 due。以前这里用 isReviewPending，它把错题也包含进来，
+  // 于是「只抽错题」和「只抽到期复习」抽出同一批题，第二个按钮等于重复。
   const onPractice = (mode) => {
     const pool = mode === "unfinished"
       ? studyQuestions.filter((q) => !hasCompletedLearning(progress[q.id]))
       : mode === "wrong" ? hot100.questions.filter((q) => isMistakeStatus(derivePracticeStatus(progress[q.id])))
-        : mode === "due" ? hot100.questions.filter((q) => isReviewPending(progress[q.id])) : filtered;
+        : mode === "due" ? hot100.questions.filter((q) => derivePracticeStatus(progress[q.id]) === "due") : filtered;
     const next = mode === "sequential" || mode === "unfinished" ? pickStudyQuestion(pool, progress) : pickNextQuestion(pool, { mode: mode === "random" ? "random" : "sequential" });
     if (next) open(next.id);
   };
@@ -346,6 +380,17 @@ function App() {
       </div>
     </header>
     <main>
+      {/* 存不下时明确说一声。以前这里直接抛错白屏，用户既看不到页面也不知道改动没保存。
+          复用 runnerNotice 的黄色提示条样式，不引入新配色。 */}
+      {storageError && (
+        <div className="globalNotice">
+          <div className="runnerNotice" role="alert">
+            <p>{storageError.message}</p>
+            <p className="runnerNoticeHint">{storageError.hint}</p>
+            <button type="button" className="runnerNoticeClose" onClick={() => setStorageError(null)}>我知道了</button>
+          </div>
+        </div>
+      )}
       {view === "dashboard" && <Dashboard stats={stats} studyEntry={studyEntry} dueReviews={dueReviews} questions={dashboardQuestions} state={state} onOpen={open} onOpenStage={(phase) => { setFilters({ query: "", category: "全部", difficulty: "全部", status: "全部", phase }); setView("bank"); }} />}
       {view === "bank" && <ProblemBank questions={filtered} allQuestions={studyQuestions} progress={displayProgress} dailyNewLimit={state.profile?.dailyNewLimit} onDailyNewLimitChange={(value) => updateState((current) => ({ profile: { ...current.profile, dailyNewLimit: value } }))} filters={filters} onFiltersChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onOpenQuestion={open} onStatusChange={setStatus} onPractice={onPractice} categories={["全部", ...hot100.groups.map((group) => group.name)]} />}
       {view === "mistakes" && <Mistakes questions={hot100.questions} rawProgress={progress} dailyNewLimit={state.profile?.dailyNewLimit} onOpen={open} />}

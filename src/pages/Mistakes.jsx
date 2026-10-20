@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { isReviewDue } from "../services/review.js";
 import { derivePracticeStatus, isMistakeStatus } from "../services/status.js";
 import { statusLabel } from "../services/status-labels.js";
 
@@ -16,12 +15,10 @@ export default function Mistakes({ questions, rawProgress = {}, dailyNewLimit = 
     () => questions.filter((question) => isMistakeStatus(derivePracticeStatus(rawProgress[question.id]))),
     [questions, rawProgress]
   );
+  // 到期复习：只放「已通过但到期」的题。错题本来就要重做，已单独列在上面，
+  // 不重复出现在这里 —— 否则同一道题在两栏里各数一次，和总览统计又对不上。
   const dueItems = useMemo(
-    () => questions.filter((question) => {
-      const item = rawProgress[question.id];
-      const status = derivePracticeStatus(item);
-      return !isMistakeStatus(status) && (status === "due" || isReviewDue(item));
-    }),
+    () => questions.filter((question) => derivePracticeStatus(rawProgress[question.id]) === "due"),
     [questions, rawProgress]
   );
   const newItems = useMemo(

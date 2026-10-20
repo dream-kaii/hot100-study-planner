@@ -10,6 +10,8 @@
 // 所有函数都是"有就用、没有就算了"：没装助手、端口被占、浏览器拦了本机请求，
 // 都安静返回 null，调用方退回配对码流程，不会卡住。
 
+import { readLocal, writeLocal } from "./local-store.js";
+
 /** 运行助手的本机接口端口，和 runner/localapi.mjs 里的 LOCAL_API_PORT 必须一致。 */
 const LOCAL_API = "http://127.0.0.1:17890";
 const LOCAL_TIMEOUT_MS = 1500;
@@ -151,12 +153,14 @@ export async function adoptFromUrl() {
     if (!status?.paired) return null;
     let previous = [];
     try {
-      const old = JSON.parse(localStorage.getItem(PAIR_KEY) || "null");
+      const old = JSON.parse(readLocal(PAIR_KEY) || "null");
       if (old?.sid && old.sid !== sid) previous = [old.sid, ...(old.previous || [])].slice(0, 3);
     } catch {
       /* 没有旧会话就算了 */
     }
-    localStorage.setItem(PAIR_KEY, JSON.stringify({ sid, previous, pairedAt: Date.now() }));
+    // 存不下也把 sid 返回给调用方：这次配对在内存里是有效的，
+    // 只是刷新后要重新配一次（隐私模式下必然会这样）。
+    writeLocal(PAIR_KEY, JSON.stringify({ sid, previous, pairedAt: Date.now() }));
     return sid;
   } catch {
     return null;

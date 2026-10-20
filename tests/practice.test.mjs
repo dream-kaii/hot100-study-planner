@@ -93,3 +93,32 @@ test("a mastered item never shows up as a mistake even with a stale reviewing st
   assert.deepEqual(filterQuestions(questions, mastered, { status: "错题" }, now).map((q) => q.id), []);
   assert.deepEqual(filterQuestions(questions, mastered, { status: "已掌握" }, now).map((q) => q.id), ["1"]);
 });
+
+test("the done counter does not drop when a completed item's review falls due", async () => {
+  // 回归：总进度以前用派生状态数 ["completed","mastered"]。
+  // 一道题通过后排了 1 天复习，第二天派生变成 due —— 已经做完的进度会凭空掉一格，
+  // 看着像退步。现在「已完成」只问「曾经做完过没有」，与「只抽未完成」「学习主线」同源。
+  const { hasCompletedLearning } = await import("../src/services/practice.js");
+  const day1 = new Date("2026-10-14T00:00:00.000Z");
+  const day3 = new Date("2026-10-16T00:00:00.000Z");
+  const finished = { status: "completed", reviewAt: "2026-10-15T00:00:00.000Z" };
+  assert.equal(derivePracticeStatus(finished, day1), "completed");
+  assert.equal(derivePracticeStatus(finished, day3), "due");
+  // 派生状态变了，但「做完过」这件事不变。
+  assert.equal(hasCompletedLearning(finished), true);
+});
+
+test("only the due filter picks due items, mistake and due never overlap", () => {
+  // 回归：「只抽到期复习」以前用 isReviewPending，把错题也算进去，
+  // 于是和「只抽错题」抽出同一批题，第二个按钮等于重复。
+  const now = new Date("2026-10-19T00:00:00.000Z");
+  const mixed = {
+    "1": { status: "reviewing" },                                    // 错题
+    "2": { status: "completed", reviewAt: "2026-10-10T00:00:00Z" },  // 到期
+    "3": { status: "due" }                                            // 到期
+  };
+  const statuses = ["1", "2", "3"].map((id) => derivePracticeStatus(mixed[id], now));
+  assert.deepEqual(statuses, ["reviewing", "due", "due"]);
+  assert.deepEqual(filterQuestions(questions, mixed, { status: "错题" }, now).map((q) => q.id), ["1"]);
+  assert.deepEqual(filterQuestions(questions, mixed, { status: "待复习" }, now).map((q) => q.id), ["2", "3"]);
+});

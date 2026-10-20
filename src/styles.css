@@ -481,3 +481,22 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 .runnerPairClaim button:hover {
   background: rgba(178, 80, 36, 0.16);
 }
+
+/* 全局提示条（目前只有"存不下"用）。
+   横向对齐沿用 .pageSection 的 1240px / 20px，纵向只给一点上边距，
+   避免把下面的内容整体推下去。 */
+.globalNotice {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 16px 20px 0;
+}
+
+.globalNotice .runnerNotice {
+  margin: 0;
+}
+
+@media (max-width: 800px) {
+  .globalNotice {
+    padding: 12px 14px 0;
+  }
+}

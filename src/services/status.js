@@ -6,6 +6,20 @@ function asDate(value) {
   return date;
 }
 
+// 宽松版：拿不到合法时间就返回 null，交给调用方决定怎么兜底。
+//
+// 为什么需要它：derivePracticeStatus 是整个 UI 的必经函数，总览、题库、错题页、
+// 顶栏统计全在调。以前它内部直接用会抛错的 asDate，于是只要某条 progress 里的
+// reviewAt 是个坏字符串（手改过 localStorage、旧备份、跨设备合并都可能出现），
+// 一次渲染就炸掉整个 React 树 —— 实测整页白屏，页面上一个字都没有。
+// 派生状态是只读展示逻辑，遇到坏数据应当退化成「当作没有复习日」，不能连累整站。
+function safeTime(value) {
+  if (value === undefined || value === null || value === "") return null;
+  const date = value instanceof Date ? value : new Date(value);
+  const time = date.getTime();
+  return Number.isNaN(time) ? null : time;
+}
+
 function addDays(value, days) {
   const date = asDate(value);
   date.setUTCDate(date.getUTCDate() + days);
@@ -24,9 +38,9 @@ export function classifyAttemptOutcome({ passed, attemptHintsUsed = 0, attemptVi
 }
 
 function normalizedStatus(progressItem, now) {
-  if (!progressItem) return "new";
+  if (!progressItem || typeof progressItem !== "object") return "new";
   if (progressItem.masteredAt || progressItem.status === "mastered" || progressItem.status === "已掌握") return "mastered";
-  const status = {
+  const mapped = {
     未开始: "new",
     思考中: "in-progress",
     已完成: "completed",
@@ -40,9 +54,16 @@ function normalizedStatus(progressItem, now) {
     reviewing: "reviewing",
     due: "due",
     failed: "reviewing"
-  }[progressItem.status] || progressItem.status || "new";
+  }[progressItem.status];
+  // status 可能是个对象/数字（坏数据），映射不上时退回 "new"，
+  // 否则这个值会一路漏到 class 名和筛选比较里。
+  const status = mapped || (typeof progressItem.status === "string" && progressItem.status ? progressItem.status : "new");
   // 已完成且复习到期，派生为「待复习」而不是「错题」：题本身没做错，只是该复习了。
-  if (progressItem.reviewAt && asDate(progressItem.reviewAt).getTime() <= asDate(now).getTime() && status === "completed") return "due";
+  if (status === "completed") {
+    const dueTime = safeTime(progressItem.reviewAt);
+    const nowTime = safeTime(now) ?? Date.now();
+    if (dueTime !== null && dueTime <= nowTime) return "due";
+  }
   return status;
 }
 
@@ -120,7 +141,10 @@ export function recordReviewOutcome(progressItem = {}, outcome, now = new Date()
     next.independentPassAt = updatedAt;
     const reviewStep = Number.isInteger(progressItem.reviewStep) ? progressItem.reviewStep : (currentInterval >= 14 ? 3 : Math.max(0, reviewCount - 2));
     if (reviewStep >= REVIEW_INTERVALS.length - 1) {
-      if (progressItem.reviewAt && asDate(progressItem.reviewAt).getTime() > asDate(updatedAt).getTime()) {
+      // 这里也要用安全解析：旧的 reviewAt 可能是坏字符串，
+      // 一抛错就整条记录写不进去，用户点「重做完成」像没反应。
+      const pendingTime = safeTime(progressItem.reviewAt);
+      if (pendingTime !== null && pendingTime > asDate(updatedAt).getTime()) {
         next.status = "completed";
         next.reviewIntervalDays = REVIEW_INTERVALS[REVIEW_INTERVALS.length - 1];
         next.reviewStep = REVIEW_INTERVALS.length - 1;

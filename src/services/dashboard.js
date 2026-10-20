@@ -127,7 +127,11 @@ function weakPointFor(question, state, now) {
 
   const status = derivePracticeStatus(progressItem, now);
   const dueAt = progressItem.reviewAt;
-  if (status !== "mastered" && dueAt && (dateValue(dueAt) ?? Number.POSITIVE_INFINITY) <= (dateValue(now.toISOString?.() || now) ?? Date.now())) reasons.push("复习已到期");
+  // 「复习已到期」只在派生状态真的是 due 时才成立。
+  // 以前这里直接比 reviewAt 是否过期，于是手动降级成「思考中」的题——
+  // 旧的 reviewAt 还留在记录里——会被算成「复习已到期」，
+  // 与总览统计卡（按派生状态算 0 条待复习）又对不上。错题有自己的一栏，不在这里重复算。
+  if (status === "due") reasons.push("复习已到期");
 
   if (!reasons.length) return null;
   return {
