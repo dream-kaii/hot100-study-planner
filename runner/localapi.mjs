@@ -88,7 +88,7 @@ async function readJsonBody(req) {
  * @param {(level: string, message: string) => void} [options.log]
  * @returns {import("node:http").Server}
  */
-export function startLocalApi({ endpoint, getSession, version = "", log = () => {} }) {
+export function startLocalApi({ endpoint, getSession, version = "", log = () => {}, port = LOCAL_API_PORT }) {
   const origins = allowedOrigins(endpoint);
 
   const server = http.createServer(async (req, res) => {
@@ -113,6 +113,31 @@ export function startLocalApi({ endpoint, getSession, version = "", log = () => 
       return;
     }
 
+    const url = new URL(req.url || "/", `http://${req.headers.host}`);
+
+    // Safari 从 https 页面发起的本机 fetch 会被混合内容策略拦掉（实测 WebKit: "Not allowed to request resource"），
+    // 但"顶层跳转"不受此限。所以给 Safari 留一条路：导航到这里，再 302 回站点并带上 sid。
+    // 顶层导航不带 Origin，因此这一步在 Origin 校验之前处理；它只回一个 302，页面读不到响应体，
+    // 不构成跨站数据泄露，且回跳地址被死锁在本站点（next 只接受站内路径）。
+    if (url.pathname === "/claim" && (req.method === "GET" || req.method === "HEAD")) {
+      const session = getSession() || {};
+      const sid = String(session.sid || "");
+      const site = [...origins].find((item) => item.startsWith("https://")) || "";
+      if (!sid || !site) {
+        res.writeHead(503, { "cache-control": "no-store", "content-type": "text/plain; charset=utf-8" });
+        res.end("运行助手还没有连上，稍等一下再刷新。");
+        return;
+      }
+      const rawNext = url.searchParams.get("next") || "/";
+      // 只允许站内路径：// 开头会被 URL 解析成别的主机，等于把 sid 送到外站。
+      const next = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/";
+      const target = new URL(next, site);
+      target.searchParams.set("adopt", sid);
+      res.writeHead(302, { location: target.toString(), "cache-control": "no-store" });
+      res.end();
+      return;
+    }
+
     if (req.method === "OPTIONS") {
       res.writeHead(allowOrigin ? 204 : 403, cors);
       res.end();
@@ -123,8 +148,6 @@ export function startLocalApi({ endpoint, getSession, version = "", log = () => 
       res.end();
       return;
     }
-
-    const url = new URL(req.url || "/", `http://${req.headers.host}`);
 
     try {
       if (url.pathname === "/device" && req.method === "GET") {
@@ -157,11 +180,11 @@ export function startLocalApi({ endpoint, getSession, version = "", log = () => 
 
   server.on("error", (error) => {
     // 端口被占用不是致命问题：网页会退回配对码方式，功能仍然可用。
-    log("warn", `本机接口监听 127.0.0.1:${LOCAL_API_PORT} 失败（${error.code || error.message}），浏览器将改用配对码`);
+    log("warn", `本机接口监听 127.0.0.1:${port} 失败（${error.code || error.message}），浏览器将改用配对码`);
   });
 
-  server.listen(LOCAL_API_PORT, "127.0.0.1", () => {
-    log("info", `本机接口就绪：http://127.0.0.1:${LOCAL_API_PORT}/device`);
+  server.listen(port, "127.0.0.1", () => {
+    log("info", `本机接口就绪：http://127.0.0.1:${server.address()?.port ?? port}/device`);
   });
   // 不因为多了一个监听而拖住进程退出。
   server.unref?.();

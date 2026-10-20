@@ -458,3 +458,26 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
 
 /* 配对面板：第二条命令给"文件还在下载目录"的人，弱化显示 */
 .runnerPairCommandAlt { margin-top: 6px; opacity: .82; }
+
+/* Safari 一键连接：本机 fetch 被混合内容策略拦掉时的兜底入口 */
+.runnerPairClaim {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted, #6b625c);
+}
+
+.runnerPairClaim button {
+  margin: 0 2px;
+  padding: 2px 8px;
+  border: 1px solid rgba(178, 80, 36, 0.35);
+  border-radius: 6px;
+  background: rgba(178, 80, 36, 0.08);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.runnerPairClaim button:hover {
+  background: rgba(178, 80, 36, 0.16);
+}

@@ -101,3 +101,64 @@ export async function saveDeviceBackup(name) {
   }
   return saved;
 }
+
+/** 和 client.js 里的 PAIR_KEY 保持一致。 */
+const PAIR_KEY = "hot100:onlineRunner";
+
+/**
+ * 本机接口是否可访问。
+ * Safari 会拦掉 https 页面对 http://127.0.0.1 的 fetch（混合内容），
+ * 用它来决定面板上要不要露出"一键连接"。
+ */
+export async function canReachLocalApi() {
+  try {
+    await localRequest("/device");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 从 `?adopt=<sid>` 里认回会话 —— Safari 的专用通道。
+ *
+ * Safari 拦 fetch 但不拦顶层跳转，所以流程是：
+ * 页面 → http://127.0.0.1:17890/claim → 302 → 本页?adopt=<sid>。
+ * 这里把 sid 落进 localStorage 并把参数从地址栏抹掉，之后和正常配对完全一样。
+ */
+export async function adoptFromUrl() {
+  if (typeof window === "undefined" || typeof window.location === "undefined") return null;
+  let url;
+  try {
+    url = new URL(window.location.href);
+  } catch {
+    return null;
+  }
+  const sid = url.searchParams.get("adopt") || "";
+  if (!/^[0-9a-f]{16,64}$/.test(sid)) return null;
+
+  url.searchParams.delete("adopt");
+  try {
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  } catch {
+    /* 某些环境不允许改写地址栏，忽略 */
+  }
+
+  try {
+    const response = await fetch(`/api/status/${sid}`, { cache: "no-store" });
+    if (!response.ok) return null;
+    const status = await response.json();
+    if (!status?.paired) return null;
+    let previous = [];
+    try {
+      const old = JSON.parse(localStorage.getItem(PAIR_KEY) || "null");
+      if (old?.sid && old.sid !== sid) previous = [old.sid, ...(old.previous || [])].slice(0, 3);
+    } catch {
+      /* 没有旧会话就算了 */
+    }
+    localStorage.setItem(PAIR_KEY, JSON.stringify({ sid, previous, pairedAt: Date.now() }));
+    return sid;
+  } catch {
+    return null;
+  }
+}

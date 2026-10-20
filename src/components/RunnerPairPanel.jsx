@@ -7,7 +7,9 @@
 //   3. 明确告诉用户"代码在你自己的电脑上执行"
 //   4. 整体高度受控，不能把代码编辑器挤没
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+
+import { canReachLocalApi } from "../services/device.js";
 
 /**
  * 由 scripts/build-runner.mjs 产出到 dist/download/：
@@ -33,6 +35,20 @@ function tunnelEndpoint() {
 export default function RunnerPairPanel({ code, mode = "pair", onRetry, onDismiss, waiting = false, error = "" }) {
   const offline = mode === "offline";
   const [copied, setCopied] = useState(false);
+  // Safari 会拦掉 https 页面对本机的 fetch（实测 WebKit 直接 "Not allowed to request resource"），
+  // 但顶层跳转不拦。探测失败就把"一键连接"这条路露出来。
+  const [localBlocked, setLocalBlocked] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
+    if (!isHttps) return undefined;
+    canReachLocalApi().then((ok) => { if (alive && !ok) setLocalBlocked(true); });
+    return () => { alive = false; };
+  }, []);
+  const claimLink = () => {
+    const next = typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
+    window.location.href = `http://127.0.0.1:17890/claim?next=${encodeURIComponent(next)}`;
+  };
   const [copiedFresh, setCopiedFresh] = useState(false);
 
   // base "./" 是 vite.config.js 里设的，所以下载链接用相对路径，部署在子路径下也能用。
@@ -113,6 +129,11 @@ export default function RunnerPairPanel({ code, mode = "pair", onRetry, onDismis
       </div>}
     </details>
 
+    {localBlocked && <p className="runnerPairClaim">
+      Safari 会拦截网页对本机助手的请求。
+      <button type="button" onClick={claimLink}>点这里直接连上本机助手</button>
+      （跳一下就自动回来，不用输配对码）
+    </p>}
     {waiting && <p className="runnerPairWait" role="status">正在等待运行助手接入…连上后会自动继续运行</p>}
     {error && <p className="runnerPairError" role="alert">{error}</p>}
 

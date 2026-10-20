@@ -81,6 +81,7 @@ function parseArgs(argv) {
     else if (item === "--detach") args.detach = true;
     else if (item === "--headless") args.headless = true;
     else if (item === "--stop") args.stop = true;
+    else if (item === "--start") args.start = true;
     else if (item === "--status") args.status = true;
     else if (item === "--launch") args.launch = true;
     else if (item === "--install") args.install = true;
@@ -358,8 +359,23 @@ async function main() {
       log("info", "由 macOS 开机自启托管，正在运行");
       return 0;
     }
+    if (agentInstalled()) {
+      log("warn", "开机自启已登记，但当前没有在运行（上次可能是被系统正常终止的）。");
+      log("warn", "执行 --start 现在就拉起来（不影响开机自启设置）。");
+      return 1;
+    }
     log("info", "没有在运行");
     return 1;
+  }
+
+  if (args.start) {
+    if (agentInstalled() && kickstartAgent()) {
+      log("info", "已让 macOS 重新拉起后台实例");
+      return 0;
+    }
+    const pid = spawnBackground(args);
+    log("info", `已转入后台（pid ${pid}），日志：${logPath()}`);
+    return 0;
   }
 
   if (args.uninstall) {
@@ -664,13 +680,18 @@ async function main() {
   }
 
   // 5. 保持前台运行，Ctrl+C 优雅退出
-  const shutdown = () => {
-    log("info", "正在关闭…");
+  const shutdown = (signal) => {
+    log("info", `正在关闭…（${signal}）`);
     tunnel.close();
-    process.exit(0);
+    // launchd 的 KeepAlive 是 SuccessfulExit=false：退出码 0 表示"正常结束，别再拉起"。
+    // 而 SIGTERM 基本都来自系统（注销、重启、休眠唤醒、launchctl kickstart），
+    // 属于"该被重新拉起"的场景。用 0 退出的后果是自启服务从此静默死亡，
+    // 第二天打开网页就变成"请重新启动运行助手"。
+    // 所以只有手动 Ctrl+C（SIGINT）算正常退出，SIGTERM 一律返回 75 让 launchd 重启。
+    process.exit(signal === "SIGTERM" ? 75 : 0);
   };
-  process.on("SIGINT", shutdown);
-  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 
   await new Promise(() => {});
   return 0;

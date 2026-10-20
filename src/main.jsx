@@ -23,7 +23,7 @@ import {
   updateVariant
 } from "./services/solutions.js";
 import BackupPanel from "./components/BackupPanel.jsx";
-import { fetchDeviceBackup } from "./services/device.js";
+import { adoptFromUrl, fetchDeviceBackup } from "./services/device.js";
 import ProblemDetail from "./components/ProblemDetail.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import ProblemBank from "./pages/ProblemBank.jsx";
@@ -75,6 +75,12 @@ function App() {
   // 「从错题页点另起一种解法」要用的一次性标记。消费后清掉，
   // 免得下次普通打开题目又莫名其妙多开一份。
   const [freshStartFor, setFreshStartFor] = useState(null);
+
+  // Safari 拦掉了 https 页面对本机的 fetch，只能靠"顶层跳转"把 sid 带回来，
+  // 落点是 /?adopt=<sid>，这里第一时间收下并清掉地址栏参数。
+  useEffect(() => {
+    adoptFromUrl().catch(() => {});
+  }, []);
 
   useEffect(() => {
     hasBackupDirectory()
