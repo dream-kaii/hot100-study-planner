@@ -259,3 +259,52 @@ test("node definitions remain top-level when pasted together with method fragmen
   const codes={java:'class ListNode {int val; ListNode next; ListNode(int val){this.val=val;}}\npublic ListNode reverseList(ListNode head){ListNode prev=null;while(head!=null){ListNode next=head.next;head.next=prev;prev=head;head=next;}return prev;}',python:'class ListNode:\n    def __init__(self, val=0, next=None):\n        self.val, self.next = val, next\n\ndef reverseList(self, head):\n    prev = None\n    while head:\n        nxt = head.next\n        head.next = prev\n        prev, head = head, nxt\n    return prev'};
   for(const language of ["java","python"]){const r=await runExample({language,mode:"function",func,code:codes[language],cases:[{id:"reverse",input:{head:[1,2,3]},expected:[3,2,1]}]});assert.equal(r.status,"passed",`${language}: ${JSON.stringify(r)}`);}
 });
+
+// 报错行号必须对得上编辑器：框架拼进源码的 import / __hot100_* 不能算进行号，
+// 也不能把框架自己的栈帧甩给用户看。
+test("python runtime errors point at the line the user actually wrote", async () => {
+  const func = { className: "Solution", methodName: "singleNumber", params: [{ name: "nums", type: "int[]" }], returns: "int", compare: "exact" };
+  const code = "class Solution:\n    def singleNumber(self, nums):\n        return nums[0] / 0";
+  const result = await runExample({ language: "python", mode: "function", func, code, input: { nums: [2, 2, 1] } });
+  assert.equal(result.status, "runtime_error");
+  assert.match(result.error, /File "你的代码", line 3, in singleNumber/);
+  assert.match(result.error, /ZeroDivisionError/);
+  assert.ok(!result.error.includes("__hot100_"), result.error);
+});
+
+test("python comment syntax mistakes report the offending editor line", async () => {
+  const func = { className: "Solution", methodName: "singleNumber", params: [{ name: "nums", type: "int[]" }], returns: "int", compare: "exact" };
+  // 用户真实场景：把 Python 注释写成了 //，坏行在编辑器第 7 行。
+  const code = "from typing import *\n\n\nclass Solution:\n    def singleNumber(self, nums: List[int]) -> int:\n        # 异或解法\n        //return nums[0]\n        return nums[0]";
+  const result = await runExample({ language: "python", mode: "function", func, code, input: { nums: [2, 2, 1] } });
+  assert.equal(result.status, "runtime_error");
+  assert.match(result.error, /File "你的代码", line 7/);
+  assert.match(result.error, /SyntaxError/);
+});
+
+test("java runtime errors drop framework frames and keep the user line", async () => {
+  const func = { className: "Solution", methodName: "singleNumber", params: [{ name: "nums", type: "int[]" }], returns: "int", compare: "exact" };
+  const code = "class Solution {\n    public int singleNumber(int[] nums) {\n        int zero = nums.length - nums.length;\n        return nums[0] / zero;\n    }\n}";
+  const result = await runExample({ language: "java", mode: "function", func, code, input: { nums: [2, 2, 1] } });
+  assert.equal(result.status, "runtime_error");
+  assert.match(result.error, /Solution\.singleNumber\(你的代码:4\)/);
+  assert.match(result.error, /ArithmeticException/);
+  assert.ok(!result.error.includes("Main.java"), result.error);
+  assert.ok(!result.error.includes("Main.main"), result.error);
+});
+
+test("java compile errors report the offending editor line", async () => {
+  const func = { className: "Solution", methodName: "singleNumber", params: [{ name: "nums", type: "int[]" }], returns: "int", compare: "exact" };
+  const code = "class Solution {\n    public int singleNumber(int[] nums) {\n        return nums[0]\n    }\n}";
+  const result = await runExample({ language: "java", mode: "function", func, code, input: { nums: [2, 2, 1] } });
+  assert.equal(result.status, "compile_error");
+  assert.match(result.error, /你的代码:3:/);
+  assert.ok(!result.error.includes("Main.java"), result.error);
+});
+
+test("acm mode has no injected framework so its line numbers stay untouched", async () => {
+  const result = await runExample({ language: "python", mode: "acm", code: "print('ok')\nraise RuntimeError('boom')", expectedOutput: "ok" });
+  assert.equal(result.status, "runtime_error");
+  assert.match(result.error, /line 2/);
+  assert.match(result.error, /boom/);
+});

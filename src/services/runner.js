@@ -2,7 +2,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
-import { isVoid, nodeDefinitions, wrapFunctionCode } from "./function-contract.js";
+import { isVoid, nodeDefinitions, wrapFunctionCodeWithMap } from "./function-contract.js";
+import { remapErrorLines } from "./error-lines.js";
 
 export const MAX_OUTPUT = 64 * 1024;
 export const COMPILE_TIMEOUT_MS = 10_000;
@@ -120,9 +121,23 @@ function operationSequence(func, input) {
   });
 }
 
-function pythonOperationSource(code, func, input) {
+// 生成源码时同时记下每一行对应编辑器里的第几行，报错行号才能换回用户看得懂的位置。
+// 框架自己拼的行记 0，回显时整帧丢掉，不把 __hot100_* 暴露给用户。
+function newlineCount(text) { let total = 0; for (const char of text) if (char === "\n") total++; return total; }
+
+function composeMapped(head, wrapped, tail) {
+  const source = `${head}${wrapped.source}${tail}`;
+  const offset = newlineCount(head);
+  const map = new Array(newlineCount(source) + 1).fill(0);
+  wrapped.map.forEach((value, index) => { if (offset + index < map.length) map[offset + index] = value; });
+  return { source, map };
+}
+
+
+function pythonOperationSourceWithMap(code, func, input) {
   operationSequence(func, input);
-  return `from __future__ import annotations
+  const wrapped = wrapFunctionCodeWithMap(code, "python", func);
+  const head = `from __future__ import annotations
 from typing import *
 from collections import *
 from heapq import *
@@ -131,7 +146,8 @@ from operator import *
 from bisect import *
 from itertools import *
 import json, sys, collections, heapq
-${wrapFunctionCode(code, "python", func)}
+`;
+  const tail = `
 payload = json.loads(sys.stdin.read())
 instance = ${func.className}(*payload['arguments'][0])
 results = [None]
@@ -139,6 +155,7 @@ for name, args in zip(payload['operations'][1:], payload['arguments'][1:]):
     results.append(getattr(instance, name)(*args))
 print(json.dumps(results, ensure_ascii=False, separators=(',', ':')))
 `;
+  return composeMapped(head, wrapped, tail);
 }
 
 const JAVA_JSON_HELPER = String.raw`
@@ -169,7 +186,7 @@ const JAVA_JSON_HELPER = String.raw`
   }
 `;
 
-function javaOperationSource(code, func, input) {
+function javaOperationSourceWithMap(code, func, input) {
   const sequence = operationSequence(func, input);
   const calls = sequence.map((op, index) => {
     const args = op.params.map((p,i)=>javaLiteral(op.args[i],p.type)).join(", ");
@@ -177,7 +194,8 @@ function javaOperationSource(code, func, input) {
     const call = `instance.${op.name}(${args})`;
     return isVoid(op) ? `${call}; results.add(null);` : `results.add(${call});`;
   }).join("\n    ");
-  return `${wrapFunctionCode(code, "java", func)}
+  const wrapped = wrapFunctionCodeWithMap(code, "java", func);
+  const tail = `
 public class Main {
 ${JAVA_JSON_HELPER}
   public static void main(String[] args) {
@@ -187,13 +205,15 @@ ${JAVA_JSON_HELPER}
   }
 }
 `;
+  return composeMapped("", wrapped, tail);
 }
 
-function pythonFunctionSource(code, func, input) {
-  if (func.compare === "operation-sequence") return pythonOperationSource(code, func, input);
+function pythonFunctionSourceWithMap(code, func, input) {
+  if (func.compare === "operation-sequence") return pythonOperationSourceWithMap(code, func, input);
   const definitions = nodeDefinitions("python", func, code);
   const params = func.params;
-  return `from __future__ import annotations
+  const wrapped = wrapFunctionCodeWithMap(code, "python", func);
+  const head = `from __future__ import annotations
 from typing import *
 from collections import *
 from functools import *
@@ -204,7 +224,8 @@ from bisect import *
 from itertools import *
 import json, sys, collections, heapq, math, functools, bisect
 ${definitions}
-${wrapFunctionCode(code, "python", func)}
+`;
+  const tail = `
 
 def __hot100_convert(value, kind):
     if kind == 'Node':
@@ -320,6 +341,7 @@ __hot100_result = getattr(${func.className}(), ${JSON.stringify(func.methodName)
 ${isVoid(func) ? "__hot100_result = __hot100_args[0]" : ""}
 print(json.dumps(__hot100_serialize(__hot100_result, ${JSON.stringify((isVoid(func) ? params[0]?.type : func.returns) || "Object")}), ensure_ascii=False, separators=(',', ':')))
 `;
+  return composeMapped(head, wrapped, tail);
 }
 
 function javaLiteral(value, type = "Object") {
@@ -450,8 +472,8 @@ function compareFunctionResult(func, input, actual, expected) {
   return {passed:false,message:'当前函数缺少可靠的多解验证方式'};
 }
 
-function javaFunctionSource(code, func, input) {
-  if (func.compare === "operation-sequence") return javaOperationSource(code, func, input);
+function javaFunctionSourceWithMap(code, func, input) {
+  if (func.compare === "operation-sequence") return javaOperationSourceWithMap(code, func, input);
   const params = func.params;
   const declarations = javaArgumentSetup(func, input);
   const args = params.map((_, index) => `__hot100_arg${index}`);
@@ -460,7 +482,8 @@ function javaFunctionSource(code, func, input) {
   const value = isVoid(func) ? "__hot100_arg0" : "__hot100_result";
   const type = isVoid(func) ? params[0]?.type : func.returns;
   const print = func.compare === "identity" ? `Collections.singletonMap("id", ${value}==null?null:__hot100_ids.containsKey(${value})?__hot100_ids.get(${value}):"external")` : type === "Node" ? `__hot100_copy(${value})` : type === "ListNode" || type === "TreeNode" ? `__hot100_values(${value})` : value;
-  return `${wrapFunctionCode(code, "java", func)}
+  const wrapped = wrapFunctionCodeWithMap(code, "java", func);
+  const tail = `
 ${nodeDefinitions("java",func,code)}
 public class Main {
 ${javaNodeHelpers(func)}
@@ -474,6 +497,7 @@ ${JAVA_JSON_HELPER}
   }
 }
 `;
+  return composeMapped("", wrapped, tail);
 }
 
 function parseStructuredOutput(value) {
@@ -496,8 +520,12 @@ async function runSingleExample({ language, mode = "acm", code = "", input = "",
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "hot100-run-"));
   try {
     const isFunction = mode === "function";
+    // ACM 模式直接跑用户自己的文件，没有框架拼接，行号原样即可。
+    const built = isFunction ? (language === "python" ? pythonFunctionSourceWithMap(code, func, input) : javaFunctionSourceWithMap(code, func, input)) : { source: code, map: null };
+    // 把解译器/编译器报的「生成后行号」换回用户编辑器里的行号；认不出来就原样透传。
+    const explain = (text) => remapErrorLines(text, { language, map: built.map });
     const source = language === "python" ? path.join(directory, "main.py") : path.join(directory, "Main.java");
-    const sourceCode = isFunction ? (language === "python" ? pythonFunctionSource(code, func, input) : javaFunctionSource(code, func, input)) : code;
+    const sourceCode = built.source;
     await fs.writeFile(source, sourceCode, "utf8");
     if (language === "java") {
       // -encoding 让 javac 按 UTF-8 读源码；-J-Xmx256m 限制编译器自身内存，
@@ -506,7 +534,7 @@ async function runSingleExample({ language, mode = "acm", code = "", input = "",
       if (compile.spawnError) return { status: "environment_error", output: "", error: "本机未找到 javac，请安装 JDK 后重试。", durationMs: Date.now() - started };
       if (compile.timedOut) return { status: "compile_timeout", output: compile.output, error: "Java 编译超过 10 秒", durationMs: Date.now() - started };
       if (compile.tooLarge) return { status: "output_limit", output: compile.output, error: "编译输出超过 64KB", durationMs: Date.now() - started };
-      if (compile.code !== 0) return { status: "compile_error", output: compile.output, error: compile.error || "Java 编译失败", durationMs: Date.now() - started };
+      if (compile.code !== 0) return { status: "compile_error", output: compile.output, error: explain(compile.error) || "Java 编译失败", durationMs: Date.now() - started };
     }
     const command = language === "python" ? "python3" : "java";
     const args = language === "python"
@@ -521,15 +549,18 @@ async function runSingleExample({ language, mode = "acm", code = "", input = "",
     });
     const durationMs = Date.now() - started;
     if (result.spawnError) return { status: "environment_error", output: "", error: `本机未找到 ${command}，请安装运行环境后重试。`, durationMs };
-    if (result.timedOut) return { status: "timeout", output: result.output, stderr: result.error, error: "程序运行超过 3 秒", durationMs };
-    if (result.tooLarge) return { status: "output_limit", output: result.output, stderr: result.error, error: "输出超过 64KB", durationMs };
-    if (result.code !== 0) return { status: "runtime_error", output: normalize(result.output), stderr: normalize(result.error), error: normalize(result.error) || `进程退出码 ${result.code}`, durationMs };
+    if (result.timedOut) return { status: "timeout", output: result.output, stderr: explain(normalize(result.error)), error: "程序运行超过 3 秒", durationMs };
+    if (result.tooLarge) return { status: "output_limit", output: result.output, stderr: explain(normalize(result.error)), error: "输出超过 64KB", durationMs };
+    if (result.code !== 0) {
+      const stderr = explain(normalize(result.error));
+      return { status: "runtime_error", output: normalize(result.output), stderr, error: stderr || `进程退出码 ${result.code}`, durationMs };
+    }
     const output = normalize(result.output);
     const actual = isFunction ? parseStructuredOutput(output) : output;
-    if (expectedOutput === undefined) return { status: "completed", output, actual, stderr: normalize(result.error), error: "", durationMs };
+    if (expectedOutput === undefined) return { status: "completed", output, actual, stderr: explain(normalize(result.error)), error: "", durationMs };
     const expected = isFunction ? parseStructuredOutput(expectedOutput) : normalize(expectedOutput);
     const comparison = isFunction ? compareFunctionResult(func, input, actual, expected) : compareResult("exact", actual, expected);
-    return { status: comparison.passed ? "passed" : "mismatch", output, actual, stderr: normalize(result.error), error: comparison.passed ? "" : comparison.message, durationMs };
+    return { status: comparison.passed ? "passed" : "mismatch", output, actual, stderr: explain(normalize(result.error)), error: comparison.passed ? "" : comparison.message, durationMs };
   } catch (error) {
     return { status: "runtime_error", output: "", error: `运行输入与函数契约不一致：${error.message}`, durationMs: Date.now() - started };
   } finally {
@@ -569,3 +600,9 @@ export function runExample(request = {}) {
     return { status: hasFailure ? "failed" : hasIncomplete ? "completed" : "passed", cases: results, durationMs: Date.now() - started };
   });
 }
+
+// 供测试直接检查生成源码与行映射（不对外，仅测试用）。
+export const __pythonFunctionSourceWithMap = pythonFunctionSourceWithMap;
+export const __javaFunctionSourceWithMap = javaFunctionSourceWithMap;
+export const __pythonFunctionSource = (code, func, input) => pythonFunctionSourceWithMap(code, func, input).source;
+export const __javaFunctionSource = (code, func, input) => javaFunctionSourceWithMap(code, func, input).source;
