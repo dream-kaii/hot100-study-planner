@@ -57,3 +57,56 @@ export function timerReducer(state, action) {
   if (action.type === "reset") return { remaining: Math.max(0, action.duration), running: false };
   return state;
 }
+
+// ── 计时器里三处「不写出来就一定会写错」的判定 ───────────────────────────
+// 它们原来是散在 Timer.jsx 的 effect 里的，任何一处写错都不会报错、
+// 也不会有测试拦住 —— 事实上「时间到」的提示就这样从未生效过一整版。
+// 抽成纯函数之后每条都能被单测直接钉住。
+
+/** 计时器上报节流：运行中不必逐秒写盘。 */
+export const TIMER_REPORT_EVERY_SECONDS = 5;
+
+/**
+ * 这一拍要不要把计时器写进存储？
+ * - 运行中：攒够 TIMER_REPORT_EVERY_SECONDS 秒才写（25 分钟 1500 次 → 300 次）
+ * - 停下 / 归零 / 首次：立即写，否则刷新会退回几秒前
+ */
+export function shouldReportTimer({ timer, lastSnapshot = "", lastReportedAt = 0 }) {
+  if (JSON.stringify(timer) === lastSnapshot) return false;
+  if (lastSnapshot === "") return true;
+  if (!timer.running || timer.remaining === 0) return true;
+  return Math.abs(lastReportedAt - timer.remaining) >= TIMER_REPORT_EVERY_SECONDS;
+}
+
+/**
+ * 是不是「刚刚倒数到 0」。
+ * reducer 在减到 0 的同一拍就把 running 置回 false，所以
+ * `remaining === 0 && running` 永远不成立 —— 这就是提示从不触发的原因。
+ * 只能用前后两拍比较：上一拍还有时间、这一拍没了。
+ */
+export function justReachedZero(previousRemaining, remaining) {
+  return Number(previousRemaining) > 0 && Number(remaining) === 0;
+}
+
+/**
+ * 存下来的计时器可能是坏的（旧备份、手改的 localStorage、跨设备合并）。
+ * 让它在界面上显示 NaN:NaN 是最糟的处理：用户只会以为计时器坏了，无从自救。
+ * 坏值一律退回本次时长。
+ */
+export function normalizeStoredTimer(timer, durationSeconds) {
+  const remaining = Number(timer?.remaining);
+  return {
+    remaining: Number.isFinite(remaining) && remaining >= 0 ? Math.floor(remaining) : Math.max(0, durationSeconds),
+    running: Boolean(timer?.running)
+  };
+}
+
+/** 计时的可选时长（分钟）。下拉与 minutesFromTimer 共用同一份。 */
+export const TIMER_MINUTE_OPTIONS = [15, 25, 45];
+
+/** 存了 45 分钟就把下拉设成 45，别固定 25 然后悄悄少掉 20 分钟。 */
+export function minutesFromTimer(timer, options = TIMER_MINUTE_OPTIONS, fallback = 25) {
+  const stored = Number(timer?.remaining);
+  return options.includes(stored / 60) ? stored / 60 : fallback;
+}
+

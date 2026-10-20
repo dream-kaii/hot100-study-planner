@@ -174,3 +174,27 @@ test("a malformed stored reviewAt does not break recording a new outcome", () =>
   const next = recordReviewOutcome({ reviewStep: 3, reviewAt: "not-a-date" }, "independent", now);
   assert.equal(next.status, "mastered");
 });
+
+// 用提示 / 看题解不改变用户手动判定过的状态。
+// 曾经的 bug：只排除 completed / mastered，于是「错题」在点一次提示后
+// 被悄悄改成「思考中」，题目从错题池消失，而用户没做任何取消动作。
+test("hints and solution views never clear a manual mistake or due mark", () => {
+  const mistake = { status: "reviewing", completedAt: "2026-10-01T00:00:00.000Z", updatedAt: "2026-10-01T00:00:00.000Z" };
+  const pending = { status: "completed", reviewAt: "2026-10-02T00:00:00.000Z", completedAt: "2026-10-01T00:00:00.000Z" };
+  for (const item of [mistake, pending]) {
+    const before = derivePracticeStatus(item, now);
+    const hinted = recordHint(item, 1, now);
+    const viewed = recordSolutionView(hinted, "java", now);
+    assert.equal(derivePracticeStatus(hinted, now), before, "记录提示改变了手动状态");
+    assert.equal(derivePracticeStatus(viewed, now), before, "记录看题解改变了手动状态");
+    assert.equal(viewed.status, item.status);
+  }
+  assert.equal(derivePracticeStatus(recordHint(mistake, 1, now), now), "reviewing");
+  assert.equal(derivePracticeStatus(recordHint(pending, 1, now), now), "due");
+});
+
+test("hints still move an untouched item into in-progress", () => {
+  assert.equal(recordHint({}, 1, now).status, "in-progress");
+  assert.equal(recordSolutionView({}, "java", now).status, "in-progress");
+  assert.equal(recordHint({ status: "new" }, 1, now).status, "in-progress");
+});

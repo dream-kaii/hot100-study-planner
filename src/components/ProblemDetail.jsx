@@ -10,6 +10,7 @@ import { classifyAttemptOutcome, derivePracticeStatus } from "../services/status
 import { STATUS_BUTTONS } from "../services/status-labels.js";
 import { MAX_SOLUTIONS_PER_SCOPE, createVariantId, normalizeVariant, selectScope } from "../services/solutions.js";
 import { formatDateTime } from "../services/datetime.js";
+import { TIMER_MINUTE_OPTIONS, minutesFromTimer } from "../services/practice.js";
 import { readLocal, removeLocal, writeLocal } from "../services/local-store.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
@@ -19,6 +20,7 @@ const QUESTION_HISTORY_KEY_PREFIX = "hot100:questionHistoryOpen:";
 // 每道题 × 语言 × 模式 记住「上次在编辑哪一份解法」。
 // 放在 localStorage 而不是 state：刷新、切换题目回来都还能接着写那一份。
 const ACTIVE_VARIANT_KEY_PREFIX = "hot100:activeVariant:";
+
 const outcomeLabels = { failed: "运行失败", independent: "独立通过", "needed-hint": "提示后通过", "needed-solution": "看题解后通过", completed: "运行完成" };
 
 function hasDraft(drafts, questionId, language, mode) {
@@ -61,6 +63,7 @@ export default function ProblemDetail({
   freshStart = false,
   onFreshStartConsumed,
   onProgressChange,
+  onTimerChange,
   onHint,
   onSolutionView,
   onDraftChange,
@@ -84,7 +87,10 @@ export default function ProblemDetail({
   const [practiceMode, setPracticeMode] = useState("learning");
   const [leftTab, setLeftTab] = useState("problem");
   const [questionHistoryOpen, setQuestionHistoryOpen] = useState(() => readQuestionHistoryOpen(question?.id));
-  const [timerMinutes, setTimerMinutes] = useState(25);
+  // 时长下拉的初始值必须来自存下来的计时器：
+  // 固定 25 会让「存着 45 分钟」的题目显示 45:00、下拉却写 25，
+  // 一按「重置」就静默少掉 20 分钟。
+  const [timerMinutes, setTimerMinutes] = useState(() => minutesFromTimer(progressItem?.timer));
   const [activeExample, setActiveExample] = useState(0);
   const scope = useMemo(() => selectScope(solutions, question.id, language, mode), [solutions, question.id, language, mode]);
   const [activeVariantId, setActiveVariantId] = useState(() => readActiveVariant(question.id, language, mode, selectScope(solutions, question.id, language, mode)));
@@ -113,7 +119,7 @@ export default function ProblemDetail({
     setPracticeMode("learning");
     setLeftTab("problem");
     setQuestionHistoryOpen(readQuestionHistoryOpen(question.id));
-    setTimerMinutes(25);
+    setTimerMinutes(minutesFromTimer(progressItem?.timer));
     setActiveExample(0);
     onRecordHistory?.({ questionId: question.id, language: defaultLanguage === "python" ? "python" : "java", mode: "function", outcome: "started", createdAt: new Date().toISOString() });
     return () => { sessionRef.current = null; attemptRef.current = null; };
@@ -251,7 +257,7 @@ export default function ProblemDetail({
       <div className="practiceIdentity"><strong>#{question.id} {question.title}</strong><span>{question.category} · {difficultyText[question.difficulty]} · {question.phase || "学习顺序"} · 学习顺序 {question.studyOrder}</span><span>{nextQuestion ? `下一题：${nextQuestion.title} · 按学习顺序 ${nextQuestion.studyOrder} 继续` : "已到学习顺序末尾"}</span></div>
       <div className="practiceMode" role="group" aria-label="练习模式">{[["learning", "学习模式"], ["independent", "独立模式"], ["interview", "面试模拟"]].map(([value, label]) => <button key={value} className={practiceMode === value ? "active" : ""} onClick={() => setPracticeMode(value)}>{label}</button>)}</div>
       <div className="practiceStatus" role="group" aria-label="学习状态">{STATUS_BUTTONS.map(({ canonical, label }) => <button key={canonical} className={currentStatus === canonical ? "active" : ""} onClick={() => onProgressChange?.(question.id, canonical)}>{label}</button>)}</div>
-      <div className="practiceTimer"><select value={timerMinutes} aria-label="计时分钟数" onChange={(event) => setTimerMinutes(Number(event.target.value))}><option value="15">15 分钟</option><option value="25">25 分钟</option><option value="45">45 分钟</option></select><Timer durationSeconds={timerMinutes * 60} persistedTimer={progressItem?.timer} onChange={(timer) => onProgressChange?.(question.id, progressItem?.status || "in-progress", timer)} onComplete={() => window.alert("时间到，可以查看结果了。")} /></div>
+      <div className="practiceTimer"><select value={timerMinutes} aria-label="计时分钟数" onChange={(event) => setTimerMinutes(Number(event.target.value))}>{TIMER_MINUTE_OPTIONS.map((value) => <option key={value} value={value}>{value} 分钟</option>)}</select><Timer durationSeconds={timerMinutes * 60} persistedTimer={progressItem?.timer} onChange={(timer) => onTimerChange?.(question.id, timer)} onComplete={() => window.alert("时间到，可以查看结果了。")} /></div>
       <div className="questionNav" aria-label="学习顺序导航"><button className="nextQuestionButton" onClick={onPrevious} disabled={!onPrevious}>← 上一题</button><span>学习顺序 {question.studyOrder || "–"} / 100</span><button className="nextQuestionButton" onClick={onNext} disabled={!onNext}>下一题 →</button></div>
     </div>
 

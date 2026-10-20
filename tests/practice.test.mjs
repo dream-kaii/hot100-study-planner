@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { derivePracticeStatus, filterQuestions, pickNextQuestion, timerReducer } from "../src/services/practice.js";
+import { derivePracticeStatus, filterQuestions, justReachedZero, minutesFromTimer, normalizeStoredTimer, pickNextQuestion, shouldReportTimer, timerReducer } from "../src/services/practice.js";
 
 const questions = [
   { id: "1", order: 1, title: "两数之和", category: "哈希", difficulty: "EASY" },
@@ -121,4 +121,67 @@ test("only the due filter picks due items, mistake and due never overlap", () =>
   assert.deepEqual(statuses, ["reviewing", "due", "due"]);
   assert.deepEqual(filterQuestions(questions, mixed, { status: "错题" }, now).map((q) => q.id), ["1"]);
   assert.deepEqual(filterQuestions(questions, mixed, { status: "待复习" }, now).map((q) => q.id), ["2", "3"]);
+});
+
+// 计时器的三处判定抽成纯函数后逐条钉住。
+// 「时间到」的提示曾经整整一版从未触发过：reducer 在减到 0 的同一拍
+// 已经把 running 置回 false，而旧代码判的是 `remaining === 0 && running`。
+test("justReachedZero fires exactly on the tick that runs out", () => {
+  assert.equal(justReachedZero(1, 0), true);
+  assert.equal(justReachedZero(600, 599), false);
+  // 挂载时计时器本来就在 0（上次就归零了），不该再弹一次
+  assert.equal(justReachedZero(0, 0), false);
+  assert.equal(justReachedZero(undefined, 0), false);
+});
+
+test("justReachedZero is reachable through the real reducer path", () => {
+  let state = { remaining: 2, running: true };
+  const seen = [];
+  let previous = state.remaining;
+  for (let i = 0; i < 4; i++) {
+    state = timerReducer(state, { type: "tick", seconds: 1 });
+    if (justReachedZero(previous, state.remaining)) seen.push(i + 1);
+    previous = state.remaining;
+  }
+  // 旧判据 remaining===0 && running 永远为 false，一次都命中不了
+  assert.deepEqual(seen, [2]);
+  assert.equal(state.running, false);
+});
+
+test("timer reporting is throttled while running but immediate when it settles", () => {
+  const tick = (remaining, running = true) => ({ remaining, running });
+  const snap = (remaining, running = true) => JSON.stringify({ remaining, running });
+  // 距上次写盘不到 5 秒：不写（否则 25 分钟要写 1500 次）
+  assert.equal(shouldReportTimer({ timer: tick(1499), lastSnapshot: snap(1500), lastReportedAt: 1500 }), false);
+  assert.equal(shouldReportTimer({ timer: tick(1496), lastSnapshot: snap(1500), lastReportedAt: 1500 }), false);
+  // 攒满 5 秒：写
+  assert.equal(shouldReportTimer({ timer: tick(1495), lastSnapshot: snap(1500), lastReportedAt: 1500 }), true);
+  assert.equal(shouldReportTimer({ timer: tick(1490), lastSnapshot: snap(1495), lastReportedAt: 1495 }), true);
+  // 一次 tick 跨过阈值也算写
+  assert.equal(shouldReportTimer({ timer: tick(1400), lastSnapshot: snap(1500), lastReportedAt: 1500 }), true);
+  // 内容没变就不写
+  assert.equal(shouldReportTimer({ timer: tick(1500), lastSnapshot: snap(1500), lastReportedAt: 1500 }), false);
+  // 暂停 / 归零：立刻写，否则刷新会退回几秒前
+  assert.equal(shouldReportTimer({ timer: tick(1499, false), lastSnapshot: snap(1500), lastReportedAt: 1500 }), true);
+  assert.equal(shouldReportTimer({ timer: tick(0, false), lastSnapshot: snap(3), lastReportedAt: 3 }), true);
+  // 首次挂载：立刻写
+  assert.equal(shouldReportTimer({ timer: tick(1500), lastSnapshot: "", lastReportedAt: 0 }), true);
+});
+
+test("a malformed stored timer degrades to the chosen duration", () => {
+  assert.deepEqual(normalizeStoredTimer({ remaining: {}, running: true }, 1500), { remaining: 1500, running: true });
+  assert.deepEqual(normalizeStoredTimer({ remaining: -5, running: false }, 1500), { remaining: 1500, running: false });
+  assert.deepEqual(normalizeStoredTimer({ remaining: "abc" }, 900), { remaining: 900, running: false });
+  assert.deepEqual(normalizeStoredTimer(null, 900), { remaining: 900, running: false });
+  assert.deepEqual(normalizeStoredTimer({ remaining: 300.7, running: false }, 1500), { remaining: 300, running: false });
+});
+
+test("the duration dropdown follows the stored timer instead of snapping to 25", () => {
+  assert.equal(minutesFromTimer({ remaining: 2700 }), 45);
+  assert.equal(minutesFromTimer({ remaining: 900 }), 15);
+  assert.equal(minutesFromTimer({ remaining: 1500 }), 25);
+  // 计时进行中的值不是整分钟，退回默认，别把 25 分钟显示成 24
+  assert.equal(minutesFromTimer({ remaining: 1493 }), 25);
+  assert.equal(minutesFromTimer({ remaining: {} }), 25);
+  assert.equal(minutesFromTimer(null), 25);
 });

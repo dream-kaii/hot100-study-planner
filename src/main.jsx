@@ -176,6 +176,20 @@ function App() {
 
   const setNote = (questionId, note) => updateState((current) => ({ notes: { ...current.notes, [questionId]: { value: note, updatedAt: new Date().toISOString() } } }));
 
+  // 计时器只在写它自己的字段，绝不碰 status / reviewAt。
+  //
+  // 以前计时器是借 setStatus 落盘的（`onProgressChange(id, status, timer)`），
+  // 而 Timer 在挂载时就会上报一次、运行中每秒再上报一次。于是：
+  //   - 只是打开一道「已完成且复习已到期」的题，什么都没做，
+  //     setStatus("completed") 就把 reviewAt 从过去改到 +7 天，
+  //     这道题当场从「待复习」里消失；
+  //   - 计时器跑着的每题每秒都会重写一次 reviewAt / updatedAt。
+  // 计时和「这题做到什么程度」是两件事，必须分开写。
+  const setTimer = (questionId, timer) => updateState((current) => {
+    const previous = current.progress?.[questionId] || {};
+    return { progress: { ...current.progress, [questionId]: { ...previous, timer, updatedAt: new Date().toISOString() } } };
+  });
+
   const setDraft = (questionId, language, mode, draft) => updateState((current) => ({
     drafts: {
       ...current.drafts,
@@ -408,6 +422,7 @@ function App() {
         freshStart={freshStartFor === selectedId}
         onFreshStartConsumed={() => setFreshStartFor(null)}
         onProgressChange={setStatus}
+        onTimerChange={setTimer}
         onHint={recordHintUsage}
         onSolutionView={recordSolutionCodeView}
         onDraftChange={setDraft}

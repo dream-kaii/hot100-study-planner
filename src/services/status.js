@@ -30,6 +30,20 @@ function contextKey(language = "java", mode = "function") {
   return `${language}:${mode}`;
 }
 
+// 用提示、看题解都不该改变「这题我标成什么样了」。
+//
+// 以前这里只排除 completed / mastered，于是：
+//   用户把一道题标成「错题」→ 打开提示看一眼 → 状态被悄悄改成「思考中」
+//   → 题目从错题池里消失，而用户完全没做任何「取消错题」的动作。
+// 「待复习」同理。这两者是用户主动判定的结果，只有再做一次才能改变。
+const STATUSES_KEPT_ON_HINT = ["completed", "mastered", "reviewing", "due"];
+
+function keepsStatusOnHint(progressItem, now = new Date()) {
+  if (!progressItem || typeof progressItem !== "object") return false;
+  if (progressItem.independentPassAt) return true;
+  return STATUSES_KEPT_ON_HINT.includes(normalizedStatus(progressItem, now));
+}
+
 export function classifyAttemptOutcome({ passed, attemptHintsUsed = 0, attemptViewedSolutionCode = false }) {
   if (!passed) return "failed";
   if (attemptViewedSolutionCode) return "needed-solution";
@@ -108,7 +122,7 @@ export function recordHint(progressItem = {}, level, now = new Date(), language 
     lastHintAt: updatedAt,
     updatedAt
   };
-  if (!current.independentPassAt && !["completed", "mastered"].includes(current.status)) next.status = "in-progress";
+  if (!keepsStatusOnHint(current, now)) next.status = "in-progress";
   return next;
 }
 
@@ -126,7 +140,7 @@ export function recordSolutionView(progressItem = {}, language, now = new Date()
     viewedAt: updatedAt,
     updatedAt
   };
-  if (!next.independentPassAt && !["completed", "mastered"].includes(next.status)) next.status = "in-progress";
+  if (!keepsStatusOnHint(next, now)) next.status = "in-progress";
   return next;
 }
 
