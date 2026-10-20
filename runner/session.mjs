@@ -263,7 +263,11 @@ export class Tunnel {
         if (!this.stopped) this.scheduleReconnect();
       });
     }, wait);
-    this.reconnectTimer.unref?.();
+    // 这个定时器必须是 ref 的。断线期间 socket 已关、心跳已停，
+    // 如果重连也 unref，事件循环里就一个 ref 的 handle 都没有了，
+    // Node 会以退出码 0 静默退出；而 launchd 的 KeepAlive.SuccessfulExit=false
+    // 又不会把它拉起来 —— 现象就是"用着好好的，过几小时突然让你重新启动运行助手"。
+    this.reconnectTimer.ref?.();
   }
 
   /** 优雅关闭：先告诉对端，再断，且不再重连。 */

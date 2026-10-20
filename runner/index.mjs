@@ -481,6 +481,7 @@ async function main() {
   };
 
   // 正在判题的并发数。有任务在跑时不自动更新，免得把用户的一次运行打断。
+  let intentionalExit = false;
   let activeRuns = 0;
   let autoUpdateStarted = false;
 
@@ -511,6 +512,7 @@ async function main() {
     log("info", `自动更新完成：${result.from} → ${result.to}，正在用新版本重启`);
     const pid = respawnSelf();
     log("info", `新实例已启动（pid ${pid}），本进程退出`);
+    intentionalExit = true;
     process.exit(0);
   };
 
@@ -679,9 +681,22 @@ async function main() {
     return 0;
   }
 
+  // 兜底一：显式撑住事件循环。只要这个进程该活着，就不能因为"暂时没有 handle"而退出。
+  const lifetimeTimer = setInterval(() => {}, 60 * 60 * 1000);
+
+  // 兜底二：万一是 0 退出，改成 75，让 launchd 按失败重启（KeepAlive.SuccessfulExit=false）。
+  process.on("exit", (code) => {
+    if (code === 0 && !intentionalExit) {
+      log("warn", "进程以退出码 0 结束了（不该发生），改成 75 让开机自启重新拉起");
+      process.exitCode = 75;
+    }
+  });
+
   // 5. 保持前台运行，Ctrl+C 优雅退出
   const shutdown = (signal) => {
     log("info", `正在关闭…（${signal}）`);
+    intentionalExit = true;
+    clearInterval(lifetimeTimer);
     tunnel.close();
     // launchd 的 KeepAlive 是 SuccessfulExit=false：退出码 0 表示"正常结束，别再拉起"。
     // 而 SIGTERM 基本都来自系统（注销、重启、休眠唤醒、launchctl kickstart），
