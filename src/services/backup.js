@@ -36,20 +36,55 @@ export async function requestBackupDirectory() {
   return handle;
 }
 
-export async function hasBackupDirectory() {
-  if (memoryHandle) return true;
+/** 从 IndexedDB 里取回句柄（不检查权限）。 */
+async function loadHandle() {
+  if (memoryHandle) return memoryHandle;
   const db = await openDb();
-  if (!db) return false;
+  if (!db) return null;
   return new Promise((resolve) => {
     const request = db.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(HANDLE_KEY);
-    request.onsuccess = () => { memoryHandle = request.result; resolve(Boolean(memoryHandle)); };
-    request.onerror = () => resolve(false);
+    request.onsuccess = () => { memoryHandle = request.result || null; resolve(memoryHandle); };
+    request.onerror = () => resolve(null);
   });
 }
 
+/**
+ * 句柄存进 IndexedDB 之后，权限并不跟着走。
+ * 浏览器重启、清过站点数据、隔得太久，句柄还在但权限已过期，
+ * 此时直接 getFileHandle() 会抛：
+ *   NotAllowedError: The request is not allowed by the user agent or the platform in the current context.
+ * 所以每次用之前先查、必要时请求一次（requestPermission 只能在用户点击的调用栈里生效）。
+ */
+async function ensurePermission(handle, mode = "readwrite", allowRequest = true) {
+  if (!handle) return false;
+  try {
+    if (typeof handle.queryPermission === "function") {
+      if ((await handle.queryPermission({ mode })) === "granted") return true;
+    } else {
+      return true;
+    }
+    if (!allowRequest || typeof handle.requestPermission !== "function") return false;
+    return (await handle.requestPermission({ mode })) === "granted";
+  } catch {
+    return false;
+  }
+}
+
+/** 有句柄、且当前上下文真的能写，才算"已设置"。 */
+export async function hasBackupDirectory() {
+  const handle = await loadHandle();
+  if (!handle) return false;
+  // 这里只查不问：挂载时没有用户手势，requestPermission 会被浏览器直接拒绝。
+  return ensurePermission(handle, "readwrite", false);
+}
+
 export async function writeBackup(state) {
-  if (!(await hasBackupDirectory())) throw new Error("请先选择备份文件夹。");
-  const file = await memoryHandle.getFileHandle(FILE_NAME, { create: true });
+  const handle = await loadHandle();
+  if (!handle) throw new Error("请先选择备份文件夹。");
+  if (!(await ensurePermission(handle, "readwrite"))) {
+    throw new Error("备份文件夹的授权已过期，请点「选择位置」重新选一次同一个文件夹。");
+  }
+  const file = await handle.getFileHandle(FILE_NAME, { create: true });
   const writable = await file.createWritable();
   await writable.write(serializeState({ ...state, backupAt: new Date().toISOString() }));
   await writable.close();
@@ -67,10 +102,12 @@ export async function readBackupFile(file) {
 
 // 换浏览器后重新授权同一个文件夹时，把文件夹里已有的备份读回来，
 // 才能真正做到"数据统一"——只恢复授权是不够的，数据还在各自的 localStorage 里。
-export async function readBackupFromDirectory(directory = memoryHandle) {
-  if (!directory || typeof directory.getFileHandle !== "function") return null;
+export async function readBackupFromDirectory(directory) {
+  const target = directory || (await loadHandle());
+  if (!target || typeof target.getFileHandle !== "function") return null;
+  if (!(await ensurePermission(target, "read"))) return null;
   try {
-    const fileHandle = await directory.getFileHandle(FILE_NAME);
+    const fileHandle = await target.getFileHandle(FILE_NAME);
     const file = await fileHandle.getFile();
     return await readBackupFile(file);
   } catch {

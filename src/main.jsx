@@ -109,7 +109,10 @@ function App() {
   useEffect(() => {
     if (typeof localStorage !== "undefined") localStorage.setItem(STORAGE_KEYS[0], JSON.stringify(state));
     if (!backupAvailable) return undefined;
-    const timer = window.setTimeout(() => writeBackup(state).then(setLastBackupAt).catch(() => {}), 800);
+    const timer = window.setTimeout(() => writeBackup(state).then(setLastBackupAt).catch((error) => {
+      // 句柄还在但授权过期时会走到这里：把状态翻回"需重新授权"，别让用户以为一直在备份。
+      if (error?.name === "NotAllowedError" || /授权/.test(error?.message || "")) setBackupAvailable(false);
+    }), 800);
     return () => window.clearTimeout(timer);
   }, [state, backupAvailable]);
 
