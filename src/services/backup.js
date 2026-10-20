@@ -78,6 +78,11 @@ export async function hasBackupDirectory() {
   return ensurePermission(handle, "readwrite", false);
 }
 
+/** 句柄在不在（不管权限）——用来区分"从没设过"和"设过但要重新确认"。 */
+export async function hasBackupHandle() {
+  return Boolean(await loadHandle());
+}
+
 export async function writeBackup(state) {
   const handle = await loadHandle();
   if (!handle) throw new Error("请先选择备份文件夹。");

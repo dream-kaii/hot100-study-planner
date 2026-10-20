@@ -3,7 +3,7 @@ import { exportBackup, mergeOrReplaceState, readBackupFile, readBackupFromDirect
 import { isStateEmpty } from "../services/storage.js";
 import { saveDeviceBackup } from "../services/device.js";
 
-export default function BackupPanel({ state, onImport, lastBackupAt, backupAvailable = false, deviceBackupName = "", onConfigured }) {
+export default function BackupPanel({ state, onImport, lastBackupAt, backupAvailable = false, backupNeedsGrant = false, deviceBackupName = "", onConfigured }) {
   const inputRef = useRef(null);
   const [message, setMessage] = useState("");
   // 目录句柄是浏览器本地凭据，换浏览器必须重新授权一次；
@@ -28,7 +28,11 @@ export default function BackupPanel({ state, onImport, lastBackupAt, backupAvail
       setMessage("备份位置已设置，之后会自动保存");
     } catch (error) { setMessage(error.message); }
   };
-  const backup = async () => { if (!backupAvailable) { setMessage("备份是可选功能；请先选择位置，或使用导出下载文件。"); return; } try { const at = await writeBackup(state); setMessage(`已备份：${at}`); } catch (error) { setMessage(error.message); } };
+  // 句柄在、权限被收回时，点这里会弹一次"允许写入"，过完就恢复自动备份，不用重选文件夹。
+  const backup = async () => {
+    if (!backupAvailable && !backupNeedsGrant) { setMessage("备份是可选功能；请先选择位置，或使用导出下载文件。"); return; }
+    try { const at = await writeBackup(state); setMessage(`已备份：${at}`); onConfigured?.(); } catch (error) { setMessage(error.message); }
+  };
   const importFile = async (event) => {
     const file = event.target.files?.[0]; if (!file) return;
     try { const incoming = await readBackupFile(file); const mode = window.confirm("确定覆盖当前数据吗？点击取消将合并导入。") ? "replace" : "merge"; onImport?.(mergeOrReplaceState(state, incoming, mode)); setMessage("导入完成"); } catch (error) { setMessage(error.message); }
@@ -39,7 +43,9 @@ export default function BackupPanel({ state, onImport, lastBackupAt, backupAvail
     ? `最近：${lastBackupAt}`
     : backupAvailable
       ? "已设置自动备份"
-      : deviceBackupName
-        ? `已设置：${deviceBackupName} · 本浏览器需重新授权`
-        : "使用 localStorage 自动保存"}</span></div><div className="backupActions"><button onClick={configure}>选择位置</button><button onClick={backup}>立即备份</button><button onClick={() => inputRef.current?.click()}>导入</button><button onClick={download}>导出</button><input ref={inputRef} type="file" accept="application/json" hidden onChange={importFile} /></div>{message && <small role="status">{message}</small>}</section>;
+      : backupNeedsGrant
+        ? "已设置自动备份 · 点「立即备份」恢复授权"
+        : deviceBackupName
+          ? `已设置：${deviceBackupName} · 本浏览器需重新授权`
+          : "使用 localStorage 自动保存"}</span></div><div className="backupActions"><button onClick={configure}>选择位置</button><button onClick={backup}>立即备份</button><button onClick={() => inputRef.current?.click()}>导入</button><button onClick={download}>导出</button><input ref={inputRef} type="file" accept="application/json" hidden onChange={importFile} /></div>{message && <small role="status">{message}</small>}</section>;
 }

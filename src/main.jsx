@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import hot100 from "./data/hot100.json";
 import { createDefaultState, parseState } from "./services/storage.js";
-import { hasBackupDirectory, writeBackup } from "./services/backup.js";
+import { hasBackupDirectory, hasBackupHandle, writeBackup } from "./services/backup.js";
 import { appendHistory } from "./services/history.js";
 import { getEffectivePracticeEvents } from "./services/history.js";
 import { filterQuestions, hasCompletedLearning, orderByStudyOrder, pickNextQuestion, pickPreviousQuestion, pickStudyQuestion } from "./services/practice.js";
@@ -66,6 +66,8 @@ function uiProgress(progress = {}, solutions = {}, now = new Date()) {
 function App() {
   const [state, setState] = useState(loadState);
   const [backupAvailable, setBackupAvailable] = useState(false);
+  // 句柄还在、但写入权限被浏览器收回了：点一次就能恢复，不必重新选文件夹。
+  const [backupNeedsGrant, setBackupNeedsGrant] = useState(false);
   const [selectedId, setSelectedId] = useState(() => typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("question"));
   const [view, setView] = useState(() => typeof window !== "undefined" && new URLSearchParams(window.location.search).get("question") ? "detail" : "dashboard");
   const [filters, setFilters] = useState({ query: "", category: "全部", difficulty: "全部", status: "全部" });
@@ -88,6 +90,7 @@ function App() {
         setBackupAvailable(has);
         // 本浏览器还没有句柄时，问问这台设备是不是在别的浏览器里设过。
         if (!has) {
+          hasBackupHandle().then((hasHandle) => setBackupNeedsGrant(hasHandle)).catch(() => {});
           fetchDeviceBackup()
             .then((info) => { if (info?.name) setDeviceBackupName(info.name); })
             .catch(() => {});
@@ -380,7 +383,7 @@ function App() {
       {view === "detail" && !selected && <div className="contentCard emptyState">未找到这道题，请从上方题库重新选择。</div>}
     </main>
     <SiteFooter />
-    <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} deviceBackupName={deviceBackupName} onConfigured={() => setBackupAvailable(true)} onImport={(incoming) => setState(parseState(incoming))} />
+    <BackupPanel state={state} lastBackupAt={lastBackupAt} backupAvailable={backupAvailable} backupNeedsGrant={backupNeedsGrant} deviceBackupName={deviceBackupName} onConfigured={() => { setBackupAvailable(true); setBackupNeedsGrant(false); }} onImport={(incoming) => setState(parseState(incoming))} />
   </div>;
 }
 

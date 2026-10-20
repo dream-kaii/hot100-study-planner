@@ -25,9 +25,10 @@ export async function probeOnlineRunner({ force = false } = {}) {
     value = { available: false, reason: "dev" };
   } else {
     try {
-      // HEAD 太容易被 CDN 缓存，用 OPTIONS 打一个明确不存在的探测路径；
-      // 只要 /api/ 前缀被 Worker 接管就会返回 404 JSON 而不是 index.html。
-      const response = await fetch("/api/status/probe", { method: "GET", cache: "no-store" });
+      // 打一个格式合法但绝不存在的 sid：只要 /api/ 前缀被 Worker 接管，
+      // 就会返回 200 + JSON；没接管时是 index.html（content-type 是 text/html）。
+      // 别用非法 sid 去探——那会返回 400，控制台里留一条红字报错。
+      const response = await fetch("/api/status/00000000000000000000000000000000", { method: "GET", cache: "no-store" });
       const isJson = (response.headers.get("content-type") || "").includes("application/json");
       value = isJson
         ? { available: true, reason: "ok" }
