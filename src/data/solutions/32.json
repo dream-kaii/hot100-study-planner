@@ -109,13 +109,12 @@
     {
       "id": "32-boundary-1",
       "input": {
-        "s": ")()())"
+        "s": ""
       },
-      "expected": 4,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用最长有效括号的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "32-adversarial-1",
@@ -125,8 +124,7 @@
       "expected": 4,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查最长有效括号的脆弱点。"
+      ]
     }
   ],
   "acm": {

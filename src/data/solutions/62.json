@@ -137,9 +137,9 @@
       "id": "62-basic-1",
       "input": {
         "m": 3,
-        "n": 2
+        "n": 7
       },
-      "expected": 3,
+      "expected": 28,
       "tags": [
         "basic"
       ]
@@ -147,14 +147,13 @@
     {
       "id": "62-boundary-1",
       "input": {
-        "m": 3,
-        "n": 2
+        "m": 1,
+        "n": 1
       },
-      "expected": 3,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用不同路径的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "62-adversarial-1",
@@ -165,8 +164,7 @@
       "expected": 3,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查不同路径的脆弱点。"
+      ]
     }
   ],
   "acm": {

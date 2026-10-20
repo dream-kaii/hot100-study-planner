@@ -60,6 +60,44 @@ test('repaired examples contain distinct basic, boundary and adversarial inputs'
   }
 });
 
+test('every one of the 100 questions has pairwise-distinct case inputs', () => {
+  // #136「只出现一次的数字」暴露过的问题：100 道题里有 56 道的 boundary / adversarial
+  // 用例直接复制了 basic 的输入，甚至三个用例输入完全一样，正确答案也同为 1，
+  // 跑起来三行结果一模一样 —— 用户看到的就是「运行实例都是重复运行」。
+  // 根因是批量生成用例时没为每道题单独设计输入，而旧测试只盯着一张手写名单（44 题），
+  // #136 恰好不在名单里，所以一路绿灯。
+  // 这道闸门覆盖全部 100 题，任何一题退化成重复用例都会立刻失败。
+  const dir = new URL('../src/data/solutions/', import.meta.url);
+  const files = fs.readdirSync(dir).filter(name => name.endsWith('.json'));
+  assert.equal(files.length, 100);
+
+  const offenders = [];
+  for (const file of files) {
+    const id = file.replace(/\.json$/, '');
+    const q = JSON.parse(fs.readFileSync(new URL(file, dir)));
+    const signatures = (q.cases || []).map(item => stableSignature(item.input));
+    const unique = new Set(signatures);
+    if (unique.size !== signatures.length) {
+      const dupes = signatures.filter((sig, index) => signatures.indexOf(sig) !== index).length;
+      offenders.push(`${id}（${q.cases.length} 个用例里有 ${dupes} 个重复输入）`);
+    }
+    // 三个用例若连期望值都全同，答案也失去区分度，视为同一路信号。
+    const expectations = (q.cases || []).map(item => stableSignature(item.expected));
+    if (new Set(expectations).size === 1 && expectations.length > 1) {
+      offenders.push(`${id}（所有用例期望值都是 ${JSON.stringify(q.cases[0].expected)}，没有区分度）`);
+    }
+  }
+  assert.deepEqual(offenders, [], `存在重复用例：\n${offenders.join('\n')}`);
+});
+
+/** 键排序后的稳定序列化，判断两个用例输入/期望是否等价（与字段顺序无关）。 */
+function stableSignature(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'undefined';
+  if (Array.isArray(value)) return `[${value.map(stableSignature).join(',')}]`;
+  const keys = Object.keys(value).sort();
+  return `{${keys.map(key => `${JSON.stringify(key)}:${stableSignature(value[key])}`).join(',')}}`;
+}
+
 test('node identity and deep-copy expectations are structured machine-readable values', () => {
   for (const id of ['142','160','236']) for (const item of read(id).cases) {
     assert.ok(Object.hasOwn(item.expected, 'id'), `${id}/${item.id}`);
@@ -124,8 +162,16 @@ test('schema validator ignores signatures in comments or strings and checks the 
 test('schema validator accepts the real 100 contracts, operation sequences and special node input protocols', () => {
   assert.deepEqual(validateContent(loadContent()), []);
   assert.deepEqual(contractErrors('160', () => {}), []);
+  // 空链表协议合法。注意三个用例的输入必须互不相同 —— 用例唯一性是硬约束，
+  // 曾经用「三个都用 {headA:[],headB:[]}」来写这个断言，会撞上新加的唯一性闸门。
+  // 这里改成三种不同的空/单边空组合，覆盖面更足，也仍然全部合法。
   assert.deepEqual(contractErrors('160', q => {
-    for (const item of q.cases) item.input = { headA: [], headB: [] };
+    const empties = [
+      { headA: [], headB: [] },
+      { headA: [], headB: [1] },
+      { headA: [1], headB: [] }
+    ];
+    q.cases.forEach((item, index) => { item.input = empties[index]; });
   }), []);
   assert.deepEqual(contractErrors('141', () => {}), []);
   assert.deepEqual(contractErrors('146', () => {}), []);

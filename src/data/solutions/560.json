@@ -120,17 +120,14 @@
       "id": "560-boundary-1",
       "input": {
         "nums": [
-          1,
-          2,
-          3
+          1
         ],
-        "k": 3
+        "k": 0
       },
-      "expected": 2,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用和为 K 的子数组的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "560-adversarial-1",
@@ -145,8 +142,7 @@
       "expected": 2,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查和为 K 的子数组的脆弱点。"
+      ]
     }
   ],
   "acm": {

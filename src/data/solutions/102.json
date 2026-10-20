@@ -218,19 +218,23 @@
       "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用二叉树的层序遍历的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "102-adversarial-1",
       "input": {
-        "root": []
+        "root": [
+          1
+        ]
       },
-      "expected": [],
+      "expected": [
+        [
+          1
+        ]
+      ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查二叉树的层序遍历的脆弱点。"
+      ]
     }
   ],
   "acm": {

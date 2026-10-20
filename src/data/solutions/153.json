@@ -121,17 +121,13 @@
       "id": "153-boundary-1",
       "input": {
         "nums": [
-          11,
-          13,
-          15,
-          17
+          1
         ]
       },
-      "expected": 11,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用寻找旋转排序数组中的最小值的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "153-adversarial-1",
@@ -146,8 +142,7 @@
       "expected": 11,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查寻找旋转排序数组中的最小值的脆弱点。"
+      ]
     }
   ],
   "acm": {

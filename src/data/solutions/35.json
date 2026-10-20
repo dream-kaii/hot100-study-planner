@@ -166,13 +166,12 @@
           5,
           6
         ],
-        "target": 7
+        "target": 0
       },
-      "expected": 4,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用搜索插入位置的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "35-adversarial-1",
@@ -188,8 +187,7 @@
       "expected": 4,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查搜索插入位置的脆弱点。"
+      ]
     }
   ],
   "acm": {

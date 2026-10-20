@@ -118,24 +118,22 @@
     {
       "id": "70-boundary-1",
       "input": {
-        "n": 3
+        "n": 1
       },
-      "expected": 3,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用爬楼梯的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "70-adversarial-1",
       "input": {
-        "n": 3
+        "n": 45
       },
-      "expected": 3,
+      "expected": 1836311903,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查爬楼梯的脆弱点。"
+      ]
     }
   ],
   "acm": {

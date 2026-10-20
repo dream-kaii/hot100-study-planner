@@ -130,19 +130,29 @@
       "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用排序链表的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "148-adversarial-1",
       "input": {
-        "head": []
+        "head": [
+          -1,
+          5,
+          3,
+          4,
+          0
+        ]
       },
-      "expected": [],
+      "expected": [
+        -1,
+        0,
+        3,
+        4,
+        5
+      ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查排序链表的脆弱点。"
+      ]
     }
   ],
   "acm": {

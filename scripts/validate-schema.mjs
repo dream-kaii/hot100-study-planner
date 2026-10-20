@@ -290,6 +290,34 @@ function checkCases(solution, errors) {
   for (const tag of ["basic", "boundary", "adversarial"]) {
     if (!solution.cases.some((item) => item.tags?.includes(tag))) add(errors, location, `missing ${tag} case`);
   }
+  // 用例输入必须两两不同。
+  //
+  // 这里曾经是漏洞：100 道题里有 56 道的 boundary / adversarial 用例直接复制了
+  // basic 的输入（甚至三个用例输入完全一样），顶部还挂着同一套模板 note
+  // 「使用 X 的最小规模或空输入检查边界」。结构校验全过，但跑起来三行结果一模一样，
+  // 看起来就像「运行实例重复执行」——#136 就是这样被发现的。
+  // 校验只管结构、不管用例是否真的测到了不同分支，所以必须在这里补一道闸门。
+  const seenInputs = new Map();
+  for (const [index, item] of solution.cases.entries()) {
+    const signature = stableStringify(item?.input);
+    if (seenInputs.has(signature)) {
+      add(
+        errors,
+        `${location}[${index}].input`,
+        `duplicates cases[${seenInputs.get(signature)}] — 每个用例的输入必须不同，否则等于重复执行同一个用例`
+      );
+    } else {
+      seenInputs.set(signature, index);
+    }
+  }
+}
+
+/** 键排序后的稳定序列化，用来判断两个用例输入是否等价（不受字段顺序影响）。 */
+function stableStringify(value) {
+  if (value === null || typeof value !== "object") return JSON.stringify(value) ?? "undefined";
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  const keys = Object.keys(value).sort();
+  return `{${keys.map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`).join(",")}}`;
 }
 
 function checkSolution(solution, errors) {

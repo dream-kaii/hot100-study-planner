@@ -115,20 +115,13 @@
       "id": "169-boundary-1",
       "input": {
         "nums": [
-          2,
-          2,
-          1,
-          1,
-          1,
-          2,
-          2
+          1
         ]
       },
-      "expected": 2,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用多数元素的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "169-adversarial-1",
@@ -146,8 +139,7 @@
       "expected": 2,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查多数元素的脆弱点。"
+      ]
     }
   ],
   "acm": {

@@ -117,20 +117,13 @@
       "id": "124-boundary-1",
       "input": {
         "root": [
-          -10,
-          9,
-          20,
-          null,
-          null,
-          15,
-          7
+          -3
         ]
       },
-      "expected": 42,
+      "expected": -3,
       "tags": [
         "boundary"
-      ],
-      "note": "使用二叉树中的最大路径和的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "124-adversarial-1",
@@ -148,8 +141,7 @@
       "expected": 42,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查二叉树中的最大路径和的脆弱点。"
+      ]
     }
   ],
   "acm": {

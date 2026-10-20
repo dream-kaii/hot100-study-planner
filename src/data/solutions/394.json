@@ -114,13 +114,12 @@
     {
       "id": "394-boundary-1",
       "input": {
-        "s": "2[abc]3[cd]ef"
+        "s": "abc"
       },
-      "expected": "abcabccdcdcdef",
+      "expected": "abc",
       "tags": [
         "boundary"
-      ],
-      "note": "使用字符串解码的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "394-adversarial-1",
@@ -130,8 +129,7 @@
       "expected": "abcabccdcdcdef",
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查字符串解码的脆弱点。"
+      ]
     }
   ],
   "acm": {

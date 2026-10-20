@@ -114,35 +114,26 @@
       "id": "543-boundary-1",
       "input": {
         "root": [
-          1,
-          2,
-          3,
-          4,
-          5
+          1
         ]
       },
-      "expected": 3,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用二叉树的直径的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "543-adversarial-1",
       "input": {
         "root": [
           1,
-          2,
-          3,
-          4,
-          5
+          2
         ]
       },
-      "expected": 3,
+      "expected": 1,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查二叉树的直径的脆弱点。"
+      ]
     }
   ],
   "acm": {

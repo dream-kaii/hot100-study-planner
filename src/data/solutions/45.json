@@ -135,35 +135,28 @@
       "id": "45-boundary-1",
       "input": {
         "nums": [
-          2,
-          3,
-          1,
-          1,
-          4
+          0
         ]
       },
-      "expected": 2,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用跳跃游戏 II的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "45-adversarial-1",
       "input": {
         "nums": [
-          2,
-          3,
           1,
           1,
-          4
+          1,
+          1
         ]
       },
-      "expected": 2,
+      "expected": 3,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查跳跃游戏 II的脆弱点。"
+      ]
     }
   ],
   "acm": {

@@ -125,33 +125,27 @@
       "id": "322-boundary-1",
       "input": {
         "coins": [
-          1,
-          2,
-          5
+          2
         ],
-        "amount": 11
+        "amount": 3
       },
-      "expected": 3,
+      "expected": -1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用零钱兑换的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "322-adversarial-1",
       "input": {
         "coins": [
-          1,
-          2,
-          5
+          1
         ],
-        "amount": 11
+        "amount": 0
       },
-      "expected": 3,
+      "expected": 0,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查零钱兑换的脆弱点。"
+      ]
     }
   ],
   "acm": {

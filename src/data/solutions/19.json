@@ -140,18 +140,14 @@
       "id": "19-boundary-1",
       "input": {
         "head": [
-          1,
-          2
+          1
         ],
         "n": 1
       },
-      "expected": [
-        1
-      ],
+      "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用删除链表的倒数第 N 个结点的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "19-adversarial-1",
@@ -167,8 +163,7 @@
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查删除链表的倒数第 N 个结点的脆弱点。"
+      ]
     }
   ],
   "acm": {

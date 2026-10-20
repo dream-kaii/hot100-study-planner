@@ -119,27 +119,31 @@
       "id": "136-boundary-1",
       "input": {
         "nums": [
+          1,
+          0,
           1
         ]
       },
-      "expected": 1,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用只出现一次的数字的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "136-adversarial-1",
       "input": {
         "nums": [
-          1
+          4,
+          1,
+          2,
+          1,
+          2
         ]
       },
-      "expected": 1,
+      "expected": 4,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查只出现一次的数字的脆弱点。"
+      ]
     }
   ],
   "acm": {

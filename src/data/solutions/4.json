@@ -122,20 +122,15 @@
     {
       "id": "4-boundary-1",
       "input": {
-        "nums1": [
-          1,
-          2
-        ],
+        "nums1": [],
         "nums2": [
-          3,
-          4
+          1
         ]
       },
-      "expected": 2.5,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用寻找两个正序数组的中位数的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "4-adversarial-1",
@@ -152,8 +147,7 @@
       "expected": 2.5,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查寻找两个正序数组的中位数的脆弱点。"
+      ]
     }
   ],
   "acm": {

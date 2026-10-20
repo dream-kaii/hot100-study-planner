@@ -124,39 +124,33 @@
       "id": "31-boundary-1",
       "input": {
         "nums": [
-          1,
-          1,
-          5
+          1
         ]
       },
       "expected": [
-        1,
-        5,
         1
       ],
       "tags": [
         "boundary"
-      ],
-      "note": "使用下一个排列的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "31-adversarial-1",
       "input": {
         "nums": [
-          1,
-          1,
-          5
+          3,
+          2,
+          1
         ]
       },
       "expected": [
         1,
-        5,
-        1
+        2,
+        3
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查下一个排列的脆弱点。"
+      ]
     }
   ],
   "acm": {

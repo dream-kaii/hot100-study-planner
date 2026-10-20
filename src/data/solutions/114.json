@@ -134,17 +134,12 @@
     {
       "id": "114-boundary-1",
       "input": {
-        "root": [
-          0
-        ]
+        "root": []
       },
-      "expected": [
-        0
-      ],
+      "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用二叉树展开为链表的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "114-adversarial-1",
@@ -158,8 +153,7 @@
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查二叉树展开为链表的脆弱点。"
+      ]
     }
   ],
   "acm": {

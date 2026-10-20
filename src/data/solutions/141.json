@@ -144,22 +144,21 @@
       "expected": false,
       "tags": [
         "boundary"
-      ],
-      "note": "使用环形链表的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "141-adversarial-1",
       "input": {
         "head": [
-          1
+          1,
+          2
         ],
-        "pos": -1
+        "pos": 0
       },
-      "expected": false,
+      "expected": true,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查环形链表的脆弱点。"
+      ]
     }
   ],
   "acm": {

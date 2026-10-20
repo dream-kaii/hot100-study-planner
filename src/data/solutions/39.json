@@ -156,53 +156,31 @@
       "id": "39-boundary-1",
       "input": {
         "candidates": [
-          2,
-          3,
-          6,
-          7
+          2
         ],
-        "target": 7
+        "target": 1
       },
-      "expected": [
-        [
-          2,
-          2,
-          3
-        ],
-        [
-          7
-        ]
-      ],
+      "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用组合总和的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "39-adversarial-1",
       "input": {
         "candidates": [
-          2,
-          3,
-          6,
-          7
+          1
         ],
-        "target": 7
+        "target": 1
       },
       "expected": [
         [
-          2,
-          2,
-          3
-        ],
-        [
-          7
+          1
         ]
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查组合总和的脆弱点。"
+      ]
     }
   ],
   "acm": {

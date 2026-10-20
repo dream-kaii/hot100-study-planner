@@ -122,22 +122,16 @@
       "id": "230-boundary-1",
       "input": {
         "root": [
-          5,
-          3,
-          6,
-          2,
-          4,
+          1,
           null,
-          null,
-          1
+          2
         ],
-        "k": 3
+        "k": 2
       },
-      "expected": 3,
+      "expected": 2,
       "tags": [
         "boundary"
-      ],
-      "note": "使用二叉搜索树中第 K 小的元素的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "230-adversarial-1",
@@ -157,8 +151,7 @@
       "expected": 3,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查二叉搜索树中第 K 小的元素的脆弱点。"
+      ]
     }
   ],
   "acm": {

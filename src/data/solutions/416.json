@@ -125,33 +125,28 @@
       "id": "416-boundary-1",
       "input": {
         "nums": [
-          1,
-          2,
-          3,
-          5
+          1
         ]
       },
       "expected": false,
       "tags": [
         "boundary"
-      ],
-      "note": "使用分割等和子集的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "416-adversarial-1",
       "input": {
         "nums": [
           1,
-          2,
-          3,
-          5
+          1,
+          1,
+          1
         ]
       },
-      "expected": false,
+      "expected": true,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查分割等和子集的脆弱点。"
+      ]
     }
   ],
   "acm": {

@@ -143,24 +143,22 @@
     {
       "id": "20-boundary-1",
       "input": {
-        "s": "(]"
+        "s": ""
       },
-      "expected": false,
+      "expected": true,
       "tags": [
         "boundary"
-      ],
-      "note": "使用有效的括号的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "20-adversarial-1",
       "input": {
-        "s": "(]"
+        "s": "([)]"
       },
       "expected": false,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查有效的括号的脆弱点。"
+      ]
     }
   ],
   "acm": {

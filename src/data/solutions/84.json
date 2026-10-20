@@ -150,37 +150,26 @@
       "id": "84-boundary-1",
       "input": {
         "heights": [
-          2,
-          1,
-          5,
-          6,
-          2,
-          3
+          1
         ]
       },
-      "expected": 10,
+      "expected": 1,
       "tags": [
         "boundary"
-      ],
-      "note": "使用柱状图中最大的矩形的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "84-adversarial-1",
       "input": {
         "heights": [
-          2,
           1,
-          5,
-          6,
-          2,
-          3
+          1
         ]
       },
-      "expected": 10,
+      "expected": 2,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查柱状图中最大的矩形的脆弱点。"
+      ]
     }
   ],
   "acm": {

@@ -140,28 +140,18 @@
     {
       "id": "15-boundary-1",
       "input": {
-        "nums": [
-          0,
-          0,
-          0
-        ]
+        "nums": []
       },
-      "expected": [
-        [
-          0,
-          0,
-          0
-        ]
-      ],
+      "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用三数之和的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "15-adversarial-1",
       "input": {
         "nums": [
+          0,
           0,
           0,
           0
@@ -176,8 +166,7 @@
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查三数之和的脆弱点。"
+      ]
     }
   ],
   "acm": {

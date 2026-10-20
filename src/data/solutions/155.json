@@ -173,11 +173,10 @@
           "MinStack",
           "push",
           "push",
-          "push",
           "getMin",
           "pop",
-          "top",
-          "getMin"
+          "getMin",
+          "top"
         ],
         "arguments": [
           [],
@@ -186,9 +185,6 @@
           ],
           [
             0
-          ],
-          [
-            -3
           ],
           [],
           [],
@@ -200,16 +196,14 @@
         null,
         null,
         null,
+        -2,
         null,
-        -3,
-        null,
-        0,
+        -2,
         -2
       ],
       "tags": [
         "boundary"
-      ],
-      "note": "使用最小栈的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "155-adversarial-1",
@@ -219,22 +213,24 @@
           "push",
           "push",
           "push",
+          "top",
+          "pop",
           "getMin",
           "pop",
-          "top",
           "getMin"
         ],
         "arguments": [
           [],
           [
-            -2
+            0
+          ],
+          [
+            1
           ],
           [
             0
           ],
-          [
-            -3
-          ],
+          [],
           [],
           [],
           [],
@@ -246,15 +242,15 @@
         null,
         null,
         null,
-        -3,
+        0,
         null,
         0,
-        -2
+        null,
+        0
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查最小栈的脆弱点。"
+      ]
     }
   ],
   "acm": {

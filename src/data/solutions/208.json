@@ -179,47 +179,26 @@
         "operations": [
           "Trie",
           "insert",
-          "search",
-          "search",
-          "startsWith",
-          "insert",
           "search"
         ],
         "arguments": [
           [],
           [
-            "apple"
+            "a"
           ],
           [
-            "apple"
-          ],
-          [
-            "app"
-          ],
-          [
-            "app"
-          ],
-          [
-            "app"
-          ],
-          [
-            "app"
+            "a"
           ]
         ]
       },
       "expected": [
         null,
         null,
-        true,
-        false,
-        true,
-        null,
         true
       ],
       "tags": [
         "boundary"
-      ],
-      "note": "使用实现 Trie (前缀树)的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "208-adversarial-1",
@@ -227,31 +206,19 @@
         "operations": [
           "Trie",
           "insert",
-          "search",
-          "search",
           "startsWith",
-          "insert",
           "search"
         ],
         "arguments": [
           [],
           [
-            "apple"
+            "abc"
           ],
           [
-            "apple"
+            "ab"
           ],
           [
-            "app"
-          ],
-          [
-            "app"
-          ],
-          [
-            "app"
-          ],
-          [
-            "app"
+            "ab"
           ]
         ]
       },
@@ -259,15 +226,11 @@
         null,
         null,
         true,
-        false,
-        true,
-        null,
-        true
+        false
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查实现 Trie (前缀树)的脆弱点。"
+      ]
     }
   ],
   "acm": {

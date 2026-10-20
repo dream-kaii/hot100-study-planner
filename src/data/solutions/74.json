@@ -136,31 +136,15 @@
       "input": {
         "matrix": [
           [
-            1,
-            3,
-            5,
-            7
-          ],
-          [
-            10,
-            11,
-            16,
-            20
-          ],
-          [
-            23,
-            30,
-            34,
-            60
+            1
           ]
         ],
-        "target": 13
+        "target": 1
       },
-      "expected": false,
+      "expected": true,
       "tags": [
         "boundary"
-      ],
-      "note": "使用搜索二维矩阵的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "74-adversarial-1",
@@ -190,8 +174,7 @@
       "expected": false,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查搜索二维矩阵的脆弱点。"
+      ]
     }
   ],
   "acm": {

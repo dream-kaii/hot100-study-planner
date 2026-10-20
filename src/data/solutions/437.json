@@ -124,50 +124,28 @@
     {
       "id": "437-boundary-1",
       "input": {
-        "root": [
-          10,
-          5,
-          -3,
-          3,
-          2,
-          null,
-          11,
-          3,
-          -2,
-          null,
-          1
-        ],
-        "targetSum": 8
+        "root": [],
+        "targetSum": 0
       },
-      "expected": 3,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用路径总和 III的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "437-adversarial-1",
       "input": {
         "root": [
-          10,
-          5,
-          -3,
-          3,
-          2,
-          null,
-          11,
-          3,
+          1,
           -2,
-          null,
-          1
+          -3
         ],
-        "targetSum": 8
+        "targetSum": -1
       },
-      "expected": 3,
+      "expected": 1,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查路径总和 III的脆弱点。"
+      ]
     }
   ],
   "acm": {

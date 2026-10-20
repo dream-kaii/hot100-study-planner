@@ -125,28 +125,23 @@
       "id": "75-boundary-1",
       "input": {
         "nums": [
-          2,
-          0,
-          1
+          0
         ]
       },
       "expected": [
-        0,
-        1,
-        2
+        0
       ],
       "tags": [
         "boundary"
-      ],
-      "note": "使用颜色分类的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "75-adversarial-1",
       "input": {
         "nums": [
           2,
-          0,
-          1
+          1,
+          0
         ]
       },
       "expected": [
@@ -156,8 +151,7 @@
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查颜色分类的脆弱点。"
+      ]
     }
   ],
   "acm": {

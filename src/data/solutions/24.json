@@ -153,17 +153,12 @@
     {
       "id": "24-boundary-1",
       "input": {
-        "head": [
-          1
-        ]
+        "head": []
       },
-      "expected": [
-        1
-      ],
+      "expected": [],
       "tags": [
         "boundary"
-      ],
-      "note": "使用两两交换链表中的节点的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "24-adversarial-1",
@@ -177,8 +172,7 @@
       ],
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查两两交换链表中的节点的脆弱点。"
+      ]
     }
   ],
   "acm": {

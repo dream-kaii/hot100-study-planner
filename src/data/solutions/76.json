@@ -127,20 +127,18 @@
       "expected": "",
       "tags": [
         "boundary"
-      ],
-      "note": "使用最小覆盖子串的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "76-adversarial-1",
       "input": {
         "s": "a",
-        "t": "aa"
+        "t": "a"
       },
-      "expected": "",
+      "expected": "a",
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查最小覆盖子串的脆弱点。"
+      ]
     }
   ],
   "acm": {

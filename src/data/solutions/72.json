@@ -130,14 +130,13 @@
     {
       "id": "72-boundary-1",
       "input": {
-        "word1": "intention",
-        "word2": "execution"
+        "word1": "",
+        "word2": ""
       },
-      "expected": 5,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用编辑距离的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "72-adversarial-1",
@@ -148,8 +147,7 @@
       "expected": 5,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查编辑距离的脆弱点。"
+      ]
     }
   ],
   "acm": {

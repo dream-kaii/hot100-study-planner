@@ -115,24 +115,22 @@
     {
       "id": "3-boundary-1",
       "input": {
-        "s": "pwwkew"
+        "s": ""
       },
-      "expected": 3,
+      "expected": 0,
       "tags": [
         "boundary"
-      ],
-      "note": "使用无重复字符的最长子串的最小规模或空输入检查边界。"
+      ]
     },
     {
       "id": "3-adversarial-1",
       "input": {
-        "s": "pwwkew"
+        "s": "dvdf"
       },
       "expected": 3,
       "tags": [
         "adversarial"
-      ],
-      "note": "使用重复、极值或特殊顺序检查无重复字符的最长子串的脆弱点。"
+      ]
     }
   ],
   "acm": {
