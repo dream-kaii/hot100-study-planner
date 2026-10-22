@@ -68,13 +68,24 @@ export default function CodeEditor({
   useEffect(() => { latestCodeRef.current = code; }, [code]);
   useEffect(() => { draftChangeRef.current = onDraftChange; }, [onDraftChange]);
 
-  const emitDraft = (nextCode = latestCodeRef.current) => {
+  // 上报草稿。
+  //
+  // 默认值**不能**用 latestCodeRef.current：它是靠 useEffect 跟着 props.code 更新的，
+  // 永远慢一帧。而 monaco 的 setValue 是同步派发事件的——
+  // 「重置为模板」把 variant.code 换成模板后，编辑器立刻 setValue(模板)，
+  // 同步触发的 cursor/scroll 回调读到的 latestCodeRef 还是**重置前的旧代码**，
+  // 于是把旧代码写回存档 → 又渲染成旧代码 → 再 setValue → 再回调……
+  // 编辑器和存档互相覆盖，一秒几百次，页面直接卡死。
+  // 模型里的内容才是最新真相，没显式给值就问它。
+  const emitDraft = (nextCode) => {
     const editor = editorRef.current;
     if (!editor) return;
     const model = editor.getModel();
+    const value = typeof nextCode === "string" ? nextCode : model ? model.getValue() : latestCodeRef.current;
+    latestCodeRef.current = value;
     const position = editor.getPosition();
     draftChangeRef.current?.({
-      code: nextCode,
+      code: value,
       cursor: model && position ? model.getOffsetAt(position) : 0,
       scrollTop: editor.getScrollTop(),
       updatedAt: new Date().toISOString()

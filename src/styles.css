@@ -500,3 +500,83 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
     padding: 12px 14px 0;
   }
 }
+
+/* 「这次运行发生了什么」提示条。
+   和 runnerNotice 的区别：那是环境欠配置，长期存在；这条是本次运行的结论
+   （复用旧代码未计入通过 / 存档满了改重置 / 刚重置过可撤销），下一次运行就换内容。 */
+.attemptNotice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 9px 12px;
+  border-radius: 7px;
+  border: 1px solid #e0c3b4;
+  background: #fdf3ee;
+  color: #8e3f25;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.attemptNotice span { flex: 1; min-width: 0; }
+.attemptNoticeUndo {
+  flex: none;
+  border: 1px solid #d49a83;
+  background: #FFFEFB;
+  color: #8e3f25;
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.attemptNoticeUndo:hover { background: #fbeee7; }
+.attemptNoticeClose {
+  flex: none;
+  border: 0;
+  background: transparent;
+  color: #a39c92;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+}
+.attemptNoticeClose:hover { color: #5d574f; }
+
+/* 「重置为模板」放编辑器上方单独一行：
+   它不可逆（虽然有撤销），不该和日常操作的按钮挤在一起被误点。 */
+.resetRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+.resetRow small { color: #a39c92; font-size: 11px; }
+
+/* 存档满 5 份时按钮语义变了（新增 → 重置当前这份），
+   用虚线描边 + 中性色提示"这不是加号了"。 */
+.variantAdd.full {
+  border-style: dashed;
+  border-color: #c9c2b6;
+  color: #756f66;
+}
+
+@media (max-width: 800px) {
+  .attemptNotice { align-items: flex-start; flex-wrap: wrap; }
+  .resetRow { margin-top: 10px; }
+}
+
+/* 复习节奏徽标：只在「已完成且有下一个复习日」时出现，
+   把「下次什么时候再来」直接摆在操作条上，不用回错题页查。 */
+.nextReviewChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid #d8cfc0;
+  background: #f5f1e8;
+  color: #5c5346;
+  font-size: 12px;
+  white-space: nowrap;
+}

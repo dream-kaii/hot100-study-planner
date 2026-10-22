@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { orderByStudyOrder } from "../services/practice.js";
+import { pickDailyNew } from "../services/review-session.js";
 import { STATUS_FILTER_OPTIONS } from "../services/status-labels.js";
 import ProblemCard from "../components/ProblemCard.jsx";
 
@@ -13,6 +13,7 @@ const DIFFICULTY_OPTIONS = [
 export default function ProblemBank({
   questions,
   allQuestions = [],
+  rawProgress = {},
   progress,
   dailyNewLimit = 1,
   onDailyNewLimitChange,
@@ -23,11 +24,12 @@ export default function ProblemBank({
   categories,
   onPractice
 }) {
+  // 今日新题和错题页必须同一个口径，否则同一份进度下两个页面给出不同的题。
+  // 以前这里读的是 uiProgress 包装过的 label（canonical），错题页读的是原始
+  // 派生状态，两边判「未开始」的条件不完全一样；现在统一交给 pickDailyNew。
   const dailyNew = useMemo(
-    () => orderByStudyOrder(allQuestions)
-      .filter((question) => !progress[question.id] || (progress[question.id].canonical || "new") === "new")
-      .slice(0, Math.max(1, Number(dailyNewLimit) || 1)),
-    [allQuestions, progress, dailyNewLimit]
+    () => pickDailyNew(allQuestions, rawProgress, dailyNewLimit),
+    [allQuestions, rawProgress, dailyNewLimit]
   );
 
   return <section className="pageSection">

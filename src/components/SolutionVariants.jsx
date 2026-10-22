@@ -70,7 +70,12 @@ export default function SolutionVariants({
   const overflow = variants.slice(VISIBLE_LIMIT);
   const canAdd = variants.length < max;
   const activeVariant = variants.find((item) => item.id === activeId) || null;
-  const addTitle = canAdd ? "把当前代码存成一份，然后开一份新的空白模板" : `最多 ${max} 份，先删掉一份再新增`;
+  // 满了不再是「灰掉、无话可说」。按钮仍然可点，只是含义变成
+  // 「把当前这份重置成模板」—— 因为点不动又没解释，用户只会以为功能坏了。
+  const addTitle = canAdd
+    ? "把当前代码存成一份，然后开一份新的空白模板"
+    : `已有 ${max} 份（上限），点这里会把当前这份重置成空白模板，旧代码留可撤销快照`;
+  const addLabel = canAdd ? "+ 新解法" : "重置当前这份";
 
   const beginRename = (variant) => {
     if (!variant) return;
@@ -121,7 +126,7 @@ export default function SolutionVariants({
           {variant.name}{isPassingVerdict(variant.verdict) ? " ✓" : ""}
         </option>)}
       </select>}
-      <button type="button" className="variantAdd" onClick={() => onAdd?.()} disabled={!canAdd} title={addTitle} aria-label="新增解法">+</button>
+      <button type="button" className="variantAdd" onClick={() => onAdd?.()} title={addTitle} aria-label={addLabel}>{canAdd ? "+" : "↺"}</button>
       {manageMenu}
     </div>;
   }
@@ -157,7 +162,7 @@ export default function SolutionVariants({
       </ul>}
     </div>}
 
-    <button type="button" className="variantAdd" onClick={() => onAdd?.()} disabled={!canAdd} title={addTitle}>+ 新解法</button>
+    <button type="button" className={`variantAdd${canAdd ? "" : " full"}`} onClick={() => onAdd?.()} title={addTitle}>{addLabel}</button>
     {manageMenu}
   </div>;
 }

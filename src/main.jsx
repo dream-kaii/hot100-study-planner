@@ -8,7 +8,8 @@ import { appendHistory } from "./services/history.js";
 import { getEffectivePracticeEvents } from "./services/history.js";
 import { filterQuestions, hasCompletedLearning, orderByStudyOrder, pickNextQuestion, pickPreviousQuestion, pickStudyQuestion } from "./services/practice.js";
 import { normalizeStudySolution } from "./services/study-text.js";
-import { recordHint, recordReviewOutcome, recordSolutionView, derivePracticeStatus, isMistakeStatus, isReviewPending } from "./services/status.js";
+import { recordHint, recordReviewOutcome, recordSolutionView, derivePracticeStatus, isMistakeStatus } from "./services/status.js";
+import { sortReviewQueue } from "./services/review-session.js";
 import { getNextReviewAt } from "./services/review.js";
 import { canonicalStatus, statusLabel } from "./services/status-labels.js";
 import {
@@ -82,6 +83,8 @@ function App() {
   // 「从错题页点另起一种解法」要用的一次性标记。消费后清掉，
   // 免得下次普通打开题目又莫名其妙多开一份。
   const [freshStartFor, setFreshStartFor] = useState(null);
+  // 「看上次的写法」的一次性入口。与 freshStartFor 同构：挂标记 → ProblemDetail 消费 → 清空。
+  const [reviewVariantFor, setReviewVariantFor] = useState(null);
 
   // Safari 拦掉了 https 页面对本机的 fetch，只能靠"顶层跳转"把 sid 带回来，
   // 落点是 /?adopt=<sid>，这里第一时间收下并清掉地址栏参数。
@@ -251,6 +254,24 @@ function App() {
     return { solutions: writeScope(current, questionId, language, mode, list), drafts };
   });
 
+  // 直接把某一份解法的内容换成给定代码（「重置为模板」用）。
+  //
+  // 和 saveSolutionVariant 的区别：那个是「把编辑器里的草稿覆盖写回」，
+  // 这个是我们主动写一个值进去，而且必须同时清掉判题结论 ——
+  // 模板没跑过，留着 ✓ 徽标会让人以为验证过了。
+  const patchSolutionVariant = (questionId, language, mode, variantId, patch) => updateState((current) => {
+    const list = readScope(current, questionId, language, mode);
+    if (!list.some((item) => item.id === variantId)) return {};
+    const next = updateVariant(list, variantId, {
+      ...patch,
+      verdict: null,
+      verifiedAt: null,
+      outcome: null,
+      updatedAt: new Date().toISOString()
+    });
+    return { solutions: writeScope(current, questionId, language, mode, next) };
+  });
+
   // 把当前草稿覆盖写回某份已存在的解法。
   const saveSolutionVariant = (questionId, language, mode, variantId, draft) => updateState((current) => {
     const list = readScope(current, questionId, language, mode);
@@ -321,7 +342,9 @@ function App() {
   const studyEntry = useMemo(() => pickStudyQuestion(studyQuestions, progress), [progress, studyQuestions]);
   const nextInOrder = pickNextQuestion(studyQuestions, { currentId: selectedId });
   const previousInOrder = pickPreviousQuestion(studyQuestions, { currentId: selectedId });
-  const dueReviews = useMemo(() => studyQuestions.filter(q => isReviewPending(progress[q.id])), [progress, studyQuestions]);
+  // 首页「需要重做」：到期复习在前（欠得久的先）、错题在后（错得多的先）。
+  // 以前直接沿 studyQuestions 原序过滤，逾期 20 天的题会排在昨天刚到期的后面。
+  const dueReviews = useMemo(() => sortReviewQueue(progress, studyQuestions), [progress, studyQuestions]);
   const selected = hot100.questions.find((question) => question.id === selectedId);
 
   // 浏览器标签标题跟随当前视图。
@@ -348,6 +371,9 @@ function App() {
     // 现在只是挂一个一次性标记，由 ProblemDetail 挂载时走和「+ 新解法」完全相同的路径：
     // 先把已有代码存档，再开一份干净的模板。旧代码永远留在存档里。
     if (options.freshStart) setFreshStartFor(String(id));
+    // 「看上次的写法」：只把光标停在最近一次通过的解法上，不推进任何复习记录。
+    // 和 freshStart 互斥 —— freshStart 要开空白，reviewVariant 要看旧的。
+    setReviewVariantFor(options.reviewVariant ? String(id) : null);
     setSelectedId(String(id));
     if (typeof window !== "undefined") window.history.pushState({}, "", `?question=${encodeURIComponent(String(id))}`);
     setView("detail");
@@ -406,7 +432,7 @@ function App() {
         </div>
       )}
       {view === "dashboard" && <Dashboard stats={stats} studyEntry={studyEntry} dueReviews={dueReviews} questions={dashboardQuestions} state={state} onOpen={open} onOpenStage={(phase) => { setFilters({ query: "", category: "全部", difficulty: "全部", status: "全部", phase }); setView("bank"); }} />}
-      {view === "bank" && <ProblemBank questions={filtered} allQuestions={studyQuestions} progress={displayProgress} dailyNewLimit={state.profile?.dailyNewLimit} onDailyNewLimitChange={(value) => updateState((current) => ({ profile: { ...current.profile, dailyNewLimit: value } }))} filters={filters} onFiltersChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onOpenQuestion={open} onStatusChange={setStatus} onPractice={onPractice} categories={["全部", ...hot100.groups.map((group) => group.name)]} />}
+      {view === "bank" && <ProblemBank questions={filtered} allQuestions={studyQuestions} rawProgress={progress} progress={displayProgress} dailyNewLimit={state.profile?.dailyNewLimit} onDailyNewLimitChange={(value) => updateState((current) => ({ profile: { ...current.profile, dailyNewLimit: value } }))} filters={filters} onFiltersChange={(patch) => setFilters((current) => ({ ...current, ...patch }))} onOpenQuestion={open} onStatusChange={setStatus} onPractice={onPractice} categories={["全部", ...hot100.groups.map((group) => group.name)]} />}
       {view === "mistakes" && <Mistakes questions={hot100.questions} rawProgress={progress} dailyNewLimit={state.profile?.dailyNewLimit} onOpen={open} />}
       {view === "detail" && selected && (selectedSolution?.id === selectedId ? <ProblemDetail
         question={selected}
@@ -420,7 +446,9 @@ function App() {
         runnerAvailable={Boolean(runnerAvailable && selectedSolution?.func)}
         maxVariants={MAX_SOLUTIONS_PER_SCOPE}
         freshStart={freshStartFor === selectedId}
-        onFreshStartConsumed={() => setFreshStartFor(null)}
+        reviewMode={reviewVariantFor === selectedId}
+        onFreshStartConsumed={() => { setFreshStartFor(null); setReviewVariantFor(null); }}
+        onPatchVariant={patchSolutionVariant}
         onProgressChange={setStatus}
         onTimerChange={setTimer}
         onHint={recordHintUsage}

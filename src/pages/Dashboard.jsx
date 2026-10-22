@@ -53,11 +53,19 @@ export default function Dashboard({
           : <p>学习主线已完成，可以继续复习。</p>}
         <h3>需要重做 · {dueReviews.length} 道</h3>
         {dueReviews.length
-          ? dueReviews.map((q) => <button className="planRow" key={q.id} onClick={() => onOpen?.(q.id)}>
-            <span>#{q.id}</span>
-            <strong>{q.title}</strong>
-            <small>{reviewReason(progressMap[q.id])}</small>
-          </button>)
+          ? dueReviews.map((entry) => {
+            // dueReviews 现在从 sortReviewQueue 出来，是 {question, item, status} 的形状；
+            // 旧版这里是裸的题目对象。两种都认，免得别处传裸数组时整页崩掉。
+            const question = entry.question || entry;
+            const item = entry.item || progressMap[question.id];
+            const status = entry.status || derivePracticeStatus(item);
+            // 到期复习的主按钮照样是「重写」：点进去给空白模板，而不是上次那份满分答案。
+            return <button className="planRow" key={question.id} onClick={() => onOpen?.(question.id, status === "due" ? { freshStart: true } : undefined)}>
+              <span>#{question.id}</span>
+              <strong>{question.title}</strong>
+              <small>{reviewReason(item)}</small>
+            </button>;
+          })
           : <p>今天没有错题或到期复习。</p>}
       </article>
       <article className="contentCard">
