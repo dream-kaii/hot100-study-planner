@@ -18,10 +18,14 @@ import {
   applyVerdict,
   canAddVariant,
   createVariant,
+  dropVersion,
   nextVariantName,
   normalizeVariant,
+  pruneBlankVariants,
+  pushVersion,
   removeVariant,
   renameVariant,
+  restoreVersion,
   selectScope,
   updateVariant
 } from "./services/solutions.js";
@@ -254,22 +258,49 @@ function App() {
     return { solutions: writeScope(current, questionId, language, mode, list), drafts };
   });
 
-  // 直接把某一份解法的内容换成给定代码（「重置为模板」用）。
+  // 「在这份上重新开始」：先把当前代码压进它的历史版本，再换成新内容。
   //
-  // 和 saveSolutionVariant 的区别：那个是「把编辑器里的草稿覆盖写回」，
-  // 这个是我们主动写一个值进去，而且必须同时清掉判题结论 ——
-  // 模板没跑过，留着 ✓ 徽标会让人以为验证过了。
-  const patchSolutionVariant = (questionId, language, mode, variantId, patch) => updateState((current) => {
+  // 这是复习重写和「重置为模板」唯一的落盘入口。以前这两件事分别走
+  // addSolutionVariant（复习一次就多占一个槽位，5 份很快撑满）和直接改 code
+  // （旧代码只剩内存里一份撤销快照，刷新即失效）—— 前者让存档膨胀，后者会真丢代码。
+  const rewriteSolutionVariant = (questionId, language, mode, variantId, { code = "", reason = "", template } = {}) => updateState((current) => {
     const list = readScope(current, questionId, language, mode);
     if (!list.some((item) => item.id === variantId)) return {};
-    const next = updateVariant(list, variantId, {
-      ...patch,
+    const withVersion = pushVersion(list, variantId, { reason });
+    const next = updateVariant(withVersion, variantId, {
+      code,
+      cursor: 0,
+      scrollTop: 0,
       verdict: null,
       verifiedAt: null,
       outcome: null,
       updatedAt: new Date().toISOString()
     });
-    return { solutions: writeScope(current, questionId, language, mode, next) };
+    // 顺手把这个 scope 里别的空壳清掉（比如上一次「+ 新解法」后没写的那些）。
+    // 保留刚被重写的这一份 —— 它现在是空的，但用户马上要往里写。
+    const pruned = template === undefined ? { scope: next, removed: [] } : pruneBlankVariants(next, template, { keepId: variantId });
+    return { solutions: writeScope(current, questionId, language, mode, pruned.scope) };
+  });
+
+  // options.keepCurrent=false 只给提示条上的「撤销」用：那里编辑器里是刚清出来的空模板，
+  // 再压一版进历史纯属噪音。手动从「⋯」取回时不传，保证当前内容先落进历史。
+  const restoreSolutionVersion = (questionId, language, mode, variantId, versionId, options = {}) => updateState((current) => ({
+    solutions: writeScope(current, questionId, language, mode, restoreVersion(readScope(current, questionId, language, mode), variantId, versionId, options))
+  }));
+
+  const dropSolutionVersion = (questionId, language, mode, variantId, versionId) => updateState((current) => ({
+    solutions: writeScope(current, questionId, language, mode, dropVersion(readScope(current, questionId, language, mode), variantId, versionId))
+  }));
+
+  // 清掉「一个字都没写」的解法。只在打开题目时跑一次：
+  // 这类份是「+ 新解法」/「重写」之后放弃留下的壳，占着切换器位置，
+  // 还会让 readActiveVariant 指过去 —— 下次点进题目看到空白模板，以为代码丢了。
+  const pruneSolutionVariants = (questionId, language, mode, template) => updateState((current) => {
+    const list = readScope(current, questionId, language, mode);
+    if (!list.length) return {};
+    const { scope, removed } = pruneBlankVariants(list, template);
+    if (!removed.length) return {};
+    return { solutions: writeScope(current, questionId, language, mode, scope) };
   });
 
   // 把当前草稿覆盖写回某份已存在的解法。
@@ -448,7 +479,10 @@ function App() {
         freshStart={freshStartFor === selectedId}
         reviewMode={reviewVariantFor === selectedId}
         onFreshStartConsumed={() => { setFreshStartFor(null); setReviewVariantFor(null); }}
-        onPatchVariant={patchSolutionVariant}
+        onRewriteVariant={rewriteSolutionVariant}
+        onRestoreVersion={restoreSolutionVersion}
+        onDropVersion={dropSolutionVersion}
+        onPruneVariants={pruneSolutionVariants}
         onProgressChange={setStatus}
         onTimerChange={setTimer}
         onHint={recordHintUsage}

@@ -121,18 +121,52 @@ export function pickDailyNew(questions = [], progress = {}, limit = 1, now = new
  * 「另起一种解法」在存档已满时的决策。
  *
  * 以前是 `if (scope.length >= maxVariants) return;` —— 点了毫无反应、也没有任何提示，
- * 用户只会以为按钮坏了。现在满了就退化成「重置当前这份」：仍然能开始重写，
- * 只是不再新增槽位，并且必须在界面上说清楚发生了什么。
+ * 用户只会以为按钮坏了。后来改成「满了就重置当前这份」。
+ *
+ * 现在复习不再吃槽位，满 5 份就真的意味着「你已经存了 5 种思路」，
+ * 这时候悄悄清掉其中一份是最糟的处理：那 5 份都是用户主动存的。
+ * 所以改成明确的「先删一份」—— 仍然给反馈（提示条），但不动任何数据。
  */
 export function planFreshAttempt(scope = [], max = 5) {
   if (scope.length < max) return { action: "add", reason: "ok" };
-  // 文案里不写具体是哪一份：真正被重置的是「当前选中的这份」，
-  // 由调用方在重置后自己说清楚（这里猜错了会指着一个没动的存档说它被清了）。
   return {
-    action: "reset-active",
+    action: "blocked",
     reason: "full",
-    message: `存档已满（${scope.length}/${max} 份），这次直接在当前这份上重新开始；旧代码留了快照，可以撤销，也能切到别的解法继续写。`
+    message: `存档已满（${scope.length}/${max} 份），这里已经装了 ${scope.length} 种思路。想再存一种，先点「⋯ → 删除这份解法」腾出一个位置（删掉的那份会连它的历史版本一起消失，删之前可以先看一眼要留哪份）。`
   };
+}
+
+/**
+ * 复习「重写」要怎么开始：在同一份解法上重新写，还是干脆不用动。
+ *
+ * 这一条是「存档膨胀」的根。原来复习 = appendVariant 一份新的，而 1/3/7/14 的
+ * 阶梯意味着一道题走完一轮复习就会产生 4 份副本，加上最初的解法正好 5 份，
+ * 把上限吃光 —— 于是一道真有两种思路的题（两数之和 = 暴力 / 哈希）反而没地方放。
+ *
+ * 现在：重写只发生在某一份解法内部，旧代码压进这份的 versions，槽位数不变。
+ */
+export function planReviewRewrite(variant, template = "") {
+  if (!variant) {
+    // 还没存过任何解法：直接在草稿里写，不需要为了「能重写」先造一个空槽。
+    return { action: "draft-only", message: "还没有存过解法，这次写的会作为「解法 1」留下来。" };
+  }
+  const hasCode = String(variant.code || "").trim().length > 0;
+  const blank = !variant.verdict && comparable(variant.code) === comparable(template) && comparable(template).length > 0;
+  if (!hasCode || blank) {
+    // 已经是一张空白模板了，再「重写」一次什么也不该发生 ——
+    // 尤其不能再压一版空代码进历史。
+    return { action: "already-blank", variantId: variant.id, message: `「${variant.name}」本来就是空白模板，直接写就行。` };
+  }
+  return {
+    action: "snapshot-and-clear",
+    variantId: variant.id,
+    message: `已把「${variant.name}」上一次的代码收进历史版本，可以随时点「上一次的写法」取回来。`
+  };
+}
+
+/** 空白判定要和 solutions.js 的判空口径一致：忽略所有空白差异。 */
+function comparable(code) {
+  return String(code || "").replace(/\s+/g, "");
 }
 
 /**

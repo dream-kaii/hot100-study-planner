@@ -7,6 +7,7 @@ import {
   isReusedPassingCode,
   pickDailyNew,
   planFreshAttempt,
+  planReviewRewrite,
   sortDueQueue,
   sortReviewQueue
 } from "../src/services/review-session.js";
@@ -97,16 +98,32 @@ test("今日新题数量下限兜到 1，避免被传成 0 时列表空掉", () 
   assert.equal(pickDailyNew(questions, {}, undefined).length, 1);
 });
 
-test("另起一种解法：没满就新增，满了变成重置当前这份并给出原因", () => {
+test("另起一种解法：没满就新增，满了只解释、不动任何一份存档", () => {
   assert.equal(planFreshAttempt([], 5).action, "add");
   assert.equal(planFreshAttempt([{ id: "a" }], 5).action, "add");
+  // 满 5 份现在意味着「真的存了 5 种思路」——复习重写不再占用槽位，
+  // 所以不能再像以前那样悄悄把当前这份重置掉，那会销毁用户主动存下的思路。
   const full = planFreshAttempt([{ id: "a", name: "解法 1" }, { id: "b", name: "解法 2" }], 2);
-  assert.equal(full.action, "reset-active");
+  assert.equal(full.action, "blocked");
   assert.equal(full.reason, "full");
   assert.match(full.message, /2\/2/);
-  // 文案里不能点名某一份存档：真正被重置的是「当前选中的这份」，
-  // 服务层并不知道 UI 此刻选的是哪一份，猜名字会指着没动的存档说它被清了。
+  // 文案里不能点名某一份存档：服务层并不知道 UI 此刻选的是哪一份，
+  // 猜名字会指着一份没动的解法说它被清了。
   assert.doesNotMatch(full.message, /解法 2/);
+});
+
+test("复习重写：有代码就压版本再清空，空白模板不重复压", () => {
+  const template = "class Solution {\n    // 请在这里完成算法\n}";
+  // 一份写过、通过过的解法：应该压版本（旧代码不能丢）
+  const written = planReviewRewrite({ id: "v1", name: "快慢指针", code: "class Solution { void f() {} }", verdict: "independent" }, template);
+  assert.equal(written.action, "snapshot-and-clear");
+  assert.equal(written.variantId, "v1");
+  // 本来就是一坨空白模板：再点一次「重写」什么都不该发生，
+  // 尤其不能往版本栈里塞一版空代码把真的历史挤掉。
+  const blank = planReviewRewrite({ id: "v2", name: "解法 2", code: `  ${template}  `, verdict: null }, template);
+  assert.equal(blank.action, "already-blank");
+  // 还没存过任何解法：直接在草稿里写，不该为了能重写先造一个空槽。
+  assert.equal(planReviewRewrite(null, template).action, "draft-only");
 });
 
 test("代码指纹忽略注释、缩进和空行，能让「原样再跑一次」被认出来", () => {
@@ -134,8 +151,8 @@ test("复用一份已通过的代码不算独立通过，改过就算", () => {
   assert.equal(isReusedPassingCode("   ", passed), false);
 });
 
-// pickReviewVariant 需要 localStorage，用一个最小内存实现顶住。
-test("「看上次的写法」落在最近一次通过的那份解法上", async () => {
+// pickReviewSnapshot 需要 localStorage，用一个最小内存实现顶住。
+test("「看上次的写法」优先落在最近一次通过的代码上，包括历史版本里的", async () => {
   // local-store.js 走的是 window.localStorage（拿不到就静默降级成内存态），
   // 所以这里必须挂在 window 上，只设 globalThis.localStorage 是不生效的。
   const store = new Map();
@@ -145,22 +162,47 @@ test("「看上次的写法」落在最近一次通过的那份解法上", async
     removeItem: (key) => store.delete(key)
   };
   globalThis.window = { localStorage: memoryStorage };
-  const { pickReviewVariant, readActiveVariant, writeActiveVariant } = await import("../src/services/active-variant.js");
+  const { pickReviewSnapshot, pickReviewVariant, readActiveVariant, writeActiveVariant } = await import("../src/services/active-variant.js");
   const scope = [
-    { id: "v1", verdict: "failed", verifiedAt: null, updatedAt: "2026-10-01T00:00:00.000Z" },
-    { id: "v2", verdict: "needed-hint", verifiedAt: "2026-10-05T00:00:00.000Z", updatedAt: "2026-10-05T00:00:00.000Z" },
-    { id: "v3", verdict: "independent", verifiedAt: "2026-10-09T00:00:00.000Z", updatedAt: "2026-10-09T00:00:00.000Z" }
+    { id: "v1", name: "暴力", code: "class S { void a() {} }", verdict: "failed", verifiedAt: null, updatedAt: "2026-10-01T00:00:00.000Z", versions: [] },
+    { id: "v2", name: "哈希", code: "class S { void b() {} }", verdict: "needed-hint", verifiedAt: "2026-10-05T00:00:00.000Z", updatedAt: "2026-10-05T00:00:00.000Z", versions: [] },
+    { id: "v3", name: "双指针", code: "class S { void c() {} }", verdict: "independent", verifiedAt: "2026-10-09T00:00:00.000Z", updatedAt: "2026-10-09T00:00:00.000Z", versions: [] }
   ];
   // 上次停在 v1（那份没通过），但复习要看的是最近通过过的 v3。
   writeActiveVariant("1", "java", "function", "v1");
   assert.equal(readActiveVariant("1", "java", "function", scope), "v1");
   assert.equal(pickReviewVariant("1", "java", "function", scope), "v3");
+  assert.equal(pickReviewSnapshot("1", "java", "function", scope).code, "class S { void c() {} }");
 
   // 一份都没通过过时退回默认规则（接着上次那份写），不能返回空。
-  const loose = [{ id: "v1", verdict: null, updatedAt: "2026-10-01T00:00:00.000Z" }];
+  const loose = [{ id: "v1", name: "解法 1", code: "class S { void a() {} }", verdict: null, updatedAt: "2026-10-01T00:00:00.000Z", versions: [] }];
   assert.equal(pickReviewVariant("1", "java", "function", loose), "v1");
+  assert.equal(pickReviewSnapshot("1", "java", "function", loose).code, "class S { void a() {} }");
   // scope 为空时返回 null，界面据此显示初始模板。
-  assert.equal(pickReviewVariant("1", "java", "function", []), null);
+  assert.equal(pickReviewSnapshot("1", "java", "function", []), null);
+
+  // 复习重写之后：当前这份被清成模板，通过过的代码躺在 versions 里。
+  // 这时必须翻到历史版本，否则复习一轮之后点「看上次的写法」会看到一张空白模板，
+  // 用户第一反应就是「我的代码丢了」。
+  const rewritten = [{
+    id: "v1",
+    name: "双指针",
+    code: "",
+    verdict: null,
+    verifiedAt: null,
+    updatedAt: "2026-10-20T00:00:00.000Z",
+    versions: [
+      { id: "ver-old", code: "class S { void old() {} }", verdict: "needed-hint", verifiedAt: "2026-10-01T00:00:00.000Z", savedAt: "2026-10-15T00:00:00.000Z", reason: "复习重写" },
+      { id: "ver-new", code: "class S { void best() {} }", verdict: "independent", verifiedAt: "2026-10-12T00:00:00.000Z", savedAt: "2026-10-18T00:00:00.000Z", reason: "复习重写" }
+    ]
+  }];
+  const fromHistory = pickReviewSnapshot("1", "java", "function", rewritten);
+  assert.equal(fromHistory.variantId, "v1");
+  assert.equal(fromHistory.versionId, "ver-new");
+  assert.equal(fromHistory.code, "class S { void best() {} }");
+  // 标签要能说清「这是哪份解法的哪一版」，预览条直接把它显示给用户看。
+  assert.match(fromHistory.label, /双指针/);
+  assert.match(fromHistory.label, /复习重写/);
 });
 
 test("首页「需要重做」：到期在前按逾期升序，错题在后按做错次数降序", () => {

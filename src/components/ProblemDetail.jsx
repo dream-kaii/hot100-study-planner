@@ -8,12 +8,12 @@ import { normalizeStudyText, splitStudyParagraphs } from "../services/study-text
 import { createLanguageDrafts, getDraftKey, getExecutionCases, selectDraftRecord } from "../services/editor.js";
 import { classifyAttemptOutcome, derivePracticeStatus } from "../services/status.js";
 import { STATUS_BUTTONS } from "../services/status-labels.js";
-import { MAX_SOLUTIONS_PER_SCOPE, createVariantId, normalizeVariant, selectScope } from "../services/solutions.js";
+import { MAX_SOLUTIONS_PER_SCOPE, createVariantId, isBlankVariant, normalizeVariant, pruneBlankVariants, selectScope } from "../services/solutions.js";
 import { formatDateTime } from "../services/datetime.js";
 import { TIMER_MINUTE_OPTIONS, minutesFromTimer } from "../services/practice.js";
 import { readLocal, writeLocal } from "../services/local-store.js";
-import { pickReviewVariant, readActiveVariant, writeActiveVariant } from "../services/active-variant.js";
-import { describeNextReview, isReusedPassingCode, planFreshAttempt } from "../services/review-session.js";
+import { pickReviewSnapshot, readActiveVariant, writeActiveVariant } from "../services/active-variant.js";
+import { describeNextReview, isReusedPassingCode, planFreshAttempt, planReviewRewrite } from "../services/review-session.js";
 import { isPassingVerdict } from "../services/solutions.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
@@ -47,7 +47,10 @@ export default function ProblemDetail({
   freshStart = false,
   reviewMode = false,
   onFreshStartConsumed,
-  onPatchVariant,
+  onRewriteVariant,
+  onRestoreVersion,
+  onDropVersion,
+  onPruneVariants,
   onProgressChange,
   onTimerChange,
   onHint,
@@ -96,8 +99,21 @@ export default function ProblemDetail({
   const [hintUnlocked, setHintUnlocked] = useState(0);
   // 本次运行的提示条（不记进进度，只在界面上说明发生了什么）
   const [attemptNotice, setAttemptNotice] = useState("");
-  // 「重写」把当前这份清成模板之前，先把旧代码留一手，随时能撤回来。
-  const [overwriteBackup, setOverwriteBackup] = useState(null);
+  // 「刚才把哪一份重写了」—— 提示条上的「撤销」据此找到那份解法最新的一版历史代码。
+  //
+  // 以前这里存的是内存里的 { code, name } 快照，刷新一次就没了，
+  // 于是「重置为模板」在刷新之后就变成不可逆。现在旧代码在落盘的版本栈里，
+  // 撤销只是把最新那一版取回来 —— 提示条消失也不影响可恢复性，
+  // 用户随时能从「⋯ → 历史版本」里取。
+  const [rewriteUndoFor, setRewriteUndoFor] = useState(null);
+  // 「看上次的写法」翻出来的历史版本预览。
+  //
+  // 复习重写之后，通过过的代码躺在 versions 里而不在当前这份里。为了不把
+  // 历史版本又搬回当前这份（那等于悄悄改数据），这里用只读预览显示它。
+  // 非空时编辑器的内容来自 preview.code，并且禁止写回。
+  const [preview, setPreview] = useState(null);
+  const previewRef = useRef(null);
+  useEffect(() => { previewRef.current = preview; }, [preview]);
   // 运行器不可用提示：可关闭，并记住选择。
   // 线上构建（import.meta.env.DEV === false）永远没有 /__runner 接口，
   // 这个提示会一直挂着，所以给一个关闭入口；关一次后不再打扰。
@@ -123,13 +139,22 @@ export default function ProblemDetail({
     setActiveExample(0);
     setHintUnlocked(0);
     setAttemptNotice("");
-    setOverwriteBackup(null);
-    // 从「看上次的写法」进来：直接把光标停在最近一次通过的那份上。
+    setRewriteUndoFor(null);
+    setPreview(null);
+    // 从「看上次的写法」进来：翻出最近一次通过的那段代码。
     // 注意它不推进任何复习记录 —— 只是翻阅，想推进间隔就点「重写」。
     if (reviewMode) {
       const initialLanguage = defaultLanguage === "python" ? "python" : "java";
-      setActiveVariantId(pickReviewVariant(question.id, initialLanguage, "function", selectScope(solutions, question.id, initialLanguage, "function")));
-      setAttemptNotice("这是你上次通过的写法，只做翻阅，不会推进复习间隔。想推进就点「重写」。");
+      const snapshot = pickReviewSnapshot(question.id, initialLanguage, "function", selectScope(solutions, question.id, initialLanguage, "function"));
+      if (snapshot) {
+        setActiveVariantId(snapshot.variantId);
+        // 代码在历史版本里时只能看不能改：直接改这份解法会把「历史」搬成「现在」，
+        // 下次复习的对比对象就没了。
+        if (snapshot.versionId) setPreview({ ...snapshot, readOnly: true });
+        setAttemptNotice(snapshot.versionId
+          ? "这是你上次通过的写法（存在历史版本里），只做翻阅，不会推进复习间隔。想推进就点「重写」。"
+          : "这是你上次通过的写法，只做翻阅，不会推进复习间隔。想推进就点「重写」。");
+      }
     }
     onRecordHistory?.({ questionId: question.id, language: defaultLanguage === "python" ? "python" : "java", mode: "function", outcome: "started", createdAt: new Date().toISOString() });
     return () => { sessionRef.current = null; attemptRef.current = null; };
@@ -146,7 +171,7 @@ export default function ProblemDetail({
   //
   // 但这个 effect 在挂载时也会跑一次，会覆盖掉上面「看上次的写法」挑好的那份
   // （readActiveVariant 只看上次停在哪，不看有没有通过过）。所以首次挂载
-  // 且是复习入口时跳过它，把选择权留给 pickReviewVariant。
+  // 且是复习入口时跳过它，把选择权留给 pickReviewSnapshot。
   const reviewPickDone = useRef(false);
   useEffect(() => {
     if (reviewMode && !reviewPickDone.current) {
@@ -154,13 +179,41 @@ export default function ProblemDetail({
       return;
     }
     setActiveVariantId(readActiveVariant(question.id, language, mode, selectScope(solutions, question.id, language, mode)));
+    // 切语言/模式后，上一段预览的文字已经不属于这个作用域了，必须收掉，
+    // 否则编辑器会显示「Java 的历史代码」配着「Python 标签」。
+    setPreview(null);
+  }, [question.id, language, mode]);
+
+  // 打开题目时回收空壳解法。
+  //
+  // 「+ 新解法」/「重写」会先造出一份空白模板；用户如果直接走人，这份空壳会一直留着，
+  // 而且 readActiveVariant 会指过去 —— 下次点进这道题看到的是空白模板，
+  // 真实代码藏在另一个标签后面，第一反应就是「我的代码没了」。
+  // 只清「代码等于模板、没有判题结论、没有历史版本」的份，动不到任何写过的内容。
+  //
+  // 注意这里**不传 keepId**：这个 effect 只在「刚打开题目 / 刚切语言模式」时跑，
+  // 那一刻用户还一个字都没输入，不存在「正在写的那份不能动」。
+  // 反而恰恰是「上次留下的空壳正被激活」才最该清 —— 它就是幽灵存档本身。
+  // 清理后如果当前激活的那份被收走了，就把激活位让给最后一份真内容。
+  useEffect(() => {
+    if (!scope.length) return;
+    const { scope: kept, removed } = pruneBlankVariants(scope, template);
+    if (!removed.length) return;
+    const fallback = kept.at(-1) || null;
+    if (removed.includes(activeVariantId)) {
+      setActiveVariantId(fallback ? fallback.id : null);
+      writeActiveVariant(question.id, language, mode, fallback ? fallback.id : null);
+    }
+    onPruneVariants?.(question.id, language, mode, template);
   }, [question.id, language, mode]);
 
   const activeVariant = scope.find((item) => item.id === activeVariantId) || null;
   const draftRecord = selectDraftRecord(drafts, question.id, language, mode);
   const template = useMemo(() => createLanguageDrafts({ ...solution, title: question.title }, mode)[language] || "", [language, mode, question.title, solution]);
   // 有激活解法时，编辑器内容就来自这份解法的快照；否则是「未存档草稿 → 初始模板」。
-  const code = activeVariant ? activeVariant.code : hasDraft(drafts, question.id, language, mode) ? draftRecord.code : template;
+  // 历史版本预览优先：那段代码只读，不参与保存（saveDraft 里会跳过）。
+  const storedCode = activeVariant ? activeVariant.code : hasDraft(drafts, question.id, language, mode) ? draftRecord.code : template;
+  const code = preview ? preview.code : storedCode;
   const editorRecord = activeVariant ? normalizeVariant(activeVariant) : draftRecord;
   const visibleNote = typeof note === "string" ? note : note?.value || "";
   const examples = mode === "acm" ? solution.acm?.examples || [] : Array.isArray(solution.examples) ? solution.examples : [];
@@ -181,7 +234,11 @@ export default function ProblemDetail({
 
   // 草稿与解法快照同步写：编辑永远先落盘，再谈切换。
   // 这样「切走再切回来」不会丢任何一个字符。
+  //
+  // 唯一的例外是历史版本预览：那段代码只是「看一眼上次怎么写的」，
+  // 写回会把历史版本搬成当前内容，下次复习就没有对比对象了。
   const saveDraft = (record) => {
+    if (previewRef.current) return;
     onDraftChange?.(question.id, language, mode, record);
     if (activeVariantId) onSaveVariant?.(question.id, language, mode, activeVariantId, record);
   };
@@ -191,62 +248,58 @@ export default function ProblemDetail({
   };
 
   const switchVariant = (variantId) => {
+    setPreview(null);
     setActiveVariantId(variantId);
     writeActiveVariant(question.id, language, mode, variantId);
   };
 
-  // 把某一份解法清空回模板。
+  // 在某一份解法上重新开始：旧代码压进它的历史版本，编辑器换成新内容。
   //
-  // 这是不可逆操作的唯一入口，所以先存一份内存快照到 overwriteBackup：
-  // 点错了还能点「撤销，恢复原代码」把它放回去。真正的存档（其它解法）不受影响。
-  const resetActiveVariant = (target, message) => {
+  // 这是「重写」和「重置为模板」共用的唯一落盘入口 —— 也是这次改动的核心：
+  //   之前「重写」= 新建一份解法（复习 4 轮就把 5 个槽位吃光）
+  //   之前「重置」= 换掉 code，旧代码只留在内存里的一个撤销快照（刷新即消失）
+  // 现在两者都走版本栈，槽位不增长、旧代码落盘、刷新后仍能取回。
+  const rewriteActiveVariant = (target, { reason, message }) => {
     if (!target) return;
-    setOverwriteBackup({ variantId: target.id, code: target.code, name: target.name });
-    const record = {
-      code: template,
-      cursor: 0,
-      scrollTop: 0,
-      updatedAt: new Date().toISOString()
-    };
-    // 判题结论由 patchSolutionVariant 一并清掉：这份已经不是「跑通过的那份」了，
-    // 徽标留着会让用户以为模板也验证过。
-    onPatchVariant?.(question.id, language, mode, target.id, record);
+    onRewriteVariant?.(question.id, language, mode, target.id, { code: template, reason, template });
     setDraftVerdict(null);
+    setPreview(null);
     setActiveVariantId(target.id);
     writeActiveVariant(question.id, language, mode, target.id);
-    // 撤销按钮挂在提示条里。以前这里只写了 overwriteBackup、没写提示条，
-    // 提示条是空字符串就不渲染 —— 于是「旧代码留了一份快照」这句话永远看不到，
-    // 撤销按钮也就永远点不到。重置本身必须自己把提示条点亮。
-    setAttemptNotice(message || `已把「${target.name}」重置为空白模板，旧代码留了一份快照，可以撤销。`);
+    setRewriteUndoFor(target.id);
+    setAttemptNotice(message);
   };
 
-  const undoReset = () => {
-    if (!overwriteBackup) return;
-    onPatchVariant?.(question.id, language, mode, overwriteBackup.variantId, { code: overwriteBackup.code, cursor: 0, scrollTop: 0 });
-    setOverwriteBackup(null);
-    setAttemptNotice("已经恢复成重置前的代码。");
+  // 撤销 = 把最新那一版历史取回来。
+  //
+  // 之所以敢把「重置」做成看起来不可逆的样子，是因为它其实是可逆的：
+  // 旧代码在落盘的状态里，不是某个组件的 state，刷新也不影响。
+  const undoRewrite = () => {
+    const targetId = rewriteUndoFor || activeVariant?.id;
+    const versions = Array.isArray(activeVariant?.versions) ? activeVariant.versions : [];
+    if (!targetId || !versions.length) return;
+    onRestoreVersion?.(question.id, language, mode, targetId, versions.at(-1).id, { keepCurrent: false });
+    setRewriteUndoFor(null);
+    setPreview(null);
+    setAttemptNotice("已经恢复成重写前的代码。");
   };
 
   // 新增一份解法：当前这份（如果在写）已经实时同步过了，
   // 所以这里只需要把新快照建出来并切过去，编辑器随即拿到干净的模板。
   const addVariant = () => {
-    // 存档满了以前是 `return;` —— 点了没反应、也没提示，用户只会以为按钮坏了。
-    // 现在满了退化成「把当前这份重置成模板」：仍然能开始重写，但必须说清楚
-    // 旧代码去哪儿了（就在旁边那几份里，不是被删了）。
+    // 满 5 份时只解释、不动数据。
+    // 以前这里会「悄悄把当前这份重置成模板」—— 那是为了消化复习重写占用槽位的补救。
+    // 现在复习不再新占槽位，满 5 份就真的意味着有 5 种思路，覆盖掉任何一份都是错的。
     const plan = planFreshAttempt(scope, maxVariants);
-    if (plan.action === "reset-active") {
-      const target = activeVariant || scope.at(-1);
-      if (!target) return;
-      resetActiveVariant(target, plan.message);
+    if (plan.action === "blocked") {
+      setAttemptNotice(plan.message);
       return;
     }
     // 防呆：最后一份如果还是原样空模板（没写过、也没通过），直接切过去，
     // 不再堆一份一模一样的空解法 —— 否则连点几次「另起一种解法」会把 5 个槽位占满。
     const last = scope.at(-1);
-    const blankTemplate = String(template || "").trim();
-    if (last && !last.verdict && blankTemplate && String(last.code || "").trim() === blankTemplate) {
-      setActiveVariantId(last.id);
-      writeActiveVariant(question.id, language, mode, last.id);
+    if (isBlankVariant(last, template)) {
+      switchVariant(last.id);
       return;
     }
     const newId = createVariantId(scope.length);
@@ -260,6 +313,7 @@ export default function ProblemDetail({
       verdict: verdictCarries?.verdict,
       verifiedAt: verdictCarries?.verifiedAt
     });
+    setPreview(null);
     setActiveVariantId(newId);
     writeActiveVariant(question.id, language, mode, newId);
   };
@@ -268,21 +322,38 @@ export default function ProblemDetail({
     const index = scope.findIndex((item) => item.id === variantId);
     const fallback = scope[index + 1] || scope[index - 1] || null;
     onRemoveVariant?.(question.id, language, mode, variantId);
+    setPreview(null);
     setActiveVariantId(fallback ? fallback.id : null);
     writeActiveVariant(question.id, language, mode, fallback ? fallback.id : null);
   };
 
-  // 从错题页点「另起一种解法」进来：走与「+ 新解法」完全相同的路径，
-  // 所以旧代码一律进存档，不会被 delete 掉。只消费一次。
+  const restoreVersion = (variantId, versionId) => {
+    onRestoreVersion?.(question.id, language, mode, variantId, versionId);
+    setPreview(null);
+    setRewriteUndoFor(null);
+    setAttemptNotice("已经从历史版本里取回了那份代码。");
+  };
+
+  // 从错题页点「重写」进来：在同一份解法上重新写，不再新占一个槽位。
+  //
+  // 只消费一次。目标选「最近通过过的那份」——那才是这次复习要对标的对象；
+  // 一份都没有时退回当前激活的、再退回最后一份。
   const consumedFreshStart = useRef(false);
   useEffect(() => {
     if (!freshStart) { consumedFreshStart.current = false; return; }
     if (consumedFreshStart.current) return;
     consumedFreshStart.current = true;
-    addVariant();
-    // 「重写」进来的第一句必须说清「上次的写法去哪了」：
-    // 它没被删，仍然躺在存档里，只是现在写的是一份新的空白模板。
-    setAttemptNotice("已开一份空白模板，上次的写法没有删，随时可以在上面的存档里切回去看。");
+    const snapshot = pickReviewSnapshot(question.id, language, mode, scope);
+    const target = scope.find((item) => item.id === snapshot?.variantId) || activeVariant || scope.at(-1) || null;
+    const plan = planReviewRewrite(target, template);
+    if (plan.action === "snapshot-and-clear") {
+      rewriteActiveVariant(target, {
+        reason: "复习重写",
+        message: `这次在「${target.name}」上重新写。上一次的代码已经存进它的历史版本，随时可以从「⋯」里取回来。`
+      });
+    } else {
+      setAttemptNotice(plan.message);
+    }
     onFreshStartConsumed?.();
   }, [freshStart, question.id]);
 
@@ -314,9 +385,24 @@ export default function ProblemDetail({
     // 间隔就往前推一档。中间没有任何思考发生，但记录上看起来和「重新做出来」一样。
     // 所以这里比对代码指纹：和任何一份已通过的快照逐字一致，就把这次判定降级成
     // 「运行完成」，只记一次历史，不动复习阶梯。
-    const passedCodes = scope.filter((item) => isPassingVerdict(item.verdict)).map((item) => item.code);
+    const passedCodes = [];
+    for (const item of scope) {
+      if (isPassingVerdict(item.verdict) && String(item.code || "").trim()) passedCodes.push(item.code);
+      // 历史版本里的代码也算「之前通过过的那份」。
+      // 复习重写之后，通过过的代码只在 versions 里，如果只比对当前 code，
+      // 从「⋯ → 取回」把旧代码搬回来、或者从「看上次的写法」预览时跑一遍，
+      // 就会被当成一次全新的独立通过 —— 间隔白推一档。
+      for (const version of Array.isArray(item.versions) ? item.versions : []) {
+        if (isPassingVerdict(version.verdict) && String(version.code || "").trim()) passedCodes.push(version.code);
+      }
+    }
     const reused = passed && passedCodes.length > 0 && isReusedPassingCode(payload.code, passedCodes);
-    if (reused) {
+    if (previewRef.current) {
+      // 预览模式跑的是历史版本里那段代码。它确实能跑通，但那一刻你没在写东西，
+      // 记录成独立通过等于把「翻了一下旧代码」算成「重新做出来了」。
+      outcome = "completed";
+      setAttemptNotice("这是在预览历史版本里的代码，只记一次运行，不算独立通过、也不会推进复习间隔。");
+    } else if (reused) {
       outcome = "completed";
       setAttemptNotice("这次的代码和你之前通过的那份完全一样，只记一次运行，不算独立通过、也不会推进复习间隔。");
     } else if (outcome !== "failed") {
@@ -364,6 +450,8 @@ export default function ProblemDetail({
                 onAdd={addVariant}
                 onRename={(variantId, name) => onRenameVariant?.(question.id, language, mode, variantId, name)}
                 onRemove={removeVariant}
+                onRestoreVersion={restoreVersion}
+                onDropVersion={(variantId, versionId) => onDropVersion?.(question.id, language, mode, variantId, versionId)}
               />
               {examples.length > 0 && <div className="casePicker"><label htmlFor="public-case">公开用例</label><select id="public-case" value={activeExample} onChange={(event) => setActiveExample(Number(event.target.value))}>{examples.map((item, index) => <option value={index} key={`case-option-${index}`}>示例 {index + 1}</option>)}</select></div>}
             </div>
@@ -377,8 +465,8 @@ export default function ProblemDetail({
           </details>
           {attemptNotice && <div className="attemptNotice" role="status">
             <span>{attemptNotice}</span>
-            {overwriteBackup && <button type="button" className="attemptNoticeUndo" onClick={undoReset}>撤销，恢复原代码</button>}
-            <button type="button" className="attemptNoticeClose" onClick={() => { setAttemptNotice(""); setOverwriteBackup(null); }} aria-label="关闭这条提示">×</button>
+            {rewriteUndoFor && <button type="button" className="attemptNoticeUndo" onClick={undoRewrite}>撤销，恢复原代码</button>}
+            <button type="button" className="attemptNoticeClose" onClick={() => { setAttemptNotice(""); setRewriteUndoFor(null); }} aria-label="关闭这条提示">×</button>
           </div>}
           {practiceMode === "interview" && <p className="interviewNotice">面试模拟会隐藏提示和题解，已有草稿会继续保留；想换个思路就用「+ 新解法」，原来那份不会丢。</p>}
           {!runnerAvailable && !runnerNoticeDismissed && (
@@ -392,12 +480,24 @@ export default function ProblemDetail({
               </button>
             </div>
           )}
-          {activeVariant && <div className="resetRow">
-            <button type="button" className="textButton" onClick={() => resetActiveVariant(activeVariant)} title="把「当前这份」清回空白模板，旧代码会留一份可撤销的快照">重置为模板</button>
-            <small>只是清空这一份，其它解法不受影响；清完还能撤销。</small>
+          {preview && <div className="previewBar" role="status">
+            <span>正在看历史版本：{preview.label}</span>
+            <button type="button" className="textButton" onClick={() => { setPreview(null); setAttemptNotice(""); }}>回到当前这份</button>
+          </div>}
+          {activeVariant && !preview && <div className="resetRow">
+            <button
+              type="button"
+              className="textButton"
+              onClick={() => rewriteActiveVariant(activeVariant, {
+                reason: "手动重置",
+                message: `已把「${activeVariant.name}」重置为空白模板，旧代码存进了它的历史版本（「⋯」里能取回）。`
+              })}
+              title="把「当前这份」清回空白模板；旧代码会进这份解法的历史版本，刷新后仍然能取回"
+            >重置为模板</button>
+            <small>只清空这一份，其它解法不受影响；旧代码进历史版本，随时能取回。</small>
           </div>}
           <CodeEditor
-            key={`${getDraftKey(question.id, language, mode)}:${activeVariantId || "draft"}`}
+            key={`${getDraftKey(question.id, language, mode)}:${activeVariantId || "draft"}${preview ? `:preview:${preview.versionId || "code"}` : ""}`}
             language={language}
             code={code}
             mode={mode}
@@ -406,11 +506,13 @@ export default function ProblemDetail({
             complexity={solution.complexity}
             cases={cases}
             draftRecord={editorRecord}
-            draftStatus={activeVariant ? `正在写「${activeVariant.name}」· 自动保存` : hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"}
+            draftStatus={preview
+              ? "只读预览 · 这是历史版本里的代码，不会写回存档"
+              : activeVariant ? `正在写「${activeVariant.name}」· 自动保存` : hasDraft(drafts, question.id, language, mode) ? `已恢复 ${language === "java" ? "Java" : "Python"} · ${mode === "function" ? "函数" : "ACM"} 草稿` : "这是当前模式的初始模板，编辑后会自动保存"}
             onDraftChange={saveDraft}
             example={selectedExample}
             onRun={runnerAvailable ? execute : undefined}
-            readOnly={practiceMode === "interview" && false}
+            readOnly={Boolean(preview)}
           />
         </div>
         <details className="questionHistory" open={questionHistoryOpen} onToggle={handleQuestionHistoryToggle}>

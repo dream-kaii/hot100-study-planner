@@ -580,3 +580,64 @@ body{background:#F7F5F0;color:#292824}.topbar{background:#FFFEFB;border-color:#d
   font-size: 12px;
   white-space: nowrap;
 }
+
+/* 历史版本：同一个思路的历次代码折叠在这份解法里面。
+   角标用 ↺ 而不是绿色勾，是为了和「✓ 通过」区分开 ——
+   一个是「这份跑通过」，一个是「这里还存着几份旧的」，两个事实不该长得一样。 */
+.variantVersionBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 3px;
+  border-radius: 4px;
+  background: #f0ece2;
+  color: #756f66;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  flex: none;
+}
+/* 有版本项的菜单会比普通的宽，否则「10月16日 · 独立通过 · 12 行」会撑成好几行。 */
+.variantMenuList:has(.variantVersionItem) { min-width: 210px; max-width: 260px; }
+.variantMenuSection {
+  padding: 6px 8px 3px;
+  color: #a39c92;
+  font-size: 10px;
+  letter-spacing: .04em;
+  border-top: 1px solid #f0ece2;
+  margin-top: 3px;
+  list-style: none;
+}
+.variantMenuSection:first-child { border-top: 0; margin-top: 0; }
+.variantVersionItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  list-style: none;
+}
+.variantVersionItem:hover { background: #faf5ef; }
+.variantVersionMeta { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.variantVersionMeta strong { color: #292824; font-size: 12px; font-weight: 600; }
+.variantVersionMeta small { color: #a39c92; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.variantVersionActions { display: flex; align-items: center; gap: 2px; flex: none; }
+.variantMenuList .variantVersionActions button { width: auto; padding: 4px 6px; font-size: 11px; }
+
+/* 历史版本预览条：明确说明「现在看到的不是正在写的那份」。
+   没有这行字，只读的编辑器看起来就像卡住了。 */
+.previewBar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+  padding: 9px 12px;
+  border: 1px solid #cfd8e0;
+  border-left: 3px solid #4a6d8c;
+  border-radius: 6px;
+  background: #f2f6f9;
+  color: #3d566e;
+  font-size: 12px;
+}
+.previewBar span { flex: 1; min-width: 0; }
+.previewBar .textButton { font-size: 11px; }

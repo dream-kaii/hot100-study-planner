@@ -11,6 +11,11 @@ import { readLocal, removeLocal, writeLocal } from "./local-store.js";
 
 const ACTIVE_VARIANT_KEY_PREFIX = "hot100:activeVariant:";
 
+function asTime(value) {
+  const time = Date.parse(String(value || ""));
+  return Number.isNaN(time) ? 0 : time;
+}
+
 export function activeVariantKey(questionId, language, mode) {
   return `${ACTIVE_VARIANT_KEY_PREFIX}${questionId}:${language}:${mode}`;
 }
@@ -31,20 +36,61 @@ export function writeActiveVariant(questionId, language, mode, variantId) {
 }
 
 /**
- * 「看上次的写法」该落在哪一份上。
+ * 「上次的写法」到底是哪一段代码。
  *
- * 优先最近一次通过过的那份 —— 复习时想看的是「当时我是怎么解出来的」，
- * 不是「我上一次点开时随便停在哪个标签上」。都没通过过才退回默认规则。
+ * 这里是 2026-10 那次改动带出来的新问题：复习重写的旧代码不再是一份独立的
+ * 解法副本，而是压进了这份解法的 versions。如果沿用老的「找一份通过的解法」，
+ * 复习完一轮之后所有解法都是空的，点「看上次的写法」会打开一张空白模板 ——
+ * 用户会以为代码丢了。
+ *
+ * 所以候选池要同时包含「解法自身的代码」和「它历史版本里的代码」，
+ * 按最后通过时间取最新的一段。返回 `{ variantId, versionId, code, label }`。
+ *
+ * versionId 非空表示这段代码不在当前存档里，而在历史版本栈里 ——
+ * 调用方据此决定它是不是只读的预览（不能直接改，改了会覆盖掉当前那份）。
  */
-export function pickReviewVariant(questionId, language, mode, scope = []) {
-  const passing = scope.filter((item) => isPassingVerdict(item?.verdict));
-  if (passing.length) {
-    const latest = passing.reduce((best, item) => {
-      const time = Date.parse(item.verifiedAt || item.updatedAt || "") || 0;
-      const bestTime = Date.parse(best.verifiedAt || best.updatedAt || "") || 0;
-      return time >= bestTime ? item : best;
-    });
-    if (latest?.id) return latest.id;
+export function pickReviewSnapshot(questionId, language, mode, scope = []) {
+  const candidates = [];
+  for (const variant of Array.isArray(scope) ? scope : []) {
+    if (!variant?.id) continue;
+    if (isPassingVerdict(variant.verdict) && String(variant.code || "").trim()) {
+      candidates.push({
+        variantId: variant.id,
+        versionId: null,
+        code: variant.code,
+        label: variant.name,
+        at: asTime(variant.verifiedAt || variant.updatedAt)
+      });
+    }
+    for (const version of Array.isArray(variant.versions) ? variant.versions : []) {
+      if (!isPassingVerdict(version.verdict) || !String(version.code || "").trim()) continue;
+      candidates.push({
+        variantId: variant.id,
+        versionId: version.id,
+        code: version.code,
+        label: `${variant.name} · ${version.reason || "历史版本"}`,
+        at: asTime(version.verifiedAt || version.savedAt)
+      });
+    }
   }
-  return readActiveVariant(questionId, language, mode, scope);
+  if (candidates.length) {
+    candidates.sort((a, b) => b.at - a.at);
+    return candidates[0];
+  }
+  // 一次都没通过过：退回「上次停在哪份」，让用户至少看到自己写的东西。
+  const fallbackId = readActiveVariant(questionId, language, mode, scope);
+  const fallback = (Array.isArray(scope) ? scope : []).find((item) => item.id === fallbackId);
+  if (!fallback) return null;
+  return {
+    variantId: fallback.id,
+    versionId: null,
+    code: String(fallback.code || ""),
+    label: fallback.name || "上次停在这份",
+    at: asTime(fallback.updatedAt)
+  };
+}
+
+/** 只要那份解法的 id（兼容旧调用点）。 */
+export function pickReviewVariant(questionId, language, mode, scope = []) {
+  return pickReviewSnapshot(questionId, language, mode, scope)?.variantId ?? readActiveVariant(questionId, language, mode, scope);
 }
