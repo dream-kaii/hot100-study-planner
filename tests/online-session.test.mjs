@@ -192,3 +192,51 @@ test("runner 发 hello 后拿到刚配对的 token（必须在消息处理内回
     restore();
   }
 });
+
+test("重连后旧的 runner 连接会被关掉，不会留下僵尸", async () => {
+  const restore = installGlobals();
+  try {
+    const state = makeState();
+    const { code, server } = await pairAndConnect(state);
+    const firstRunner = state.getWebSockets("runner")[0];
+
+    // 模拟一次 1006 之后的真实重连：同一 token 再连一次。
+    const token = state._mem.get("token");
+    const again = await server.handleWebSocket(new Request(`https://x/ws?role=runner&token=${token}`, {
+      headers: { Upgrade: "websocket" }
+    }));
+    assert.equal(again.status, 200);
+
+    const runners = state.getWebSockets("runner");
+    assert.equal(runners.length, 1, "同一会话只应保留一条 runner 连接");
+    assert.equal(firstRunner.readyState, 3, "旧连接应被关闭");
+    assert.equal(runners[0].readyState, 1);
+
+    // 网页发的帧要落到活着的那条上，而不是死连接。
+    const browser = state.getWebSockets("browser")[0];
+    await server.webSocketMessage(browser, JSON.stringify({ v: 1, t: "run", id: "r2", payload: {} }));
+    assert.equal(again._ws._recv.length, 1, "新连接应收到转发的 run 帧");
+    void code;
+  } finally {
+    restore();
+  }
+});
+
+test("多个 runner 连接并存时，转发优先走最新的一条", async () => {
+  const restore = installGlobals();
+  try {
+    const state = makeState();
+    const { server } = await pairAndConnect(state);
+    // 绕过 acceptWebSocket 的清理，直接制造两条 runner 连接（模拟历史遗留的僵尸）。
+    const makeSocket = () => ({ readyState: 1, send() {}, close() { this.readyState = 3; } });
+    const zombie = makeSocket();
+    const live = { readyState: 1, received: [], send(msg) { this.received.push(msg); }, close() { this.readyState = 3; } };
+    state._sockets.push(Object.assign(zombie, { _tags: ["runner"] }), Object.assign(live, { _tags: ["runner"] }));
+
+    const browser = state.getWebSockets("browser")[0];
+    await server.webSocketMessage(browser, JSON.stringify({ v: 1, t: "run", id: "r3", payload: {} }));
+    assert.equal(live.received.length, 1, "应发给最新的一条 runner 连接");
+  } finally {
+    restore();
+  }
+});

@@ -126,6 +126,15 @@ export class Session {
   }
 
   acceptWebSocket(role, request, { newToken } = {}) {
+    // 同一会话只留一条 runner 连接。
+    // 网络半断开时 close 事件可能永远不触发，旧 socket 会以"僵尸"形式赖在 tag 里；
+    // 而 WebSocket 的 1006 每次重连都会留下一条。僵尸一多，
+    // 转发就可能落进死连接 —— 表现就是"服务端说在线，网页每次运行都超时"。
+    if (role === "runner") {
+      for (const stale of this.state.getWebSockets("runner")) {
+        try { stale.close(4002, "replaced"); } catch { /* 已经断了 */ }
+      }
+    }
     const pair = new WebSocketPair();
     const client = pair[0];
     const server = pair[1];
@@ -224,16 +233,21 @@ export class Session {
     }
 
     // Worker 不解析用例、不执行代码，只做转发。
-    const target = this.peerOf(ws);
-    if (!target) {
-      safeSend(ws, { t: FRAME.ERROR, payload: { code: "PEER_OFFLINE", message: "另一端未连接" } });
-      return;
+    const tags = this.state.getTags(ws) || [];
+    const peers = this.state.getWebSockets(tags.includes("runner") ? "browser" : "runner") || [];
+    const text = typeof raw === "string" ? raw : new TextDecoder().decode(raw);
+    // 从最新的一条开始试：僵尸 socket 上 send() 可能不报错但消息直接丢，
+    // 所以这里按"新→旧"顺序尝试，全部失败才报离线。
+    for (let index = peers.length - 1; index >= 0; index -= 1) {
+      try {
+        peers[index].send(text);
+        return;
+      } catch { /* 换下一条 */ }
     }
-    try {
-      target.send(typeof raw === "string" ? raw : new TextDecoder().decode(raw));
-    } catch {
-      safeSend(ws, { t: FRAME.ERROR, payload: { code: "FORWARD_FAILED", message: "转发失败，另一端可能已断开" } });
-    }
+    safeSend(ws, {
+      t: FRAME.ERROR,
+      payload: { code: peers.length ? "FORWARD_FAILED" : "PEER_OFFLINE", message: peers.length ? "转发失败，另一端可能已断开" : "另一端未连接" }
+    });
   }
 
   async webSocketClose(ws, code, reason) {
@@ -263,7 +277,8 @@ export class Session {
     const tags = this.state.getTags(ws) || [];
     const targetTag = tags.includes("runner") ? "browser" : "runner";
     const peers = this.state.getWebSockets(targetTag) || [];
-    return peers.length ? peers[0] : null;
+    // 取最后一条：重连建立的新连接总在后面，前面的可能已经是僵尸。
+    return peers.length ? peers[peers.length - 1] : null;
   }
 
   /** 当前在线的连接（同样不依赖内存状态）。 */

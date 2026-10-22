@@ -254,10 +254,16 @@ export class Tunnel {
   }
 
   scheduleReconnect() {
+    // 一次只允许有一个待触发的重连定时器。
+    // 不加这个守卫时，error 与 close 两个回调会各排一次，而每次失败又排两个，
+    // 定时器数量指数增长 —— 实测重连次数飙到 39 万，日志被刷爆。
+    if (this.stopped || this.reconnectTimer) return;
     const wait = BACKOFF_MS[Math.min(this.backoffIndex, BACKOFF_MS.length - 1)];
     this.backoffIndex += 1;
     this.onLog("info", `${(wait / 1000).toFixed(1)} 秒后重连（第 ${this.backoffIndex} 次）`);
     this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (this.stopped) return;
       this.connect().catch((error) => {
         this.onLog("warn", `重连失败：${error.message}`);
         if (!this.stopped) this.scheduleReconnect();
