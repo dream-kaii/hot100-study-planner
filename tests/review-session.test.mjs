@@ -1,16 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  codeFingerprint,
   describeNextReview,
   describeOverdue,
-  isReusedPassingCode,
   pickDailyNew,
   planFreshAttempt,
   planReviewRewrite,
+  resolveRunOutcome,
   sortDueQueue,
   sortReviewQueue
 } from "../src/services/review-session.js";
+import { derivePracticeStatus, recordReviewOutcome } from "../src/services/status.js";
 
 const now = "2026-10-14T00:00:00.000Z";
 
@@ -126,29 +126,33 @@ test("复习重写：有代码就压版本再清空，空白模板不重复压",
   assert.equal(planReviewRewrite(null, template).action, "draft-only");
 });
 
-test("代码指纹忽略注释、缩进和空行，能让「原样再跑一次」被认出来", () => {
-  const original = "class Solution {\n  int f() { return 1; } // 旧注释\n}";
-  const reformatted = "class Solution {\n\n    int f() { return 1; }\n}";
-  assert.equal(codeFingerprint(original), codeFingerprint(reformatted));
-  assert.notEqual(codeFingerprint(original), codeFingerprint("class Solution {\n  int f() { return 2; }\n}"));
+test("跑通就算独立通过，哪怕代码和上次通过的逐字相同", () => {
+  // 这条曾经是反的：指纹一致就降级成「运行完成」，而「运行完成」不改动 progress，
+  // 于是错题标记永远清不掉 —— 移动零这类只有一种写法的题，用户重写后写出
+  // 和上次一字不差的正确答案，反而被永久锁在错题池里。
+  // 现在的判据是「跑通了 + 没用提示」，与代码内容无关。
+  assert.equal(resolveRunOutcome({ passed: true }), "independent");
+  assert.equal(resolveRunOutcome({ passed: true, hintsUsed: 0, viewedSolutionCode: false }), "independent");
 });
 
-test("代码指纹不折叠行内空格：字符串字面量里的差异必须算作改过", () => {
-  // 保守取舍：宁可把「只是重新排版」误判成改动（多记一次独立通过的风险），
-  // 也不要把 `return "a b"` 与 `return "a  b"` 认成同一份代码 —— 后者会把
-  // 一次真实修改吞掉，让间隔复习凭空推进一档。
-  const a = 'class Solution { String f() { return "a b"; } }';
-  const b = 'class Solution { String f() { return "a  b"; } }';
-  assert.notEqual(codeFingerprint(a), codeFingerprint(b));
+test("用没用提示决定是哪种通过，没通过就是失败", () => {
+  assert.equal(resolveRunOutcome({ passed: true, hintsUsed: 1 }), "needed-hint");
+  assert.equal(resolveRunOutcome({ passed: true, viewedSolutionCode: true }), "needed-solution");
+  // 看过题解优先于用过提示：题解比提示给的信息更多，记更保守的那个。
+  assert.equal(resolveRunOutcome({ passed: true, hintsUsed: 2, viewedSolutionCode: true }), "needed-solution");
+  assert.equal(resolveRunOutcome({ passed: false }), "failed");
+  assert.equal(resolveRunOutcome({ passed: false, hintsUsed: 3 }), "failed");
 });
 
-test("复用一份已通过的代码不算独立通过，改过就算", () => {
-  const passed = ["class Solution { int f() { return 1; } }"];
-  assert.equal(isReusedPassingCode("class Solution { int f() { return 1; } } // 又跑一遍", passed), true);
-  assert.equal(isReusedPassingCode("class Solution { int f() { return 2; } }", passed), false);
-  // 空代码永远不算复用，交给调用方按「未通过」处理。
-  assert.equal(isReusedPassingCode("", passed), false);
-  assert.equal(isReusedPassingCode("   ", passed), false);
+test("硬失败压过一切，预览只记运行完成", () => {
+  assert.equal(resolveRunOutcome({ hardFailure: true, passed: true }), "failed");
+  assert.equal(resolveRunOutcome({ hardFailure: true, hintsUsed: 1 }), "failed");
+  // 预览历史版本跑通的代码不是这次写的：进历史，但不动复习阶梯。
+  assert.equal(resolveRunOutcome({ previewing: true, passed: true }), "completed");
+  assert.equal(resolveRunOutcome({ previewing: true, passed: true, hintsUsed: 2 }), "completed");
+  // 预览时跑挂了也不记失败：翻旧代码不该被罚成错题。
+  // 记 failed 会把题目推进 reviewing，用户只是点开看了一眼就得去重做。
+  assert.equal(resolveRunOutcome({ previewing: true, hardFailure: true }), "completed");
 });
 
 // pickReviewSnapshot 需要 localStorage，用一个最小内存实现顶住。
@@ -228,4 +232,31 @@ test("首页「需要重做」：到期在前按逾期升序，错题在后按�
   assert.deepEqual(queue.map((entry) => entry.question.id), ["2", "1", "4", "3"]);
   // 前端要能区分两种语气：到期是「该复习了」，错题是「没做出来」。
   assert.deepEqual(queue.map((entry) => entry.status), ["due", "due", "reviewing", "reviewing"]);
+});
+
+test("重做跑通后必须离开错题池：错题 + 独立通过 → 不再是 reviewing", () => {
+  // 移动零（#283）只有一种写法。用户被标成错题后点「重写」，写出和上次
+  // 一字不差的正确答案，跑通了却还留在错题池 —— 这就是死锁的现场。
+  // 两个环节都必须成立：判定给出 independent，且这个结论真的推进了状态。
+  const reviewing = {
+    status: "reviewing",
+    reviewAt: "2026-10-19T00:00:00.000Z",
+    reviewCount: 1,
+    completedAt: "2026-10-01T00:00:00.000Z"
+  };
+  const outcome = resolveRunOutcome({ passed: true });
+  assert.equal(outcome, "independent");
+
+  const next = recordReviewOutcome(reviewing, outcome, "2026-10-20T08:00:00.000Z");
+  assert.notEqual(next.status, "reviewing");
+  assert.equal(derivePracticeStatus(next, new Date("2026-10-20T08:00:00.000Z")), "completed");
+  // 也不能反过来直接变成「已掌握」—— 错题重做一次只是回到正常复习节奏。
+  assert.equal(next.status, "completed");
+  assert.ok(next.reviewAt > "2026-10-20T08:00:00.000Z");
+});
+
+test("只有预览历史版本时跑的代码不改变错题标记", () => {
+  // 预览是「翻阅」，不是「重做」。它记成 completed，而 completed 不改 progress，
+  // 所以错题依旧是错题 —— 这是有意的，和上面那条并不矛盾。
+  assert.equal(resolveRunOutcome({ previewing: true, passed: true }), "completed");
 });

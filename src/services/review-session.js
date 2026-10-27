@@ -6,7 +6,7 @@
 // `String(reviewAt).slice(0, 10)` 切 ISO 串，在东八区晚上八点以后显示的是前一天。
 // 这些都不报错，只是数字悄悄错了，所以必须能被单测钉住。
 
-import { derivePracticeStatus } from "./status.js";
+import { classifyAttemptOutcome, derivePracticeStatus } from "./status.js";
 import { REVIEW_INTERVALS } from "./status.js";
 
 /** 「重写」时编译器里那份空白模板应该来自哪里。 */
@@ -170,28 +170,37 @@ function comparable(code) {
 }
 
 /**
- * 代码内容指纹：用来判断「这次通过是不是把上次那份原样又跑了一遍」。
+ * 这一次运行该记成什么结论。
  *
- * 去掉空白和注释之后比较。空手点运行不该拿到一次「独立通过」——
- * 那会让 1/3/7/14 的间隔被凭空推进一档，复习记录失去意义。
+ * 这里以前还比过代码指纹：如果这次的代码和某份已经通过的快照逐字一致，就把
+ * 结论降级成 "completed"。本意是防「点开到期复习、代码还在、直接点运行，
+ * 复习间隔就白推一档」。但那个前提在「复习改成真的重写」之后已经不成立了
+ * —— 重写会把编辑器清成空白模板，能跑通的代码只可能是重新写出来的。
+ *
+ * 留着它的实际后果是个死锁：移动零这类只有一种写法的题，用户重写后写出
+ * 和上次一字不差的正确答案，被判成 "completed"；而 "completed" 在
+ * recordPracticeOutcome 里不改动 progress，于是错题标记永远清不掉。
+ * 写对了反而出不了错题池。
+ *
+ * 所以判据回到用户能理解的那一条：跑通了就算通过，用没用提示决定是不是
+ * 独立通过。这个函数刻意不接受任何「代码内容」参数，避免再次退化成指纹比对。
  */
-export function codeFingerprint(code = "") {
-  return String(code)
-    .replace(/\r\n?/g, "\n")
-    .split("\n")
-    .map((line) => line.replace(/\/\/.*$/, "").replace(/#.*$/, "").trim())
-    .filter(Boolean)
-    .join("\n");
-}
-
-/**
- * 这次运行是不是「复用了一份已经通过的代码」。
- * 只有「本次没有任何改动、且与某份已通过的快照逐字一致」才算。
- */
-export function isReusedPassingCode(code, passedCodes = []) {
-  const fingerprint = codeFingerprint(code);
-  if (!fingerprint) return false;
-  return passedCodes.some((candidate) => codeFingerprint(candidate) === fingerprint);
+export function resolveRunOutcome({
+  hardFailure = false,
+  passed = false,
+  hintsUsed = 0,
+  viewedSolutionCode = false,
+  previewing = false
+} = {}) {
+  // 只读预览历史版本时跑的那段代码不是这次写的，记成「运行完成」：
+  // 进历史，但不动复习阶梯，也不清除任何错题标记。
+  if (previewing) return "completed";
+  if (hardFailure) return "failed";
+  return classifyAttemptOutcome({
+    passed,
+    attemptHintsUsed: hintsUsed,
+    attemptViewedSolutionCode: viewedSolutionCode
+  });
 }
 
 export { REVIEW_INTERVALS };

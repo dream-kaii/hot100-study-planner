@@ -58,9 +58,11 @@ export default function Dashboard({
             // 旧版这里是裸的题目对象。两种都认，免得别处传裸数组时整页崩掉。
             const question = entry.question || entry;
             const item = entry.item || progressMap[question.id];
-            const status = entry.status || derivePracticeStatus(item);
-            // 到期复习的主按钮照样是「重写」：点进去给空白模板，而不是上次那份满分答案。
-            return <button className="planRow" key={question.id} onClick={() => onOpen?.(question.id, status === "due" ? { freshStart: true } : undefined)}>
+            // 这一栏里两种状态点进去都必须给空白模板，而不是上次那份满分答案：
+            // 错题（reviewing）要重做才能清掉标记，到期（due）要重写才能推进间隔。
+            // 以前只对 due 传 freshStart，错题点进去看到的是上次通过的代码，
+            // 用户点一下运行就等于把旧答案又跑了一遍。
+            return <button className="planRow" key={question.id} onClick={() => onOpen?.(question.id, { freshStart: true })}>
               <span>#{question.id}</span>
               <strong>{question.title}</strong>
               <small>{reviewReason(item)}</small>

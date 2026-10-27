@@ -6,15 +6,14 @@ import ProgressiveSolution from "./ProgressiveSolution.jsx";
 import SolutionVariants from "./SolutionVariants.jsx";
 import { normalizeStudyText, splitStudyParagraphs } from "../services/study-text.js";
 import { createLanguageDrafts, getDraftKey, getExecutionCases, selectDraftRecord } from "../services/editor.js";
-import { classifyAttemptOutcome, derivePracticeStatus } from "../services/status.js";
+import { derivePracticeStatus } from "../services/status.js";
 import { STATUS_BUTTONS } from "../services/status-labels.js";
 import { MAX_SOLUTIONS_PER_SCOPE, createVariantId, isBlankVariant, normalizeVariant, pruneBlankVariants, selectScope } from "../services/solutions.js";
 import { formatDateTime } from "../services/datetime.js";
 import { TIMER_MINUTE_OPTIONS, minutesFromTimer } from "../services/practice.js";
 import { readLocal, writeLocal } from "../services/local-store.js";
 import { pickReviewSnapshot, readActiveVariant, writeActiveVariant } from "../services/active-variant.js";
-import { describeNextReview, isReusedPassingCode, planFreshAttempt, planReviewRewrite } from "../services/review-session.js";
-import { isPassingVerdict } from "../services/solutions.js";
+import { describeNextReview, planFreshAttempt, planReviewRewrite, resolveRunOutcome } from "../services/review-session.js";
 
 const difficultyText = { EASY: "简单", MEDIUM: "中等", HARD: "困难" };
 // 「无本地运行接口」提示的关闭状态存储键（见组件内 runnerNoticeDismissed）
@@ -148,12 +147,18 @@ export default function ProblemDetail({
       const snapshot = pickReviewSnapshot(question.id, initialLanguage, "function", selectScope(solutions, question.id, initialLanguage, "function"));
       if (snapshot) {
         setActiveVariantId(snapshot.variantId);
-        // 代码在历史版本里时只能看不能改：直接改这份解法会把「历史」搬成「现在」，
-        // 下次复习的对比对象就没了。
-        if (snapshot.versionId) setPreview({ ...snapshot, readOnly: true });
+        // 「看上次的写法」一律只读，不管这段代码存在当前存档上还是历史版本里。
+        // 1) 代码在历史版本里时直接改会把「历史」搬成「现在」，下次复习的对比对象就没了；
+        // 2) 这段代码不是你这次写的，跑通它不该算独立通过、更不该把错题标记清掉 ——
+        //    界面上写着「只做翻阅，不会推进复习间隔」，行为必须和这句话一致。
+        // 想真推进间隔就点「重写」，那是另一条路径。
+        setPreview({ ...snapshot, readOnly: true });
         setAttemptNotice(snapshot.versionId
           ? "这是你上次通过的写法（存在历史版本里），只做翻阅，不会推进复习间隔。想推进就点「重写」。"
           : "这是你上次通过的写法，只做翻阅，不会推进复习间隔。想推进就点「重写」。");
+      } else {
+        // 没有可翻阅的通过记录（比如这题还没通过过）：别让用户以为进来就能直接改。
+        setAttemptNotice("这道题还没有通过过的写法可以翻阅，直接写就行。");
       }
     }
     onRecordHistory?.({ questionId: question.id, language: defaultLanguage === "python" ? "python" : "java", mode: "function", outcome: "started", createdAt: new Date().toISOString() });
@@ -378,33 +383,25 @@ export default function ProblemDetail({
     const passed = result.status === "passed" || allCases.length > 0 && allCases.every((item) => item.status === "passed");
     const effectiveMode = payload.mode || mode;
     const hasHardFailure = ["mismatch", "failed", "compile_error", "compile_timeout", "runtime_error", "timeout", "output_limit", "environment_error", "template", "unsupported"].includes(result.status) || allCases.some((item) => ["mismatch", "failed", "compile_error", "compile_timeout", "runtime_error", "timeout", "output_limit", "environment_error", "template", "unsupported"].includes(item.status));
-    let outcome = hasHardFailure ? "failed" : classifyAttemptOutcome({ passed, attemptHintsUsed: attempt.hintsUsed, attemptViewedSolutionCode: attempt.viewedSolutionCode });
-    // 「原样再跑一遍已通过的代码」不算一次独立通过。
+    // 结论只由「跑没跑通 + 用没用提示」决定，不再比代码内容。
     //
-    // 这是复习功能最容易自欺的一环：点开到期复习，代码还在，直接点运行、绿了、
-    // 间隔就往前推一档。中间没有任何思考发生，但记录上看起来和「重新做出来」一样。
-    // 所以这里比对代码指纹：和任何一份已通过的快照逐字一致，就把这次判定降级成
-    // 「运行完成」，只记一次历史，不动复习阶梯。
-    const passedCodes = [];
-    for (const item of scope) {
-      if (isPassingVerdict(item.verdict) && String(item.code || "").trim()) passedCodes.push(item.code);
-      // 历史版本里的代码也算「之前通过过的那份」。
-      // 复习重写之后，通过过的代码只在 versions 里，如果只比对当前 code，
-      // 从「⋯ → 取回」把旧代码搬回来、或者从「看上次的写法」预览时跑一遍，
-      // 就会被当成一次全新的独立通过 —— 间隔白推一档。
-      for (const version of Array.isArray(item.versions) ? item.versions : []) {
-        if (isPassingVerdict(version.verdict) && String(version.code || "").trim()) passedCodes.push(version.code);
-      }
-    }
-    const reused = passed && passedCodes.length > 0 && isReusedPassingCode(payload.code, passedCodes);
+    // 以前这里还比对代码指纹：和任何一份已通过的快照逐字一致就降级成
+    // 「运行完成」，本意是防「点开到期复习、代码还在、直接点运行」白推间隔。
+    // 但复习现在是真的重写（编辑器会清成空白模板），能跑通的代码一定是重新
+    // 写出来的；而那个降级在 recordPracticeOutcome 里对应「不改动 progress」，
+    // 于是错题标记永远清不掉 —— 移动零这类只有一种写法的题，用户写对了反而
+    // 出不了错题池。判定细节见 services/review-session.js 的 resolveRunOutcome。
+    const outcome = resolveRunOutcome({
+      hardFailure: hasHardFailure,
+      passed,
+      hintsUsed: attempt.hintsUsed,
+      viewedSolutionCode: attempt.viewedSolutionCode,
+      previewing: Boolean(previewRef.current)
+    });
     if (previewRef.current) {
       // 预览模式跑的是历史版本里那段代码。它确实能跑通，但那一刻你没在写东西，
       // 记录成独立通过等于把「翻了一下旧代码」算成「重新做出来了」。
-      outcome = "completed";
       setAttemptNotice("这是在预览历史版本里的代码，只记一次运行，不算独立通过、也不会推进复习间隔。");
-    } else if (reused) {
-      outcome = "completed";
-      setAttemptNotice("这次的代码和你之前通过的那份完全一样，只记一次运行，不算独立通过、也不会推进复习间隔。");
     } else if (outcome !== "failed") {
       setAttemptNotice("");
     }
